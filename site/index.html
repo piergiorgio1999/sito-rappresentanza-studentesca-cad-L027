@@ -480,6 +480,12 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .tabs.side button:hover{background:var(--rose)!important}
 .tabs.side button[aria-selected="true"]{background:var(--rose)!important;color:var(--sap2);box-shadow:inset 4px 0 0 var(--sap)}
 .tabs.side button:focus-visible{outline:2px solid var(--sap);outline-offset:-2px}
+.side-wip{position:relative;display:flex;flex-direction:column;gap:2px;margin:10px 2px 4px;padding:20px 8px 8px;background:#fffaf0;border:1.5px solid #e2b23a;border-radius:15px;overflow:hidden}
+.side-wip::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:repeating-linear-gradient(-45deg,#2b2620 0 10px,#ffc83d 10px 20px)}
+.side-wip-head{display:flex;flex-direction:column;gap:2px;padding:0 6px 6px;color:var(--sap2)}
+.side-wip-head strong{font-size:.86rem}
+.side-wip-head span{font-size:.68rem;line-height:1.25;color:var(--muted)}
+.tabs.side .side-wip button{min-height:42px;padding:7px 8px;background:rgba(255,255,255,.78)!important;border:1px solid rgba(139,31,55,.12);border-radius:10px}
 .side-h{display:none;align-items:center;justify-content:space-between;padding:4px 6px 10px}
 .side-h b{font-family:var(--serif);font-size:1.15rem;color:var(--sap2)}
 .side-x{border:0;background:var(--rose);color:var(--sap2);width:38px;height:38px;border-radius:10px;font-size:1.4rem;cursor:pointer}
@@ -519,11 +525,15 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
     <button role="tab" id="t-orari" data-tab="orari" aria-controls="tab-orari"><span aria-hidden="true">🗓️</span>Orari</button>
     <button role="tab" id="t-esami" data-tab="esami" aria-controls="tab-esami"><span aria-hidden="true">⏳</span>Esami<i class="beta">beta</i></button>
     <button role="tab" id="t-testi" data-tab="testi" aria-controls="tab-testi"><span aria-hidden="true">📚</span><em class="two">Testi e pagine dei corsi</em><i class="beta">beta</i></button>
-    <button role="tab" id="t-market" data-tab="market" aria-controls="tab-market"><span aria-hidden="true">📖</span><em class="two">Marketplace</em></button>
     <button role="tab" id="t-segnala" data-tab="segnala" aria-controls="tab-segnala"><span aria-hidden="true">💬</span><em class="two">Contattaci e FAQ</em></button>
-    <button role="tab" id="t-news" data-tab="news" aria-controls="tab-news"><span aria-hidden="true">📰</span>News<i class="soonb">presto</i></button>
     <hr class="side-sep">
-    <button role="tab" id="t-account" data-tab="account" aria-controls="tab-account"><span aria-hidden="true">👤</span><b id="tAccLbl">Accedi</b><i class="soonb">presto</i></button>
+    <button role="tab" id="t-rassegna" data-tab="rassegna" aria-controls="tab-rassegna"><span aria-hidden="true">🗞️</span><em class="two">Rassegna stampa</em><i class="beta">beta</i></button>
+    <div class="side-wip" role="group" aria-label="Funzioni in arrivo">
+      <div class="side-wip-head"><strong>🚧 Work in progress</strong><span>In arrivo · placeholder non funzionali</span></div>
+      <button role="tab" id="t-market" data-tab="market" aria-controls="tab-market"><span aria-hidden="true">📖</span><em class="two">Marketplace</em><i class="soonb">presto</i></button>
+      <button role="tab" id="t-aggiornamenti" data-tab="aggiornamenti" aria-controls="tab-aggiornamenti"><span aria-hidden="true">📰</span><em class="two">Aggiornamenti e comunicazioni</em><i class="soonb">presto</i></button>
+      <button role="tab" id="t-account" data-tab="account" aria-controls="tab-account"><span aria-hidden="true">👤</span><b id="tAccLbl">Accedi</b><i class="soonb">presto</i></button>
+    </div>
   </nav>
 </header>
 
@@ -720,7 +730,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
     <div id="mkMarket">
       <div class="soon" id="mkWorkBox">
         <b id="mkWipTitle">Work in progress · 📖 🧑‍🏫</b>
-        <span id="mkWipCopy">La bacheca di libri usati e ripetizioni tra studenti è in preparazione.</span>
+        <span id="mkWipCopy">Le schermate di libri usati e tutoraggi sono placeholder in preparazione e al momento non sono funzionali.</span>
         <p class="note market-disclaimer" id="mkDisclaimer" hidden>Questa è una bacheca tra studenti: annunci e accordi sono gestiti direttamente da chi compra, vende o fa ripetizioni. Gli annunci non sono verificati e la rappresentanza non partecipa agli accordi né è responsabile di vendite, pagamenti o lezioni. Valuta con attenzione prima di procedere.</p>
       <div class="mk-bar">
         <input type="search" id="mkSearch" placeholder="Cerca per titolo o insegnamento" aria-label="Cerca negli annunci">
@@ -731,17 +741,23 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
       </div>
     </div>
   </section>
-  <!-- ===== News ===== -->
-  <section class="panel" id="tab-news" role="tabpanel" aria-labelledby="t-news" hidden>
+  <!-- ===== Aggiornamenti e comunicazioni ===== -->
+  <section class="panel" id="tab-aggiornamenti" role="tabpanel" aria-labelledby="t-aggiornamenti" hidden>
     <div class="ph">
-      <h2>News <span class="soonb big">lavori in corso</span></h2>
-      <div class="soon"><b>🚧 Lavori in corso</b><span>Stiamo preparando questa sezione: la rassegna stampa si aggiorna da sola una volta al giorno e gli avvisi della rappresentanza sono ancora d'esempio.</span></div>
+      <h2>Aggiornamenti e comunicazioni <span class="soonb big">presto</span></h2>
+      <div class="soon"><b>🚧 Work in progress</b><span>Le comunicazioni mostrate sono placeholder: la sezione non è ancora funzionale.</span></div>
     </div>
     <h3 class="h3">Dai docenti e dalla rappresentanza</h3>
     <p class="note" id="postInfo"></p>
     <div class="news-list" id="newsList"></div>
+  </section>
+  <!-- ===== Rassegna stampa ===== -->
+  <section class="panel" id="tab-rassegna" role="tabpanel" aria-labelledby="t-rassegna" hidden>
+    <div class="ph">
+      <h2>Rassegna stampa <span class="beta big">beta</span></h2>
+      <p class="note" id="pressInfo">Articoli dei giornali online che citano la Sapienza, raccolti automaticamente ogni mattina. I link portano agli articoli originali.</p>
+    </div>
     <h3 class="h3">Sapienza nei giornali</h3>
-    <p class="note" id="pressInfo">Articoli dei giornali online che citano la Sapienza, raccolti automaticamente da Google News ogni mattina alle 7. I link portano agli articoli originali.</p>
     <div class="news-list" id="pressList"></div>
     <p class="note news-more">Per le novità in tempo reale <a class="ig" href="https://www.instagram.com/chimica_la_sapienza/" target="_blank" rel="noopener">seguici su Instagram</a>.</p>
   </section>
@@ -2086,10 +2102,11 @@ render();
 /* =================== SCHEDE =================== */
 /* Interruttori delle funzioni: quando backend e database su Cloudflare sono pronti, mettere a true */
 const FEATURES = { accounts:false, market:false };
-const TABS = ['orari','esami','testi','market','segnala','news','account'];
+const TABS = ['orari','esami','testi','market','segnala','rassegna','aggiornamenti','account'];
 function showTab(t, push){
   if(t==='libri') t='testi';
   if(t==='faq' || t==='contatti') t='segnala';
+  if(t==='news') t='aggiornamenti';
   if(!TABS.includes(t)) t='orari';
   TABS.forEach(x=>{
     $('tab-'+x).hidden = x!==t;
@@ -2106,7 +2123,8 @@ function showTab(t, push){
   if(t==='market') { if(!['libro','ripetizioni'].includes(mkTab)) mkTab='libro'; renderMarket(); }
   if(t==='account') renderAccount();
   if(t==='segnala'){ renderFaq(); renderProfs(); }
-  if(t==='news') renderNews();
+  if(t==='rassegna') loadPress();
+  if(t==='aggiornamenti') renderNews();
   if(t==='orari') render();
 }
 document.querySelector('.tabs').addEventListener('click', e=>{
@@ -2829,7 +2847,7 @@ $('accDel').addEventListener('click', async ()=>{
 /* comunicazioni di docenti e rappresentanza */
 $('accPost').addEventListener('click', ()=>{ ['poT','poB','poL'].forEach(id=>$(id).value=''); $('poErr').textContent=''; $('dlgPost').showModal(); });
 $('poSave').addEventListener('click', async ()=>{
-  try{ await api('posts',{method:'POST', body:{title:$('poT').value, body:$('poB').value, link:$('poL').value}}); $('dlgPost').close(); POSTS=null; showTab('news', true); }
+  try{ await api('posts',{method:'POST', body:{title:$('poT').value, body:$('poB').value, link:$('poL').value}}); $('dlgPost').close(); POSTS=null; showTab('aggiornamenti', true); }
   catch(err){ $('poErr').textContent = err.message; }
 });
 $('rgLegal').addEventListener('click', e=>{ e.preventDefault(); $('avvertenze').open=true; $('avvertenze').scrollIntoView({behavior:'smooth'}); });
@@ -3043,7 +3061,6 @@ $('newsList').addEventListener('click', async e=>{
   try{ await api('posts/'+b.dataset.delpost,{method:'DELETE'}); POSTS=null; renderPosts(); }catch(err){ b.textContent=err.message; }
 });
 function renderNews(){
-  loadPress();
   if(FEATURES.accounts){ renderPosts(); return; }
   $('postInfo').textContent = 'Qui docenti e rappresentanti pubblicheranno le loro comunicazioni. Per ora sono esempi.';
   const list = NEWS.slice().sort((a,b)=>a.date<b.date?1:-1);
