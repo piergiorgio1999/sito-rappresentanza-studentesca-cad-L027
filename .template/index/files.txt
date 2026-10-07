@@ -121,10 +121,14 @@ docs/pages-deployment.md
 docs/release/README.md
 docs/validation/README.md
 examples/README.md
+functions/_lib.js
+functions/api/admin/[[path]].js
+functions/api/content.js
 mcp/README.md.jinja
 mcp/package-lock.json
 mcp/package.json
 mcp/server.mjs
+migrations/0001_admin_content.sql
 release/CHECKLIST.md
 release/RELEASE_NOTES_TEMPLATE.md
 schemas/project-status.schema.json
@@ -269,4 +273,5 @@ tools/scope-guard/scope-guard
 tools/scope-guard/test.sh
 tools/validate/validate-ci.sh
 tools/validate/validate.sh
+wrangler.toml
 {{_copier_conf.answers_file}}.jinja

@@ -170,3 +170,17 @@ segnala gli altri manifest riconosciuti come non disponibili.
 Il sito statico vive in `site/` ed è versionato nello stesso repository del progetto. GitHub `main` è la fonte autorevole condivisa tra Codex e Claude; ogni modifica segue il flusso Issue, branch e PR già definito dal repository.
 
 Il progetto Cloudflare Pages `orari-chimica` usa Direct Upload: Cloudflare non consente di aggiungere Git integration a un progetto esistente. GitHub Actions distribuisce quindi `site/` a Pages sui push a `main` usando secrets GitHub, senza commit o credenziali nel repository. Il deploy non è attivo finché entrambi i secrets richiesti non sono configurati.
+
+## 2026-10-08 — Dati globali e annotazioni dell'area amministratore
+
+Su richiesta esplicita del proprietario (Issue #5), `site/` può usare Pages
+Functions e la D1 `orari-chimica-db`. GitHub resta la fonte del codice e della
+governance; D1 contiene gli override globali di orari/appelli e i contatori
+temporanei con IP derivati per limitare i tentativi di accesso. Le
+personalizzazioni individuali continuano a restare nel browser.
+
+L'accesso amministratore è verificato sul server con credenziali conservate
+nei Cloudflare secrets, limitazione dei tentativi e cookie HttpOnly, Secure e
+SameSite. Le annotazioni sono GitHub Issues pubbliche create e lette dal
+backend; l'interfaccia del sito le rende disponibili soltanto con una sessione
+admin valida. I token non sono inclusi nel client né nel repository.

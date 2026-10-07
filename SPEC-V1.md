@@ -1,4 +1,4 @@
-# SPEC-V1.2 — Agent-Ready Template (CONGELATA)
+# SPEC-V1.3 — Agent-Ready Template (CONGELATA)
 
 Questo file è IL CONTRATTO vincolante.
 In caso di divergenza con qualsiasi altro file del repo (docs, config/,
@@ -6,8 +6,8 @@ acceptance/cases/, .template/), SPEC-V1.md PREVALE.
 Non modificare senza approvazione esplicita dell'architetto.
 
 ## 1. VINCOLI ASSOLUTI
-1. GitHub = unica source of truth persistente
-2. Profilo MCP opzionale = adapter locale stdio selezionato da Copier; `standalone` resta il default. Nessun servizio remoto, webhook o pubblicazione automatica.
+1. GitHub = unica source of truth persistente per codice, specifiche, decisioni e governance del repository. I dati runtime dell'applicazione sono ammessi solo entro l'eccezione approvata nella sezione 14.
+2. Profilo MCP opzionale = adapter locale stdio selezionato da Copier; `standalone` resta il default. Nessun servizio remoto, webhook o pubblicazione automatica nel runtime del template. Il sito `site/**` può usare i servizi Cloudflare dichiarati nella sezione 14.
 3. Project Status Digest = funzione read-only derivata; MAI committato, MAI editabile, MAI source of truth
 4. Runtime tool custom = Bash + jq + gh. Il solo adapter MCP opzionale usa Node.js e l'SDK MCP ufficiale pinnato. VIETATI: yq, PyYAML, parser YAML custom, Python per parsing
 5. scope-map.json = UNICA fonte classificazione path; overlap: first-match-wins (ordine chiavi); OGNI file classificato (nessun unclassified)
@@ -161,6 +161,19 @@ dell'acceptance.
    modalità `standalone` e `mcp`. Ogni repository figlio deriva le mappe solo
    dal proprio HEAD e stato GitHub; vietati riferimenti cablati al template e
    persistenza dello stato live durante `copier update`.
-11. Le mappe non sostituiscono codice, manifest, workflow, Issue, PR, Checks,
+    11. Le mappe non sostituiscono codice, manifest, workflow, Issue, PR, Checks,
     DECISIONS.md o Project Status Digest. Nessuna mappa è fonte autorevole e
     nessun file vietato dalla sezione 2 viene introdotto.
+
+## 14. RUNTIME DEL SITO ORARI CHIMICA — ECCEZIONE APPROVATA
+
+Su richiesta esplicita del proprietario del repository, il solo sito in `site/`
+può usare Cloudflare Pages Functions e D1 per autenticazione amministrativa e
+dati globali di orari/esami. Il codice, le decisioni e la governance del
+progetto restano in GitHub; D1 contiene esclusivamente i dati operativi
+condivisi del sito.
+
+Le annotazioni inviate dall'area amministratore sono GitHub Issues pubbliche.
+Le API del sito ne consentono consultazione e creazione solo con una sessione
+amministrativa verificata sul server. Credenziali e token restano secrets
+Cloudflare e non sono mai inclusi nel repository o nel client.

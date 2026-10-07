@@ -37,7 +37,10 @@
     {
       "name": "website",
       "paths": [
-        "site/**"
+        "site/**",
+        "functions/**",
+        "migrations/**",
+        "wrangler.toml"
       ]
     },
     {
