@@ -1,0 +1,8 @@
+{
+  "maxLines": 100,
+  "maxBytes": 8192,
+  "format": [
+    "json",
+    "markdown"
+  ]
+}

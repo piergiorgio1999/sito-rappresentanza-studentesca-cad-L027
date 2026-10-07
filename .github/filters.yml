@@ -1,0 +1,24 @@
+typescript:
+  - '**/*.{ts,tsx,js,jsx}'
+  - 'package.json'
+  - 'tsconfig.json'
+python:
+  - '**/*.py'
+  - 'pyproject.toml'
+swift:
+  - '**/*.swift'
+  - 'Package.swift'
+rust:
+  - '**/*.rs'
+  - 'Cargo.toml'
+go:
+  - '**/*.go'
+  - 'go.mod'
+shell:
+  - '**/*.sh'
+  - '**/*.bash'
+  - 'tools/**'
+container:
+  - 'Dockerfile*'
+  - '**/*.tf'
+  - '**/docker-compose*.yml'

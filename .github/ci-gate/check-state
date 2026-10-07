@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+: "${CI_GATE_NEEDS_JSON:?CI_GATE_NEEDS_JSON is required}"
+: "${CI_GATE_APPLICABILITY_JSON:?CI_GATE_APPLICABILITY_JSON is required}"
+
+jq -e 'type == "object"' >/dev/null <<<"$CI_GATE_NEEDS_JSON" \
+    || { echo "CI Gate: needs data is not an object" >&2; exit 1; }
+jq -e 'type == "object" and all(.[]; type == "boolean")' >/dev/null \
+    <<<"$CI_GATE_APPLICABILITY_JSON" \
+    || { echo "CI Gate: applicability data must be a boolean object" >&2; exit 1; }
+
+needs_keys="$(jq -c 'keys | sort' <<<"$CI_GATE_NEEDS_JSON")"
+applicability_keys="$(jq -c 'keys | sort' <<<"$CI_GATE_APPLICABILITY_JSON")"
+if [[ "$needs_keys" != "$applicability_keys" ]]; then
+    echo "CI Gate: applicability topology does not match needs" >&2
+    exit 1
+fi
+
+while IFS=$'\t' read -r job applicable result; do
+    if [[ "$applicable" == "true" && "$result" == "success" ]] || \
+       [[ "$applicable" == "false" && "$result" == "skipped" ]]; then
+        printf 'CI Gate: PASS %s (applicable=%s result=%s)\n' "$job" "$applicable" "$result"
+        continue
+    fi
+    printf 'CI Gate: FAIL %s (applicable=%s result=%s)\n' "$job" "$applicable" "${result:-missing}" >&2
+    exit 1
+done < <(jq -r --argjson applicability "$CI_GATE_APPLICABILITY_JSON" '
+    to_entries[] | [.key, ($applicability[.key] | tostring), (.value.result // "missing")] | @tsv
+' <<<"$CI_GATE_NEEDS_JSON")

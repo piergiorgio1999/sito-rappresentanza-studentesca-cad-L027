@@ -1,0 +1,12 @@
+name: bug
+description: bug
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+    validations:
+      required: true

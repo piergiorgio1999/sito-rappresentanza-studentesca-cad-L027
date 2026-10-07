@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# Renders the static repository map views into the README generated blocks
+# (SPEC-V1.md section 13 points 3 and 8).
+#
+# Only `dependencies` and `ci` are persisted. `status` is live and is never
+# committed: the README carries its command and the Actions link instead, so
+# no derived GitHub state becomes an authoritative cache.
+#
+# `check` never writes. It regenerates into temporary storage and compares
+# byte-for-byte, so a stale block fails the pull request instead of being
+# silently rewritten by CI.
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT/tools/lib/common.sh"
+
+require_jq
+require_git
+
+cd "$ROOT"
+
+README="README.md"
+MAP="$ROOT/tools/project-status/map"
+STATIC_TYPES="dependencies ci"
+
+usage() {
+    echo "Usage: readme-maps render TYPE | update | check | install-hook" >&2
+    echo "  TYPE=dependencies|ci   (status is live and never committed)" >&2
+}
+
+marker_start() { printf '<!-- repository-map:%s:start -->' "$1"; }
+marker_end() { printf '<!-- repository-map:%s:end -->' "$1"; }
+
+# The block body: the same ordered tree in both formats, the graphical one
+# first because the README is read by people and rendered by GitHub.
+render_body() {
+    local type="$1"
+    printf '\n'
+    printf '```mermaid\n'
+    "$MAP" "$type" mermaid
+    printf '```\n'
+    printf '\n'
+    printf '```text\n'
+    "$MAP" "$type" outline
+    printf '```\n'
+    printf '\n'
+}
+
+# Exactly one well-formed marker pair per type, in order. Missing, duplicated
+# or inverted markers are a failure, never something to repair in place.
+markers_are_wellformed() {
+    local type="$1" start end starts ends start_line end_line
+    start="$(marker_start "$type")"
+    end="$(marker_end "$type")"
+    starts="$(grep -cFx "$start" "$README" || true)"
+    ends="$(grep -cFx "$end" "$README" || true)"
+    if [[ "$starts" != "1" || "$ends" != "1" ]]; then
+        echo "readme-maps: expected exactly one $start and one $end pair (found $starts/$ends)" >&2
+        return 1
+    fi
+    start_line="$(grep -nFx "$start" "$README" | cut -d: -f1)"
+    end_line="$(grep -nFx "$end" "$README" | cut -d: -f1)"
+    if ((start_line >= end_line)); then
+        echo "readme-maps: $start must precede $end" >&2
+        return 1
+    fi
+    return 0
+}
+
+extract_body() {
+    local type="$1"
+    awk -v s="$(marker_start "$type")" -v e="$(marker_end "$type")" '
+        $0 == e { inside = 0 }
+        inside { print }
+        $0 == s { inside = 1 }
+    ' "$README"
+}
+
+replace_body() {
+    local type="$1" body="$2" tmp
+    tmp="$(mktemp)"
+    awk -v s="$(marker_start "$type")" -v e="$(marker_end "$type")" -v body="$body" '
+        $0 == s { print; while ((getline line < body) > 0) print line; inside = 1; next }
+        $0 == e { inside = 0; print; next }
+        !inside { print }
+    ' "$README" > "$tmp"
+    mv "$tmp" "$README"
+}
+
+command="${1:-}"
+case "$command" in
+    render)
+        type="${2:-}"
+        case "$type" in
+            dependencies|ci) ;;
+            *) usage; exit 2 ;;
+        esac
+        render_body "$type"
+        ;;
+    update)
+        status=0
+        for type in $STATIC_TYPES; do
+            markers_are_wellformed "$type" || { status=1; continue; }
+            body="$(mktemp)"
+            render_body "$type" > "$body"
+            replace_body "$type" "$body"
+            rm -f "$body"
+        done
+        exit "$status"
+        ;;
+    check)
+        status=0
+        for type in $STATIC_TYPES; do
+            if ! markers_are_wellformed "$type"; then
+                status=1
+                continue
+            fi
+            expected="$(mktemp)"
+            actual="$(mktemp)"
+            render_body "$type" > "$expected"
+            extract_body "$type" > "$actual"
+            if ! diff -q "$expected" "$actual" >/dev/null 2>&1; then
+                echo "readme-maps: STALE_BLOCK repository-map:$type" >&2
+                echo "readme-maps: ACTION run tools/project-status/readme-maps update and commit README.md" >&2
+                status=1
+            fi
+            rm -f "$expected" "$actual"
+        done
+        exit "$status"
+        ;;
+    install-hook)
+        hook_path="$(git rev-parse --git-path hooks/pre-commit)"
+        if [[ -e "$hook_path" ]]; then
+            echo "readme-maps: preserving existing pre-commit hook"
+            exit 0
+        fi
+        cat > "$hook_path" <<'HOOK'
+#!/usr/bin/env bash
+# Keeps the generated README map blocks in step with every commit.
+#
+# This is a local hook, not CI: SPEC-V1.md section 13 points 4 and 9 forbid
+# workflows writing back to the repository, so the pull request check stays
+# read-only and fail-closed while regeneration happens here, before the commit
+# exists.
+set -Eeuo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+renderer="$repo_root/tools/project-status/readme-maps"
+
+[[ -x "$renderer" ]] || exit 0
+[[ -f "$repo_root/README.md" ]] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+# Unstaged README edits made before this commit must not be swept in by the
+# regeneration, so the ambiguous case stops instead of guessing.
+readme_dirty=false
+git diff --quiet -- README.md || readme_dirty=true
+
+# Whether the regeneration actually changed anything is a question about the
+# file before and after, not about the file against the index: a README that
+# is already fresh must not be held hostage by unrelated unstaged edits.
+readme_before="$(cat "$repo_root/README.md")"
+
+"$renderer" update
+
+if [[ "$readme_before" == "$(cat "$repo_root/README.md")" ]]; then
+    exit 0
+fi
+
+if [[ "$readme_dirty" == true ]]; then
+    echo "readme-maps pre-commit: README.md had unstaged changes" >&2
+    echo "readme-maps pre-commit: map blocks were regenerated but not staged" >&2
+    echo "readme-maps pre-commit: ACTION review and stage README.md, then commit again" >&2
+    exit 1
+fi
+
+git add -- README.md
+echo "readme-maps pre-commit: regenerated README map blocks"
+HOOK
+        chmod +x "$hook_path"
+        echo "readme-maps: installed pre-commit hook"
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac

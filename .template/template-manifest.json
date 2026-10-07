@@ -1,0 +1,19 @@
+{
+  "name": "agent-template",
+  "version": "1.2.0",
+  "schemaVersion": 1,
+  "bootstrap": "tools/bootstrap/bootstrap.sh",
+  "customTools": [
+    "project-status",
+    "scope-guard",
+    "agent-config-check",
+    "bootstrap"
+  ],
+  "minimumRequirements": {
+    "gh": true,
+    "jq": true,
+    "copier": true,
+    "shellcheck": true,
+    "actionlint": true
+  }
+}

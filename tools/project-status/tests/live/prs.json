@@ -1,0 +1,12 @@
+[
+  {"number":130,"title":"Superseded failure","state":"OPEN","labels":[],"closingIssuesReferences":[{"number":30}],"headRefOid":"same-head","headRefName":"pr-130","baseRefName":"main","body":"","files":[".github/workflows/example.yml"],"mergeStateStatus":"CLEAN","statusCheckRollup":[
+    {"name":"CI Gate","workflowName":"CI","status":"COMPLETED","conclusion":"FAILURE","startedAt":"2026-08-12T01:00:00Z","completedAt":"2026-08-12T01:01:00Z","detailsUrl":"https://github.com/example/repo/actions/runs/100/job/1001"},
+    {"name":"CI Gate","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS","startedAt":"2026-08-12T02:00:00Z","completedAt":"2026-08-12T02:01:00Z","detailsUrl":"https://github.com/example/repo/actions/runs/101/job/1011"}
+  ]},
+  {"number":131,"title":"Current Zizmor failure","state":"OPEN","labels":[],"closingIssuesReferences":[{"number":31}],"headRefOid":"zizmor-head","headRefName":"pr-131","baseRefName":"main","body":"","files":[".github/workflows/example.yml"],"mergeStateStatus":"CLEAN","statusCheckRollup":[
+    {"name":"security","workflowName":"CI","status":"COMPLETED","conclusion":"FAILURE","startedAt":"2026-08-12T03:00:00Z","completedAt":"2026-08-12T03:01:00Z","detailsUrl":"https://github.com/example/repo/actions/runs/200/job/2001"}
+  ]},
+  {"number":132,"title":"Unlinked linking failure","state":"OPEN","labels":[],"closingIssuesReferences":[],"headRefOid":"abc123def456","headRefName":"pr-132","baseRefName":"main","body":"Fixes #999","mergeStateStatus":"CLEAN","statusCheckRollup":[
+    {"name":"linking","workflowName":"CI","status":"COMPLETED","conclusion":"FAILURE","startedAt":"2026-08-12T04:00:00Z","completedAt":"2026-08-12T04:01:00Z","detailsUrl":"https://github.com/example/repo/actions/runs/201/job/2011"}
+  ]}
+]

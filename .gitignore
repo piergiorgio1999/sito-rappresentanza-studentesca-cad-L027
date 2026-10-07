@@ -1,0 +1,10 @@
+.DS_Store
+.venv/
+node_modules/
+.build/
+dist/
+coverage/
+reports/
+*.local
+template-only/runtime-secret-fixture
+

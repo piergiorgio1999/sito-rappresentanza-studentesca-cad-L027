@@ -1,0 +1,18 @@
+{
+  "repository": "agent-template",
+  "generated_at": "2026-08-08T20:00:00Z",
+  "phase": "V1",
+  "progress": 42,
+  "current": [
+    "#41 Scope Guard",
+    "#42 Project Status"
+  ],
+  "next": [
+    "#43 CI Gate",
+    "#44 Bootstrap"
+  ],
+  "blocked": [],
+  "attention": [
+    "PR #52 failing CI"
+  ]
+}

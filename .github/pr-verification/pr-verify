@@ -1,0 +1,293 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
+
+MARKER='<!-- pr-verification:report -->'
+BASE_REF="${BASE_REF:-${GITHUB_BASE_REF:-main}}"
+PR_NUMBER="${PR_NUMBER:-${GITHUB_PR_NUMBER:-}}"
+REPOSITORY="${REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+TIMEOUT_SECONDS="${PR_VERIFY_TIMEOUT_SECONDS:-300}"
+POLL_SECONDS="${PR_VERIFY_POLL_SECONDS:-10}"
+SELF_CHECK_NAME="${PR_VERIFY_CHECK_NAME:-pr-verification}"
+OWN_CHECKS="${PR_VERIFY_OWN_CHECKS:-${SELF_CHECK_NAME},publish-pr-verification-report}"
+WORKFLOW_NAME="${GITHUB_WORKFLOW:-PR Verification}"
+REPORT_FILE="${PR_VERIFY_REPORT_FILE:-${TMPDIR:-/tmp}/pr-verification-report.$$}"
+COMMENT_LANGUAGE="${PR_COMMENT_LANGUAGE:-}"
+
+if [[ -z "$COMMENT_LANGUAGE" && -f "$ROOT/config/template/comment-language" ]]; then
+    COMMENT_LANGUAGE="$(tr -d '[:space:]' < "$ROOT/config/template/comment-language")"
+fi
+COMMENT_LANGUAGE="${COMMENT_LANGUAGE:-it}"
+LOCALE_FILE="$ROOT/config/template/comment-locales/$COMMENT_LANGUAGE.json"
+
+[[ -f "$LOCALE_FILE" ]] || { echo "pr-verify: unsupported comment language: $COMMENT_LANGUAGE" >&2; exit 2; }
+
+text() {
+    jq -er --arg key "$1" '.[$key] // error("missing locale key: " + $key)' "$LOCALE_FILE"
+}
+
+usage() {
+    echo "Usage: pr-verify [--base-ref REF] [--pr NUMBER] [--repo OWNER/REPO] [--timeout-seconds N] [--poll-seconds N]" >&2
+}
+
+while (($#)); do
+    case "$1" in
+        --base-ref)
+            (($# >= 2)) || { usage; exit 2; }
+            BASE_REF="$2"
+            shift
+            ;;
+        --pr)
+            (($# >= 2)) || { usage; exit 2; }
+            PR_NUMBER="$2"
+            shift
+            ;;
+        --repo)
+            (($# >= 2)) || { usage; exit 2; }
+            REPOSITORY="$2"
+            shift
+            ;;
+        --timeout-seconds)
+            (($# >= 2)) || { usage; exit 2; }
+            TIMEOUT_SECONDS="$2"
+            shift
+            ;;
+        --poll-seconds)
+            (($# >= 2)) || { usage; exit 2; }
+            POLL_SECONDS="$2"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            exit 2
+            ;;
+    esac
+    shift
+done
+
+for command in gh git jq; do
+    command -v "$command" >/dev/null 2>&1 || {
+        echo "pr-verify: $command is required" >&2
+        exit 2
+    }
+done
+
+[[ "$TIMEOUT_SECONDS" =~ ^[0-9]+$ ]] || { echo "pr-verify: invalid timeout" >&2; exit 2; }
+[[ "$POLL_SECONDS" =~ ^[0-9]+$ ]] || { echo "pr-verify: invalid poll interval" >&2; exit 2; }
+
+resolve_base_ref() {
+    local candidate="$1"
+    if [[ -n "$candidate" ]] && git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+    if [[ -n "$candidate" ]] && git rev-parse --verify "origin/$candidate" >/dev/null 2>&1; then
+        printf '%s\n' "origin/$candidate"
+        return 0
+    fi
+    return 1
+}
+
+filter_rollup() {
+    jq -c --arg self "$SELF_CHECK_NAME" --arg own "$OWN_CHECKS" --arg workflow "$WORKFLOW_NAME" '
+        def norm: tostring | ascii_downcase | gsub("[^a-z0-9]"; "");
+        def check_name: (.name // .context // "");
+        def own_names: ($own | split(",") | map(norm));
+        def is_own: (check_name | norm) as $name | (own_names | index($name)) != null;
+        def freshness: (.updatedAt // .completedAt // .startedAt // .id // 0);
+        def latest_by_name: sort_by((check_name | norm), freshness) | group_by(check_name | norm) | map(last);
+        map(select(
+            (is_own | not) and
+            (((.workflowName // "") | norm) != ($workflow | norm)) and
+            ((check_name | norm) != (($workflow + " / " + $self) | norm))
+        )) | latest_by_name
+    '
+}
+
+gate_status() {
+    jq -r '
+        def norm: tostring | ascii_downcase | gsub("[^a-z0-9]"; "");
+        def check_name: (.name // .context // "") | norm;
+        def outcome: ((.conclusion // .state // "") | ascii_upcase);
+        def status: ((.status // "") | ascii_upcase);
+        [ .[] | select((check_name == "cigate") or (check_name == "gate")) ] |
+        if length == 0 then
+            [0, 0, 0, ""]
+        else
+            .[0] as $gate |
+            ($gate | outcome) as $outcome |
+            ($gate | status) as $status |
+            (if ($outcome == "" or $outcome == "PENDING" or $outcome == "QUEUED" or $outcome == "IN_PROGRESS" or ($status != "" and $status != "COMPLETED")) then 1 else 0 end) as $pending |
+            (if ($outcome == "FAILURE" or $outcome == "ERROR" or $outcome == "CANCELLED" or $outcome == "TIMED_OUT" or $outcome == "STARTUP_FAILURE" or $outcome == "ACTION_REQUIRED" or $outcome == "STALE") then 1 else 0 end) as $failed |
+            [1, $pending, $failed, $outcome]
+        end | @tsv
+    '
+}
+
+status_emoji() {
+    case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+        success) printf '🟢' ;;
+        skipped|neutral|not_applicable) printf '⚪' ;;
+        *) printf '🔴' ;;
+    esac
+}
+
+fetch_rollup() {
+    local check_runs statuses
+    check_runs="$(gh api --paginate "repos/$REPOSITORY/commits/$head_oid/check-runs?per_page=100" | jq -s '[.[].check_runs[]? | {id: .id, name: .name, status: .status, conclusion: .conclusion, startedAt: .started_at, completedAt: .completed_at, updatedAt: .completed_at, workflowName: (.app.name // "")}]')" || return 1
+    statuses="$(gh api --paginate "repos/$REPOSITORY/commits/$head_oid/statuses?per_page=100" | jq -s '[.[][]? | {id: .id, name: .context, status: "COMPLETED", conclusion: .state, startedAt: .created_at, completedAt: .updated_at, updatedAt: .updated_at, workflowName: ""}]')" || return 1
+    jq -n --argjson check_runs "$check_runs" --argjson statuses "$statuses" '$check_runs + $statuses'
+}
+
+scope_status="FAIL"
+scope_output=""
+scope_reason="scope-guard did not run"
+if scope_base_ref="$(resolve_base_ref "$BASE_REF")"; then
+    scope_rc=0
+    scope_output="$("$ROOT/tools/scope-guard/scope-guard" "$scope_base_ref" 2>&1)" || scope_rc=$?
+    if [[ "$scope_rc" -eq 0 ]]; then
+        scope_status="PASS"
+        scope_reason="$(text scope_guard_passed)"
+    else
+        scope_reason="$(text scope_guard_failed)"
+    fi
+else
+    scope_reason="base ref is unavailable: $BASE_REF"
+fi
+
+metadata_status="PASS"
+metadata_reason="$(text metadata_loaded)"
+pr_data='{}'
+if [[ -z "$REPOSITORY" || -z "$PR_NUMBER" ]]; then
+    metadata_status="FAIL"
+    metadata_reason="repository or PR number is unavailable"
+elif ! pr_data="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json number,title,baseRefName,headRefName,headRefOid,mergeStateStatus,mergeable,commits,additions,deletions,changedFiles 2>/dev/null)"; then
+    metadata_status="FAIL"
+    metadata_reason="GitHub PR metadata could not be read"
+fi
+
+title="$(jq -r '.title // "unavailable"' <<<"$pr_data")"
+base_name="$(jq -r '.baseRefName // "unavailable"' <<<"$pr_data")"
+head_name="$(jq -r '.headRefName // "unavailable"' <<<"$pr_data")"
+merge_state="$(jq -r '.mergeStateStatus // "unavailable"' <<<"$pr_data")"
+mergeable="$(jq -r '.mergeable // "unknown"' <<<"$pr_data")"
+head_oid="$(jq -r '.headRefOid // empty' <<<"$pr_data")"
+
+merge_recommendation="WAIT — PR metadata unavailable"
+merge_recommendation_reason=""
+if [[ "$metadata_status" == "PASS" ]]; then
+    commit_count="$(jq -r '(.commits // []) | length' <<<"$pr_data")"
+    additions="$(jq -r '.additions // 0' <<<"$pr_data")"
+    deletions="$(jq -r '.deletions // 0' <<<"$pr_data")"
+    changed_files="$(jq -r '.changedFiles // 0' <<<"$pr_data")"
+    changed_lines=$((additions + deletions))
+    if [[ "$mergeable" != "MERGEABLE" || "$merge_state" == "CONFLICTING" || "$merge_state" == "DIRTY" || "$merge_state" == "BLOCKED" || "$merge_state" == "BEHIND" ]]; then
+        merge_recommendation="WAIT — resolve merge blockers"
+        merge_recommendation_reason="mergeable=$mergeable, merge state is $merge_state"
+    elif (( commit_count <= 3 && changed_lines <= 300 && changed_files <= 10 )); then
+        merge_recommendation="SQUASH MERGE"
+        merge_recommendation_reason="$commit_count commit(s), $changed_lines changed line(s), $changed_files file(s): atomic change"
+    elif (( commit_count >= 6 || changed_lines > 1000 || changed_files > 20 )); then
+        merge_recommendation="MERGE COMMIT"
+        merge_recommendation_reason="$commit_count commit(s), $changed_lines changed line(s), $changed_files file(s): preserve grouped history"
+    else
+        merge_recommendation="REBASE MERGE"
+        merge_recommendation_reason="$commit_count commit(s), $changed_lines changed line(s), $changed_files file(s): linear history is suitable"
+    fi
+fi
+
+merge_banner="### 🔴 MERGE RECOMMENDATION: $merge_recommendation"
+merge_banner="### 🔴 $(text merge_recommendation): $merge_recommendation"
+case "$merge_recommendation" in
+    SQUASH\ MERGE)
+        merge_banner="### 🟢 $(text merge_recommendation): SQUASH MERGE"
+        ;;
+    REBASE\ MERGE)
+        merge_banner="### 🟢 $(text merge_recommendation): REBASE MERGE"
+        ;;
+    MERGE\ COMMIT)
+        merge_banner="### 🟢 $(text merge_recommendation): MERGE COMMIT"
+        ;;
+esac
+
+checks_status="FAIL"
+checks_reason="status checks were not read"
+rollup='[]'
+if [[ "$metadata_status" == "PASS" && -n "$head_oid" ]]; then
+    if ! rollup="$(fetch_rollup)"; then
+        checks_reason="status checks could not be read"
+    else
+    SECONDS=0
+    while :; do
+        filtered_rollup="$(filter_rollup <<<"$rollup")"
+        # shellcheck disable=SC2034
+        IFS=$'\t' read -r gate_count gate_pending gate_failed gate_conclusion <<<"$(gate_status <<<"$filtered_rollup")"
+        if (( gate_count > 0 && gate_pending == 0 )); then
+            if (( gate_failed > 0 )) || [[ "$gate_conclusion" != "SUCCESS" ]]; then
+                checks_status="FAIL"
+                checks_reason="CI Gate completed with conclusion $gate_conclusion"
+                break
+            fi
+            checks_status="PASS"
+            checks_reason="$(text ci_gate_passed)"
+            break
+        fi
+        if (( SECONDS >= TIMEOUT_SECONDS )); then
+            checks_status="FAIL"
+            if (( gate_count == 0 )); then
+                checks_reason="required check CI Gate missing after ${TIMEOUT_SECONDS}s"
+            else
+                checks_reason="required check CI Gate pending after ${TIMEOUT_SECONDS}s"
+            fi
+            break
+        fi
+        if (( POLL_SECONDS > 0 )); then
+            sleep "$POLL_SECONDS"
+        fi
+        if ! rollup="$(fetch_rollup)"; then
+            checks_status="FAIL"
+            checks_reason="status checks could not be refreshed"
+            break
+        fi
+    done
+    fi
+fi
+
+safe_scope_output="$scope_output"
+{
+    printf '%s\n' "$MARKER"
+    printf '%s\n\n' "$merge_banner"
+    printf '%s\n\n' "$(text reason): ${merge_recommendation_reason:-unavailable}"
+    printf '%s\n\n' "## $(text pr_verification)"
+    printf '%s\n' "- $(text pr): #${PR_NUMBER:-unavailable} — $title"
+    printf '%s\n' "- $(text branch): ${head_name} → ${base_name}"
+    if [[ "$mergeable" != "MERGEABLE" || "$checks_status" != "PASS" || "$merge_state" != "UNSTABLE" ]]; then
+        printf '%s\n' "- $(text merge_state): $merge_state"
+    fi
+    printf '%s\n' "- $(text scope): $scope_status ($scope_reason)"
+    printf '%s\n' "- $(text metadata): $metadata_status ($metadata_reason)"
+    printf '%s\n' "- $(text status_checks): $checks_status ($checks_reason)"
+    printf '\n### %s\n' "$(text scope_guard_output)"
+    printf '%s\n' '<pre>'
+    printf '%s\n' "$safe_scope_output"
+    printf '%s\n' '</pre>'
+} > "$REPORT_FILE"
+
+cat "$REPORT_FILE"
+
+if [[ "$scope_status" != "PASS" || "$metadata_status" != "PASS" || "$checks_status" != "PASS" ]]; then
+    exit 1
+fi
+
+case "$merge_recommendation" in
+    WAIT*)
+        echo "pr-verify: merge recommendation blocks pre-merge status: $merge_recommendation" >&2
+        exit 1
+        ;;
+esac

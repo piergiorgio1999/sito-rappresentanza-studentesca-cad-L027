@@ -1,0 +1,7 @@
+title = "Template Gitleaks"
+
+[allowlist]
+paths = [
+  '''template-fixtures/.*''',
+  '''tests/fixtures/.*'''
+]

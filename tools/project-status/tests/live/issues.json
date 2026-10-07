@@ -1,0 +1,4 @@
+[
+  {"number":30,"title":"Superseded failure","state":"OPEN","labels":[],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":31,"title":"Current Zizmor failure","state":"OPEN","labels":[],"milestone":null,"subIssues":[],"blockedBy":[{"number":30,"state":"OPEN"}],"blocking":[]}
+]

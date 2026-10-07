@@ -1,0 +1,50 @@
+name: Project Status Refresh
+
+on:
+  push:
+  create:
+  delete:
+  pull_request:
+    types: [opened, synchronize, reopened, closed, ready_for_review]
+  issues:
+    types: [opened, reopened, closed, labeled, unlabeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  checks: read
+  statuses: read
+
+concurrency:
+  group: >-
+    project-status-refresh-${{ github.event_name == 'pull_request' &&
+    format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  refresh:
+    if: >-
+      github.event_name != 'create' && github.event_name != 'delete' ||
+      github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate current Project Status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in 1 2 3; do
+            if digest="$(tools/project-status/project-status md)"; then
+              printf '%s\n' "$digest" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            (( attempt < 3 )) || exit 1
+            sleep "$((attempt * 5))"
+          done

@@ -1,0 +1,23 @@
+{
+  "merge_recommendation": "RACCOMANDAZIONE DI MERGE",
+  "merge_advised": "MERGE CONSIGLIATO",
+  "do_not_merge": "NON ESEGUIRE IL MERGE",
+  "reason": "Motivo",
+  "pr_verification": "Verifica PR",
+  "pr": "PR",
+  "branch": "Branch",
+  "merge_state": "Stato merge",
+  "scope": "Scope",
+  "metadata": "Metadati",
+  "status_checks": "Controlli di stato",
+  "scope_guard_output": "Output scope guard",
+  "non_self_status_checks": "Controlli di stato non propri",
+  "none_visible": "nessuno visibile",
+  "status": "stato",
+  "conclusion": "conclusione",
+  "scope_guard_passed": "scope-guard superato",
+  "scope_guard_failed": "scope-guard fallito",
+  "metadata_loaded": "metadati della PR caricati",
+  "ci_gate_passed": "CI Gate superato",
+  "ci_gate_failed": "CI Gate fallito"
+}

@@ -1,0 +1,35 @@
+- name: priority:P0
+  color: "B60205"
+
+- name: priority:P1
+  color: "D93F0B"
+
+- name: priority:P2
+  color: "FBCA04"
+
+- name: status:blocked
+  color: "5319E7"
+
+- name: status:attention
+  color: "E99695"
+
+- name: type:feature
+  color: "1D76DB"
+
+- name: type:bug
+  color: "D73A4A"
+
+- name: type:task
+  color: "0E8A16"
+
+- name: scope:exception
+  color: "0E8A16"
+
+- name: bug
+  color: "D73A4A"
+
+- name: enhancement
+  color: "A2EEEF"
+
+- name: documentation
+  color: "0075CA"

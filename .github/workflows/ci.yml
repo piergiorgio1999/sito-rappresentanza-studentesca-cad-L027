@@ -1,0 +1,391 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+
+  anti-rot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Agent Config Check
+        run: ./tools/agent-config-check/agent-config-check
+
+      - name: CI helper matrices
+        run: |
+          .github/ci-gate/test-state.sh
+          .github/ci-gate/test-linking.sh
+          .github/ci-gate/test-project-status-refresh.sh
+          checks/swift/test-detect.sh
+
+  scope-guard:
+    needs: anti-rot
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scope Guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCOPE_GUARD_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: ./tools/scope-guard/scope-guard "origin/$BASE_REF"
+
+  detect:
+    needs: scope-guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      typescript: ${{ steps.detect.outputs.typescript }}
+      swiftpm: ${{ steps.detect.outputs.swiftpm }}
+      xcode: ${{ steps.detect.outputs.xcode }}
+      python: ${{ steps.detect.outputs.python }}
+      rust: ${{ steps.detect.outputs.rust }}
+      go: ${{ steps.detect.outputs.go }}
+      shell: ${{ steps.detect.outputs.shell }}
+      checks: ${{ steps.detect.outputs.checks }}
+      gate_applicability: ${{ steps.detect.outputs.gate_applicability }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect languages
+        id: detect
+        run: |
+          detect() {
+            local name="$1"; shift
+            for f in "$@"; do
+              if [[ -e "$f" ]]; then
+                echo "$name=true" >> "$GITHUB_OUTPUT"
+                return
+              fi
+            done
+            echo "$name=false" >> "$GITHUB_OUTPUT"
+          }
+          detect typescript package.json tsconfig.json
+          swift_detection="$(./checks/swift/detect.sh .)"
+          echo "swiftpm=$(jq -r '.swiftpm' <<<"$swift_detection")" >> "$GITHUB_OUTPUT"
+          echo "xcode=$(jq -r '.xcode' <<<"$swift_detection")" >> "$GITHUB_OUTPUT"
+          detect python pyproject.toml setup.py requirements.txt
+          detect rust Cargo.toml
+          detect go go.mod
+          if [[ -n "$(find . -type f -name '*.sh' -not -path './.git/*' -print -quit)" ]]; then
+            echo "shell=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "shell=false" >> "$GITHUB_OUTPUT"
+          fi
+          checks=false
+          for checker in typescript python rust go shell; do
+            [[ "$(grep "^$checker=" "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2-)" == "true" ]] && checks=true
+          done
+          echo "checks=$checks" >> "$GITHUB_OUTPUT"
+          jq -cn \
+            --argjson checks "$checks" \
+            --argjson swiftpm "$(jq -r '.swiftpm' <<<"$swift_detection")" \
+            --argjson xcode "$(jq -r '.xcode' <<<"$swift_detection")" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            '{"anti-rot": true, "scope-guard": true, detect: true, checks: $checks,
+              swift: ($swiftpm or $xcode), security: true,
+              linking: ($event == "pull_request")}' \
+            | { read -r gate_applicability; echo "gate_applicability=$gate_applicability" >> "$GITHUB_OUTPUT"; }
+
+  checks:
+    needs: detect
+    if: needs.detect.outputs.checks == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install shellcheck
+        if: needs.detect.outputs.shell == 'true'
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shell check
+        if: needs.detect.outputs.shell == 'true'
+        run: ./checks/shell/check.sh
+
+      - name: Setup Go
+        if: needs.detect.outputs.go == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Go check
+        if: needs.detect.outputs.go == 'true'
+        run: ./checks/go/check.sh
+
+      - name: Setup Python
+        if: needs.detect.outputs.python == 'true'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+
+      - name: Python check
+        if: needs.detect.outputs.python == 'true'
+        run: |
+          pip install ruff
+          ./checks/python/check.sh
+
+      - name: Setup Rust
+        if: needs.detect.outputs.rust == 'true'
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          components: clippy
+
+      - name: Rust check
+        if: needs.detect.outputs.rust == 'true'
+        run: ./checks/rust/check.sh
+
+      - name: Setup Node
+        if: needs.detect.outputs.typescript == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+
+      - name: TypeScript check
+        if: needs.detect.outputs.typescript == 'true'
+        run: |
+          npm ci --ignore-scripts --prefix checks/typescript
+          TSC_BIN="$GITHUB_WORKSPACE/checks/typescript/node_modules/.bin/tsc" \
+            ./checks/typescript/check.sh
+
+  swift:
+    needs: detect
+    if: needs.detect.outputs.swiftpm == 'true' || needs.detect.outputs.xcode == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: SwiftPM test
+        if: needs.detect.outputs.swiftpm == 'true'
+        run: ./checks/swift/check.sh
+
+      - name: Xcode test
+        if: needs.detect.outputs.xcode == 'true'
+        env:
+          XCODE_DESTINATION: ${{ vars.XCODE_DESTINATION }}
+          XCODE_PROJECT: ${{ vars.XCODE_PROJECT }}
+          XCODE_SCHEME: ${{ vars.XCODE_SCHEME }}
+          XCODE_WORKSPACE: ${{ vars.XCODE_WORKSPACE }}
+        run: ./checks/swift/xcode-check.sh
+
+  linking:
+    needs: detect
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify native Issue/PR link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          PR_CLOSING_REFERENCES_JSON="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json closingIssuesReferences --jq '.closingIssuesReferences')"
+          export PR_CLOSING_REFERENCES_JSON
+          .github/ci-gate/check-linking
+
+  security:
+    needs: detect
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Harden Runner audit
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gitleaks workspace scan
+        run: gitleaks dir . --redact --exit-code=2
+
+      - name: Actionlint
+        uses: reviewdog/action-actionlint@237d1fc6f7b995cc26e2eea39405fda029efd33e # v1.73.1
+        with:
+          fail_level: error
+
+      - name: Zizmor
+        run: |
+          pip install zizmor
+          zizmor .
+
+  gate:
+    name: CI Gate
+    if: always()
+    needs:
+      - anti-rot
+      - scope-guard
+      - detect
+      - checks
+      - swift
+      - security
+      - linking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: CI Gate
+        env:
+          CI_GATE_NEEDS_JSON: ${{ toJSON(needs) }}
+          CI_GATE_APPLICABILITY_JSON: ${{ needs.detect.outputs.gate_applicability }}
+        run: .github/ci-gate/check-state
+
+  pr_verification:
+    name: pr-verification
+    needs: gate
+    if: always() && github.event_name == 'pull_request' && needs.gate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      checks: read
+      contents: read
+      pull-requests: read
+      statuses: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run PR verification
+        id: verify
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_REF: origin/${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          PR_VERIFY_CHECK_NAME: pr-verification
+          PR_VERIFY_OWN_CHECKS: pr-verification,publish-pr-verification-report
+          PR_VERIFY_TIMEOUT_SECONDS: 300
+          PR_VERIFY_POLL_SECONDS: 10
+          PR_VERIFY_REPORT_FILE: ${{ runner.temp }}/pr-verification-report.md
+        run: |
+          : > "$PR_VERIFY_REPORT_FILE"
+          set +e
+          .github/pr-verification/pr-verify
+          rc=$?
+          set -e
+          cat "$PR_VERIFY_REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-verification-report
+          path: ${{ runner.temp }}/pr-verification-report.md
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Enforce verification result
+        if: steps.verify.outcome == 'failure'
+        run: |
+          echo "PR verification failed"
+          exit 1
+
+  publish_report:
+    name: publish-pr-verification-report
+    if: github.event_name == 'pull_request' && always()
+    needs: pr_verification
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download verification report
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pr-verification-report
+          path: ${{ runner.temp }}/pr-verification-report
+
+      - name: Publish report or document fork limitation
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          REPORT_FILE: ${{ runner.temp }}/pr-verification-report/pr-verification-report.md
+        run: |
+          set -Eeuo pipefail
+          marker='<!-- pr-verification:report -->'
+          if [[ -s "$REPORT_FILE" ]]; then
+            report="$(cat "$REPORT_FILE")"
+          else
+            report="$marker"
+            report+=$'\n## PR verification\n\nNo report was produced.'
+          fi
+          printf '%s\n' "$report" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$HEAD_REPOSITORY" != "$REPOSITORY" ]]; then
+            echo 'Fork PR detected: pull_request tokens cannot write PR comments.'
+            echo 'The verification report remains available in the verification job summary.'
+            exit 0
+          fi
+
+          comment_id="$(gh api --paginate "repos/$REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" --jq '.[] | select((.body // "") | contains("<!-- pr-verification:report -->")) | .id' | tail -n 1)"
+          if [[ -n "$comment_id" ]]; then
+            gh api --method PATCH "repos/$REPOSITORY/issues/comments/$comment_id" -f body="$report" >/dev/null
+          else
+            gh api --method POST "repos/$REPOSITORY/issues/$PR_NUMBER/comments" -f body="$report" >/dev/null
+          fi

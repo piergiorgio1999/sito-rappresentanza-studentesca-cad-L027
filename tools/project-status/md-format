@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+jq -r '
+def list_or_none:
+  if length == 0 then
+    "none"
+  else
+    join("\n")
+  end;
+
+[
+"# Project Status",
+"",
+"Repository: \(.repository)",
+"Generated: \(.generated_at)",
+"Phase: \(.phase)",
+"Progress: \(.progress)%",
+"",
+"## Current",
+(.current | list_or_none),
+"",
+"## Next",
+(.next | list_or_none),
+"",
+"## Blocked",
+(.blocked | list_or_none),
+"",
+"## Attention",
+(.attention | list_or_none)
+]
+| join("\n")
+' "$1"

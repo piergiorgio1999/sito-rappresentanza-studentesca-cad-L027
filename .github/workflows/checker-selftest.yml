@@ -1,0 +1,29 @@
+name: Checker Self Test
+
+on:
+
+  workflow_dispatch:
+
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Test scope-guard
+        run: ./tools/scope-guard/test.sh
+
+      - name: Test project-status
+        run: ./tools/project-status/test.sh
+
+      - name: Test agent-config-check
+        run: ./tools/agent-config-check/agent-config-check

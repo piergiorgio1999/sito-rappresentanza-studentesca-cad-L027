@@ -1,0 +1,59 @@
+_min_copier_version: "9"
+
+project_name:
+  type: str
+
+github_owner:
+  type: str
+
+comment_language:
+  type: str
+  choices:
+    Italiano: it
+    English: en
+  default: it
+
+integration_mode:
+  type: str
+  choices:
+    Standalone: standalone
+    MCP: mcp
+  default: standalone
+
+single_owner:
+  type: bool
+  default: true
+
+use_swift:
+  type: bool
+  default: true
+
+use_typescript:
+  type: bool
+  default: true
+
+use_python:
+  type: bool
+  default: true
+
+use_rust:
+  type: bool
+  default: true
+
+use_go:
+  type: bool
+  default: true
+
+use_shell:
+  type: bool
+  default: true
+
+_subdirectory: .
+_exclude:
+  - "~*"
+  - "*.py[co]"
+  - __pycache__
+  - .git
+  - .DS_Store
+  - .svn
+  - "{{ 'mcp/**' if integration_mode != 'mcp' else '__never__' }}"

@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT/tools/lib/common.sh"
+
+require_jq
+
+cd "$ROOT"
+
+status=0
+
+check() {
+    local desc="$1"
+    shift
+    if "$@"; then
+        echo "✅ $desc"
+    else
+        echo "❌ $desc"
+        status=1
+    fi
+}
+
+check "AGENTS.md exists" test -f AGENTS.md
+check "CLAUDE.md exists" test -f CLAUDE.md
+check "CLAUDE.md references AGENTS.md" grep -qi "AGENTS.md" CLAUDE.md
+check "DECISIONS.md exists" test -f DECISIONS.md
+check "scope-map.json is valid JSON" jq empty scope-map.json
+
+locale_keys='["merge_recommendation","merge_advised","do_not_merge","reason","pr_verification","pr","branch","merge_state","scope","metadata","status_checks","scope_guard_output","non_self_status_checks","none_visible","status","conclusion","scope_guard_passed","scope_guard_failed","metadata_loaded","ci_gate_passed","ci_gate_failed"]'
+locale_status=0
+for locale_file in config/template/comment-locales/*.json; do
+    if [[ ! -f "$locale_file" ]] || ! jq -e --argjson keys "$locale_keys" '($keys - keys) == []' "$locale_file" >/dev/null 2>&1; then
+        locale_status=1
+    fi
+done
+check "comment locales contain all required messages" test "$locale_status" -eq 0
+
+# Static repository map freshness (SPEC-V1.md section 13 point 8).
+#
+# The blocks are regenerated into temporary storage and compared byte-for-byte.
+# Nothing is written: a stale block fails the pull request, it is never
+# repaired by CI, because an auto-commit would make the derived view edit the
+# source it derives from.
+if [[ -f README.md && -x tools/project-status/readme-maps ]]; then
+    check "README repository maps are fresh" tools/project-status/readme-maps check
+else
+    echo "✅ README repository maps (check skipped: README.md or renderer absent)"
+fi
+
+# Helper to compare versions: X.Y.Z compatible with X.Y (major.minor must match)
+compare_versions() {
+    local semver="$1" contract="$2"
+    # Extract major.minor from both (X.Y from X.Y.Z or X.Y)
+    local semver_xy contract_xy
+    semver_xy="$(echo "$semver" | cut -d. -f1,2)"
+    contract_xy="$(echo "$contract" | cut -d. -f1,2)"
+    [[ "$semver_xy" == "$contract_xy" ]]
+}
+
+if [[ -f TEMPLATE_VERSION && -f config/template/version.json ]]; then
+    file_version="$(tr -d '[:space:]' < TEMPLATE_VERSION)"
+    json_version="$(jq -r '.templateVersion' config/template/version.json)"
+    check "TEMPLATE_VERSION matches config/template/version.json ($file_version)" test "$file_version" = "$json_version"
+else
+    echo "❌ TEMPLATE_VERSION / config/template/version.json missing"
+    status=1
+fi
+
+if [[ -f TEMPLATE_VERSION && -f .template/template-manifest.json ]]; then
+    file_version="$(tr -d '[:space:]' < TEMPLATE_VERSION)"
+    manifest_version="$(jq -r '.version' .template/template-manifest.json)"
+    check "TEMPLATE_VERSION matches .template/template-manifest.json ($file_version)" test "$file_version" = "$manifest_version"
+else
+    echo "❌ TEMPLATE_VERSION / .template/template-manifest.json missing"
+    status=1
+fi
+
+if [[ -f TEMPLATE_VERSION && -f SPEC-V1.md ]]; then
+    file_version="$(tr -d '[:space:]' < TEMPLATE_VERSION)"
+    spec_version="$(sed -n '1s/^# SPEC-V\([0-9.]*\).*/\1/p' SPEC-V1.md)"
+    if compare_versions "$file_version" "$spec_version"; then
+        echo "✅ TEMPLATE_VERSION matches SPEC-V1.md header ($file_version compatible with V$spec_version)"
+    else
+        echo "❌ TEMPLATE_VERSION does not match SPEC-V1.md header ($file_version vs V$spec_version)"
+        status=1
+    fi
+else
+    echo "❌ TEMPLATE_VERSION / SPEC-V1.md missing"
+    status=1
+fi
+
+if [[ -f TEMPLATE_VERSION && -f acceptance/VERIFICATION.md ]]; then
+    file_version="$(tr -d '[:space:]' < TEMPLATE_VERSION)"
+    verification_version="$(sed -n '1s/^# V\([0-9.]*\).*/\1/p' acceptance/VERIFICATION.md)"
+    if compare_versions "$file_version" "$verification_version"; then
+        echo "✅ TEMPLATE_VERSION matches acceptance/VERIFICATION.md header ($file_version compatible with V$verification_version)"
+    else
+        echo "❌ TEMPLATE_VERSION does not match acceptance/VERIFICATION.md header ($file_version vs V$verification_version)"
+        status=1
+    fi
+else
+    echo "❌ TEMPLATE_VERSION / acceptance/VERIFICATION.md missing"
+    status=1
+fi
+
+# Check freshness of .template/index/files.txt
+if [[ ! -f .template/index/files.txt ]]; then
+    echo "❌ .template/index/files.txt missing"
+    status=1
+else
+    # Verify index is up-to-date by comparing with git ls-files (if in a git repo)
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        index_file="$(mktemp)"
+        git_file="$(mktemp)"
+        trap 'rm -f "$index_file" "$git_file"' EXIT
+        sort .template/index/files.txt | sed 's|^\./||' > "$index_file"
+        git ls-files | grep -v '^\.template-only/' | sort > "$git_file"
+
+        if diff -q "$index_file" "$git_file" > /dev/null 2>&1; then
+            echo "✅ .template/index/files.txt is fresh and up-to-date"
+        else
+            echo "❌ .template/index/files.txt is stale or missing files"
+            while IFS= read -r path; do
+                [[ -n "$path" ]] && echo "agent-config-check: MISSING_FROM_INDEX $path"
+            done < <(comm -13 "$index_file" "$git_file")
+            while IFS= read -r path; do
+                [[ -n "$path" ]] && echo "agent-config-check: EXTRA_IN_INDEX $path"
+            done < <(comm -23 "$index_file" "$git_file")
+            echo "agent-config-check: ACTION regenerate .template/index/files.txt from tracked template files"
+            status=1
+        fi
+    else
+        # Not in a git repo; skip freshness check but verify file exists
+        echo "✅ .template/index/files.txt exists (git freshness check skipped: not in git repo)"
+    fi
+fi
+
+echo
+if [[ "$status" -eq 0 ]]; then
+    echo "✅ agent-config-check: OK"
+else
+    echo "❌ agent-config-check: FAILED"
+fi
+
+exit "$status"

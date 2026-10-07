@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "matchPolicy": "first-match-wins",
+  "scopes": [
+    {
+      "name": "github",
+      "paths": [
+        ".github/**"
+      ]
+    },
+    {
+      "name": "template",
+      "paths": [
+        ".template/**",
+        "config/**",
+        "schemas/**",
+        "contracts/**",
+        "ci/**",
+        "acceptance/**",
+        "copier.yml",
+        "{{_copier_conf.answers_file}}.jinja",
+        "scope-map.json",
+        "TEMPLATE_VERSION",
+        ".gitleaks.toml",
+        ".gitignore",
+        "template-only/**",
+        "mcp/**"
+      ]
+    },
+    {
+      "name": "documentation",
+      "paths": [
+        "*.md",
+        "docs/**"
+      ]
+    },
+    {
+      "name": "typescript",
+      "paths": [
+        "checks/typescript/**",
+        "package.json",
+        "tsconfig.json",
+        "*.ts",
+        "*.tsx",
+        "*.js",
+        "*.jsx",
+        "*.mjs",
+        "*.cjs"
+      ]
+    },
+    {
+      "name": "swift",
+      "paths": [
+        "checks/swift/**",
+        "Package.swift",
+        "*.swift",
+        "*.xcodeproj/**",
+        "*.xcworkspace/**",
+        "*.xcconfig",
+        "*.plist",
+        "*.entitlements",
+        "*.xcassets/**",
+        "*.xcdatamodeld/**",
+        "*.storyboard",
+        "*.xib",
+        "*.strings"
+      ]
+    },
+    {
+      "name": "python",
+      "paths": [
+        "checks/python/**",
+        "pyproject.toml",
+        "setup.py",
+        "requirements.txt",
+        "*.py"
+      ]
+    },
+    {
+      "name": "rust",
+      "paths": [
+        "checks/rust/**",
+        "Cargo.toml",
+        "*.rs"
+      ]
+    },
+    {
+      "name": "go",
+      "paths": [
+        "checks/go/**",
+        "go.mod",
+        "*.go"
+      ]
+    },
+    {
+      "name": "shell",
+      "paths": [
+        "checks/shell/**",
+        "tools/**",
+        "scripts/**",
+        "*.sh",
+        "*.bash"
+      ]
+    },
+    {
+      "name": "fixtures",
+      "paths": [
+        "template-fixtures/**",
+        "tests/fixtures/**"
+      ]
+    }
+  ]
+}

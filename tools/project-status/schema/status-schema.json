@@ -1,0 +1,14 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "required":[
+    "repository",
+    "generated_at",
+    "phase",
+    "progress",
+    "current",
+    "next",
+    "blocked",
+    "attention"
+  ]
+}

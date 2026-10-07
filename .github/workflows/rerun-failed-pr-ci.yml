@@ -1,0 +1,75 @@
+name: Rerun Failed PR CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  rerun:
+    name: Rerun current failed PR CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Rerun failed jobs for current PR runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+
+          prs_json="$(gh pr list --repo "$REPOSITORY" --state open --limit 100 --json number,statusCheckRollup)"
+          targets="$(jq -r '
+            def check_key: [(.workflowName // ""), (.name // .context // "unnamed")];
+            def current_checks: group_by(check_key) | map(sort_by(.startedAt // .completedAt // "") | last);
+            .[] as $pr |
+            (($pr.statusCheckRollup // []) | current_checks[]) |
+            select((((.conclusion // .state // "") | ascii_upcase) | IN("FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"))) |
+            (try ((.detailsUrl // "" | capture("/actions/runs/(?<id>[0-9]+)") | .id)) catch null) as $run_id |
+            select($run_id != null) |
+            [$run_id, ($pr.number | tostring), (.name // .context // "unnamed")] | @tsv
+          ' <<<"$prs_json" | sort -t $'\t' -k1,1 -u)"
+
+          {
+            echo "## Failed PR CI rerun"
+            echo
+            echo "Triggered current failed CI runs in parallel."
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -z "$targets" ]]; then
+            echo "No current failed CI runs found."
+            echo "No current failed CI runs found." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          pids=()
+          while IFS=$'\t' read -r run_id pr_number check_name; do
+            [[ -n "$run_id" ]] || continue
+            run_url="https://github.com/$REPOSITORY/actions/runs/$run_id"
+            echo "Requesting rerun: PR #$pr_number — $check_name — $run_url"
+            printf '%s\n' "- PR #$pr_number — $check_name — [run #$run_id]($run_url)" >> "$GITHUB_STEP_SUMMARY"
+            (
+              gh run rerun "$run_id" --repo "$REPOSITORY" --failed
+            ) &
+            pids+=("$!")
+          done <<< "$targets"
+
+          status=0
+          for pid in "${pids[@]}"; do
+            if ! wait "$pid"; then
+              status=1
+            fi
+          done
+
+          if [[ "$status" -ne 0 ]]; then
+            echo "One or more rerun requests failed." >&2
+            echo "❌ One or more rerun requests failed." >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
+
+          echo "✅ All rerun requests accepted."
+          echo "✅ All rerun requests accepted." >> "$GITHUB_STEP_SUMMARY"

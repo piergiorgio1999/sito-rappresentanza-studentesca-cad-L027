@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# Enforces one functional scope per PR (scope-map.json, first-match-wins).
+# DECISIONS.md is metadata, not a functional scope: excluded from the scope
+# count. When changed alongside a functional scope, only new entries
+# appended at the end of the file are allowed; edits/deletions of existing
+# entries fail and require a dedicated PR touching only DECISIONS.md.
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT/tools/lib/common.sh"
+
+require_jq
+require_git
+
+SCOPE_MAP="$ROOT/scope-map.json"
+DECISIONS_FILE="DECISIONS.md"
+BASE_REF="${1:-}"
+
+cd "$ROOT"
+
+if [[ -z "$BASE_REF" ]]; then
+    if git rev-parse --verify origin/main >/dev/null 2>&1; then
+        BASE_REF="origin/main"
+    elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+        BASE_REF="HEAD~1"
+    else
+        echo "scope-guard: no base ref available, nothing to compare"
+        exit 0
+    fi
+fi
+
+git rev-parse --verify "$BASE_REF" >/dev/null 2>&1 || die "Invalid base ref: $BASE_REF"
+
+CHANGED_FILES="$(git diff --name-only "$BASE_REF"...HEAD)"
+
+if [[ -z "$CHANGED_FILES" ]]; then
+    echo "scope-guard: no changed files"
+    exit 0
+fi
+
+classify_file() {
+    classify_path "$SCOPE_MAP" "$1"
+}
+
+unclassified=0
+scopes_touched=""
+
+while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    if [[ "$f" == "$DECISIONS_FILE" ]]; then
+        echo "➖ $f -> metadata (excluded from scope count)"
+        continue
+    fi
+    scope="$(classify_file "$f")"
+    if [[ "$scope" == "unclassified" ]]; then
+        echo "❌ $f -> unclassified"
+        unclassified=1
+    else
+        echo "✅ $f -> $scope"
+        scopes_touched="$scopes_touched
+$scope"
+    fi
+done <<< "$CHANGED_FILES"
+
+unique_scopes="$(echo "$scopes_touched" | sed '/^$/d' | sort -u)"
+scope_count="$(echo "$unique_scopes" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+has_scope_exception=0
+labels=""
+pr_number="${SCOPE_GUARD_PR_NUMBER:-}"
+if [[ -n "${SCOPE_EXCEPTION_LABELS:-}" ]]; then
+    labels="$(printf '%s\n' "$SCOPE_EXCEPTION_LABELS" | tr ',' '\n')"
+elif [[ -n "${GITHUB_EVENT_PATH:-}" && -f "$GITHUB_EVENT_PATH" ]]; then
+    if [[ -z "$pr_number" ]]; then
+        pr_number="$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")"
+    fi
+    # Pull request events already contain authoritative label metadata.
+    labels="$(jq -r '.pull_request.labels[]?.name // empty' "$GITHUB_EVENT_PATH")"
+    if [[ -z "$labels" && -n "$pr_number" && -n "${GH_TOKEN:-}" ]] && command -v gh >/dev/null 2>&1; then
+        if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
+            labels="$(gh pr view "$pr_number" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name')"
+        else
+            labels="$(gh pr view "$pr_number" --json labels --jq '.labels[].name')"
+        fi
+    fi
+fi
+while IFS= read -r label; do
+    if [[ "$label" == "scope:exception" ]]; then
+        has_scope_exception=1
+        break
+    fi
+done <<< "$labels"
+
+echo
+echo "Scopes touched: ${unique_scopes:-none}"
+
+status=0
+
+if [[ "$unclassified" -eq 1 ]]; then
+    echo "❌ scope-guard: unclassified files present"
+    echo "scope-guard: ACTION add each unclassified path to exactly one scope in scope-map.json"
+    status=1
+fi
+
+if [[ "$scope_count" -gt 1 && "$has_scope_exception" -eq 0 ]]; then
+    echo "❌ scope-guard: multiple scopes touched"
+    echo "scope-guard: ACTION split the PR by scope or link one Issue authorized with scope:exception"
+    status=1
+elif [[ "$scope_count" -gt 1 ]]; then
+    echo "⚠️ scope-guard: scope:exception allows multiple scopes"
+fi
+
+decisions_changed=0
+if echo "$CHANGED_FILES" | grep -qFx "$DECISIONS_FILE"; then
+    decisions_changed=1
+fi
+
+if [[ "$decisions_changed" -eq 1 && "$scope_count" -ge 1 ]]; then
+    old_decisions="$(git show "$BASE_REF:$DECISIONS_FILE" 2>/dev/null || true)"
+    new_decisions="$(cat "$DECISIONS_FILE" 2>/dev/null || true)"
+    old_len="${#old_decisions}"
+    if [[ "${new_decisions:0:old_len}" != "$old_decisions" ]]; then
+        echo "❌ scope-guard: $DECISIONS_FILE must only be appended to (new entries at the end) when changed alongside a functional scope; edits/deletions of existing entries need a dedicated PR"
+        status=1
+    else
+        echo "✅ scope-guard: $DECISIONS_FILE append-only OK"
+    fi
+fi
+
+if [[ "$status" -eq 0 ]]; then
+    echo "✅ scope-guard: single scope OK"
+fi
+
+exit "$status"

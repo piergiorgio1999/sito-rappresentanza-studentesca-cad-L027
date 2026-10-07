@@ -1,0 +1,1 @@
+{"name":"CI","url":"https://github.com/example/repo/actions/runs/200","jobs":[{"databaseId":2001,"name":"security","conclusion":"failure","steps":[{"name":"Zizmor","conclusion":"failure"}]},{"databaseId":2002,"name":"CI Gate","conclusion":"failure","steps":[{"name":"CI Gate","conclusion":"failure"}]}]}

@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
+
+die() {
+    echo "bootstrap: $*" >&2
+    exit 1
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+install_scope_guard_pre_push_hook() {
+    local hook_path=".git/hooks/pre-push"
+
+    if [[ -e "$hook_path" ]]; then
+        echo "bootstrap: preserving existing pre-push hook"
+        return
+    fi
+
+    cat > "$hook_path" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+branch="$(git branch --show-current)"
+
+if ! git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    echo "scope-guard pre-push: initial branch push allowed; open a PR before pushing again"
+    exit 0
+fi
+
+pr_data="$(gh pr view --json number,labels --jq '[.number, ([.labels[].name] | join(","))] | @tsv')" \
+    || { echo "scope-guard pre-push: cannot resolve the current PR" >&2; exit 1; }
+IFS=$'\t' read -r pr_number labels <<< "$pr_data"
+
+SCOPE_GUARD_PR_NUMBER="$pr_number" \
+SCOPE_EXCEPTION_LABELS="$labels" \
+exec "$repo_root/tools/scope-guard/scope-guard" origin/main
+EOF
+    chmod +x "$hook_path"
+    echo "bootstrap: installed scope-guard pre-push hook"
+}
+
+# Keeps the generated README map blocks in step with every commit. CI stays
+# read-only and fail-closed (SPEC-V1.md section 13 points 4, 8 and 9), so
+# regeneration belongs here, on the developer's machine.
+install_repository_map_pre_commit_hook() {
+    if [[ ! -x tools/project-status/readme-maps ]]; then
+        return
+    fi
+    tools/project-status/readme-maps install-hook
+}
+
+for command in git gh jq copier shellcheck actionlint; do
+    require_command "$command"
+done
+
+[[ ! -e .git ]] || die "refusing to run: .git already exists"
+[[ -f copier.yml ]] || die "copier.yml is missing"
+[[ -f .github/labels.yml ]] || die ".github/labels.yml is missing"
+[[ -f .github/ruleset.json ]] || die ".github/ruleset.json is missing; run copier first"
+
+repo_name="${BOOTSTRAP_REPO_NAME:-$(basename "$ROOT")}"
+owner="${BOOTSTRAP_GITHUB_OWNER:-${GITHUB_OWNER:-}}"
+if [[ -z "$owner" ]]; then
+    owner="$(gh api user --jq '.login')" || die "cannot determine GitHub owner"
+fi
+
+case "$owner" in
+    *[!a-zA-Z0-9_.-]*|"") die "invalid GitHub owner: $owner" ;;
+esac
+case "$repo_name" in
+    *[!a-zA-Z0-9_.-]*|"") die "invalid repository name: $repo_name" ;;
+esac
+
+target_repo="$owner/$repo_name"
+capability_repo="${BOOTSTRAP_CAPABILITY_REPO:-piergiorgio1999/agent-template}"
+
+if ! gh pr list --repo "$capability_repo" --state all --limit 1 --json closingIssuesReferences >/dev/null 2>&1; then
+    die "installed gh does not support closingIssuesReferences; upgrade gh and retry"
+fi
+
+if gh api "repos/$target_repo" >/dev/null 2>&1; then
+    die "refusing to run: GitHub repository $target_repo already exists"
+fi
+
+if gh api "users/$owner" >/dev/null 2>&1; then
+    owner_type="user"
+elif gh api "orgs/$owner" >/dev/null 2>&1; then
+    owner_type="organization"
+else
+    die "cannot resolve GitHub owner $owner"
+fi
+
+git config user.name >/dev/null 2>&1 || die "git user.name is not configured"
+git config user.email >/dev/null 2>&1 || die "git user.email is not configured"
+
+visibility="${BOOTSTRAP_VISIBILITY:-private}"
+case "$visibility" in
+    private|public|internal) ;;
+    *) die "BOOTSTRAP_VISIBILITY must be private, public, or internal" ;;
+esac
+
+echo "bootstrap: owner=$owner ($owner_type), repository=$target_repo"
+echo "bootstrap: verifying repository creation and ruleset permissions"
+
+git init >/dev/null
+git symbolic-ref HEAD refs/heads/main
+git add -A
+git diff --cached --quiet && die "no files to commit"
+git commit -m "chore: initialize generated repository" >/dev/null
+
+gh repo create "$target_repo" "--$visibility" --source=. --remote=origin --push
+
+gh api "repos/$target_repo" --method PATCH -F delete_branch_on_merge=true >/dev/null \
+    || die "cannot enable delete_branch_on_merge for $target_repo"
+
+permissions="$(gh api "repos/$target_repo" --jq '.permissions')"
+if ! jq -e '.admin == true' >/dev/null <<<"$permissions"; then
+    die "authenticated principal lacks repository admin permission required for Ruleset setup"
+fi
+
+gh api "repos/$target_repo/rulesets" --method POST --input .github/ruleset.json >/dev/null
+install_scope_guard_pre_push_hook
+install_repository_map_pre_commit_hook
+
+echo "bootstrap: repository created, initial commit pushed, and ruleset applied"
+echo "bootstrap: first CI and label-sync workflows are triggered by the main push"
+echo "bootstrap: verify with gh run list --repo $target_repo --branch main"

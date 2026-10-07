@@ -1,0 +1,8 @@
+{
+  "typescript": true,
+  "swift": true,
+  "python": true,
+  "rust": true,
+  "go": true,
+  "shell": true
+}

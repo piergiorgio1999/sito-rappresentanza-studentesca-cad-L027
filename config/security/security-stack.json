@@ -1,0 +1,7 @@
+{
+  "gitleaks": true,
+  "actionlint": true,
+  "zizmor": true,
+  "dependencyReview": "optional",
+  "trivy": "conditional"
+}

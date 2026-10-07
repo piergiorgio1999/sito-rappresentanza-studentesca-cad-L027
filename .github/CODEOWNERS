@@ -1,0 +1,9 @@
+# Infrastructure
+
+/.github/ @{{ github_owner }}
+/AGENTS.md @{{ github_owner }}
+/CLAUDE.md @{{ github_owner }}
+/SECURITY.md @{{ github_owner }}
+/DECISIONS.md @{{ github_owner }}
+/scope-map.json @{{ github_owner }}
+/copier.yml @{{ github_owner }}

@@ -1,0 +1,12 @@
+[
+  {"number":1,"title":"Closed work","state":"CLOSED","labels":[],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":2,"title":"In progress","state":"OPEN","labels":[{"name":"priority:P0"}],"milestone":{"title":"V1"},"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":3,"title":"Blocked work","state":"OPEN","labels":[{"name":"priority:P1"},{"name":"status:blocked"}],"milestone":{"title":"V1"},"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":4,"title":"Next P2","state":"OPEN","labels":[{"name":"priority:P2"}],"milestone":{"title":"V1"},"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":5,"title":"Feature","state":"OPEN","labels":[],"milestone":null,"subIssues":[{"state":"CLOSED"},{"state":"OPEN"}],"blockedBy":[],"blocking":[]},
+  {"number":6,"title":"Blocked issue","state":"OPEN","labels":[{"name":"status:blocked"}],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":7,"title":"Needs attention","state":"OPEN","labels":[{"name":"status:attention"}],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":8,"title":"Action required","state":"OPEN","labels":[],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":20,"title":"Pending PR","state":"OPEN","labels":[],"milestone":null,"subIssues":[],"blockedBy":[],"blocking":[]},
+  {"number":21,"title":"Dependent work","state":"OPEN","labels":[],"milestone":null,"subIssues":[],"blockedBy":[{"number":2,"state":"OPEN"}],"blocking":[]}
+]

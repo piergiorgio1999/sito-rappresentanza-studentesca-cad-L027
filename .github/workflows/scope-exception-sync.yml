@@ -1,0 +1,63 @@
+name: Scope Exception Sync
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize, labeled, unlabeled]
+
+permissions:
+  issues: read
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reconcile authorized scope exception
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+
+          report() {
+            local level="$1" message="$2"
+            printf '### Scope exception sync\n\n%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
+            printf '::%s title=Scope exception sync::%s\n' "$level" "$message"
+          }
+
+          pr_json="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json closingIssuesReferences,labels)"
+          linked_issues="$(jq '[.closingIssuesReferences[].number]' <<<"$pr_json")"
+          has_label="$(jq 'any(.labels[].name; . == "scope:exception")' <<<"$pr_json")"
+          desired=false
+          reason='exactly one closing Issue is required'
+
+          if [[ "$(jq 'length' <<<"$linked_issues")" -eq 1 ]]; then
+            issue_number="$(jq -r '.[0]' <<<"$linked_issues")"
+            desired="$(gh issue view "$issue_number" --repo "$REPOSITORY" --json labels --jq 'any(.labels[].name; . == "scope:exception")')"
+            if [[ "$desired" == "true" ]]; then
+              reason="Issue #$issue_number authorizes scope:exception"
+            else
+              reason="Issue #$issue_number does not authorize scope:exception"
+            fi
+          fi
+
+          if [[ "$desired" == "$has_label" ]]; then
+            report notice "Label state is correct: $reason."
+            exit 0
+          fi
+
+          if [[ "$HEAD_REPOSITORY" != "$REPOSITORY" ]]; then
+            report warning "Label state is incorrect but pull_request tokens cannot edit fork PR labels: $reason. Maintainer action is required."
+            exit 0
+          fi
+
+          if [[ "$desired" == "true" ]]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPOSITORY" --add-label scope:exception
+            report notice "Added scope:exception: $reason."
+          else
+            gh pr edit "$PR_NUMBER" --repo "$REPOSITORY" --remove-label scope:exception
+            report warning "Removed stale or unauthorized scope:exception: $reason."
+          fi

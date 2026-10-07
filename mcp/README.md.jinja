@@ -1,0 +1,10 @@
+# MCP integration profile
+
+This project was generated with the `mcp` integration profile.
+
+The local MCP server is `mcp/server.mjs` and uses stdio transport. It exposes
+only read-only project status, deterministic preflight, and release readiness.
+It does not publish tags or GitHub Releases automatically.
+
+The shared repository checkers and release gate remain authoritative. Any
+non-zero checker status is returned as an MCP error.

@@ -1,0 +1,6 @@
+{
+  "subIssues": "auto",
+  "dependencies": "auto",
+  "rulesets": "auto",
+  "secretScanning": "auto"
+}

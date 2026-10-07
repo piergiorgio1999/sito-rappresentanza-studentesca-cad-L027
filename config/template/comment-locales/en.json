@@ -1,0 +1,23 @@
+{
+  "merge_recommendation": "MERGE RECOMMENDATION",
+  "merge_advised": "MERGE IS ADVISED",
+  "do_not_merge": "DO NOT MERGE YET",
+  "reason": "Reason",
+  "pr_verification": "PR verification",
+  "pr": "PR",
+  "branch": "Branch",
+  "merge_state": "Merge state",
+  "scope": "Scope",
+  "metadata": "Metadata",
+  "status_checks": "Status checks",
+  "scope_guard_output": "Scope guard output",
+  "non_self_status_checks": "Non-self status checks",
+  "none_visible": "none visible",
+  "status": "status",
+  "conclusion": "conclusion",
+  "scope_guard_passed": "scope-guard passed",
+  "scope_guard_failed": "scope-guard failed",
+  "metadata_loaded": "PR metadata loaded",
+  "ci_gate_passed": "CI Gate passed",
+  "ci_gate_failed": "CI Gate failed"
+}

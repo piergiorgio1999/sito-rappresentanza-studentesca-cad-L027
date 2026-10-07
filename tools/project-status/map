@@ -1,0 +1,408 @@
+#!/usr/bin/env bash
+# Deterministic repository map views (SPEC-V1.md section 13).
+#
+# Emits one ordered tree per TYPE, rendered in one of two textual FORMATs.
+# Both formats are rendered from the same ordered node stream, so they are
+# semantically equivalent by construction rather than by convention.
+#
+# The node stream is "depth<TAB>label", depth-first pre-order, depth >= 1.
+# The root node "repository" is implicit and supplied by the renderers.
+#
+# JSON is deliberately not a public output format (SPEC section 13 point 5).
+set -Eeuo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT/tools/lib/common.sh"
+
+require_jq
+require_git
+
+cd "$ROOT"
+
+SCOPE_MAP="$ROOT/scope-map.json"
+
+# Preview limits (SPEC section 13 point 7). Independent of any tokenizer.
+PREVIEW_MAX_BYTES=8192
+PREVIEW_MAX_LINES=100
+
+TYPE=""
+FORMAT=""
+FULL=false
+REPO=""
+
+usage() {
+    echo "Usage: project-status map TYPE FORMAT [--full] [--repo OWNER/REPO]" >&2
+    echo "  TYPE=dependencies|ci|status   FORMAT=outline|mermaid" >&2
+    echo "  --repo is admitted only for TYPE 'status'" >&2
+}
+
+while (($#)); do
+    case "$1" in
+        dependencies|ci|status) [[ -n "$TYPE" ]] && { usage; exit 2; }; TYPE="$1" ;;
+        outline|mermaid) [[ -n "$FORMAT" ]] && { usage; exit 2; }; FORMAT="$1" ;;
+        --full) FULL=true ;;
+        --repo)
+            (($# >= 2)) || { usage; exit 2; }
+            [[ -n "$REPO" ]] && { usage; exit 2; }
+            REPO="$2"
+            shift
+            ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage; exit 2 ;;
+    esac
+    shift
+done
+
+[[ -n "$TYPE" && -n "$FORMAT" ]] || { usage; exit 2; }
+
+# SPEC section 13 point 5: --repo is admitted only for `status`. The static
+# views derive from HEAD, so pointing them at another repository would be a
+# silent lie rather than an option.
+if [[ -n "$REPO" && "$TYPE" != "status" ]]; then
+    echo "project-status map: --repo is admitted only for TYPE 'status'" >&2
+    exit 2
+fi
+
+# ---------------------------------------------------------------------------
+# Tree builders. Each emits "depth<TAB>label" in depth-first pre-order.
+# ---------------------------------------------------------------------------
+
+# Manifests recognized by SPEC section 13 point 2. Those that are recognized
+# but not analysed in V1.2 must say so explicitly: silent omission is
+# forbidden, so they get a literal "details unavailable" leaf.
+is_recognized_manifest() {
+    case "${1##*/}" in
+        package.json|Package.resolved) return 0 ;;
+        Package.swift|pyproject.toml|Cargo.toml|go.mod) return 0 ;;
+        requirements*.txt) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+manifest_is_supported() {
+    case "${1##*/}" in
+        package.json|Package.resolved) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Direct dependency groups of a package.json, in contract order.
+#
+# A supported manifest that declares nothing still gets an explicit leaf: an
+# empty subtree would be indistinguishable from an unread source, and SPEC
+# section 13 point 2 forbids silent omission.
+emit_package_json_groups() {
+    local path="$1" group emitted=""
+    for group in dependencies devDependencies optionalDependencies peerDependencies; do
+        jq -e --arg g "$group" 'has($g) and (.[$g] | type == "object") and ((.[$g] | length) > 0)' \
+            "$path" >/dev/null 2>&1 || continue
+        emitted=yes
+        printf '3\t%s\n' "$group"
+        jq -r --arg g "$group" '.[$g] | to_entries[] | "\(.key) \(.value)"' "$path" \
+            | LC_ALL=C sort \
+            | while IFS= read -r entry; do
+                [[ -n "$entry" ]] && printf '4\t%s\n' "$entry"
+            done
+    done
+    [[ -z "$emitted" ]] && printf '3\tno declared dependencies\n'
+    return 0
+}
+
+# Package.resolved pins. Both the v1 (.object.pins) and v2 (.pins) shapes are
+# accepted; anything else is reported as unavailable rather than guessed at.
+emit_package_resolved_pins() {
+    local path="$1" pins
+    pins="$(jq -r '
+        ((.pins // .object.pins) // []) []
+        | "\(.identity // .package // "unknown") \((.state.version // .state.revision // "unpinned"))"
+    ' "$path" 2>/dev/null | LC_ALL=C sort || true)"
+    if [[ -z "$pins" ]]; then
+        printf '3\tdetails unavailable\n'
+        return
+    fi
+    printf '3\tpins\n'
+    while IFS= read -r pin; do
+        [[ -n "$pin" ]] && printf '4\t%s\n' "$pin"
+    done <<< "$pins"
+}
+
+build_dependencies() {
+    local manifests scope path current_scope=""
+
+    # Git-tracked manifests only: the map derives from tracked sources, never
+    # from whatever happens to sit in the working tree.
+    manifests="$(git ls-files | while IFS= read -r f; do
+        if is_recognized_manifest "$f"; then printf '%s\n' "$f"; fi
+    done)"
+
+    # Order: scope, then path (SPEC section 13 point 6).
+    [[ -z "$manifests" ]] && return 0
+    while IFS=$'\t' read -r scope path; do
+        [[ -z "$path" ]] && continue
+        if [[ "$scope" != "$current_scope" ]]; then
+            printf '1\t%s\n' "$scope"
+            current_scope="$scope"
+        fi
+        printf '2\t%s\n' "$path"
+        if ! manifest_is_supported "$path"; then
+            printf '3\tdetails unavailable\n'
+        elif [[ "${path##*/}" == "package.json" ]]; then
+            emit_package_json_groups "$path"
+        else
+            emit_package_resolved_pins "$path"
+        fi
+    done <<< "$(
+        while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            printf '%s\t%s\n' "$(classify_path "$SCOPE_MAP" "$f")" "$f"
+        done <<< "$manifests" | LC_ALL=C sort
+    )"
+}
+
+# The CI view is the normative sequence of SPEC section 9. It is a view of the
+# contract, NOT a DAG extracted from the workflow, and it does not claim to
+# describe the workflow's completeness (SPEC section 13 point 2).
+build_ci() {
+    printf '1\tci\n'
+    printf '2\tcontract view of SPEC section 9 (not an extracted workflow DAG)\n'
+
+    printf '3\tsequence\n'
+    local i=0 step
+    for step in checkout anti-rot actionlint zizmor gitleaks "paths detection" \
+                "scope guard" "language detection" "static checks" test build \
+                "test reporter" "CI Gate"; do
+        i=$((i + 1))
+        printf '4\t%02d %s\n' "$i" "$step"
+    done
+
+    printf '3\tconcurrency\n'
+    printf '4\tmain cancel-in-progress false\n'
+    printf '4\tpull request cancel-in-progress true\n'
+
+    printf '3\tpermissions\n'
+    printf '4\tGITHUB_TOKEN default contents read\n'
+    printf '4\televations per job only\n'
+
+    printf '3\ttimeout\n'
+    printf '4\tlinux static 10m\n'
+    printf '4\tlinux test build 20m\n'
+    printf '4\tmacos swift 30m\n'
+    printf '4\tself test 30m\n'
+}
+
+# The status view is live: a read-only snapshot taken at run time, never a
+# committed artefact and never an authoritative cache (SPEC section 13 point
+# 3). It is derived from the digest rather than from a second GitHub query, so
+# its data, categories, precedences and limits are the digest's own
+# (SPEC section 13 point 2, section 7) instead of a parallel interpretation.
+#
+# The categories are the digest's; their order is not section 7's prose order.
+# Section 7 lists DONE first, and `done` is both the largest category and the
+# least actionable one: leading with it would let the preview limit truncate
+# everything an agent needs before it is reached. Actionable categories come
+# first and `done` last.
+build_status() {
+    local digest_args=(json)
+    [[ -n "$REPO" ]] && digest_args+=(--repo "$REPO")
+
+    "$ROOT/tools/project-status/project-status" "${digest_args[@]}" | jq -r '
+      def clean: gsub("[\\t\\n\\r]"; " ");
+      def node($depth; $label): "\($depth)\t\($label | clean)";
+
+      # Issue and pull request entries are ordered by number, not by their
+      # rendered text, so #2 precedes #10 (SPEC section 13 point 6). In the
+      # mixed attention category, issues precede pull requests.
+      def numkey: ((capture("#(?<n>[0-9]+)") | .n | tonumber) // 0);
+      def kindkey: (if startswith("PR ") then 1 else 0 end);
+      def ordered: sort_by([kindkey, numkey]);
+
+      # An empty category is stated, never dropped: silence would be
+      # indistinguishable from an unread source.
+      def category($name; $items):
+        [node(1; $name)]
+        + (if ($items | length) == 0 then [node(2; "none")] else $items end);
+
+      # Checks are ordered by name (SPEC section 13 point 6).
+      def check_nodes($pr; $depth):
+        if ($pr.checks | length) == 0 then [node($depth; "no visible check")]
+        else ($pr.checks | sort | map(node($depth; .))) end;
+
+      . as $s
+
+      # A pull request is expanded under the first current issue that reaches
+      # it; any further issue closes the repetition with an explicit stable
+      # reference instead of traversing the subtree again (section 13 point 1).
+      | (reduce ($s.current | ordered)[] as $issue ({seen: [], out: []};
+           .out += [node(2; $issue)]
+           # The digest carries one entry per pull request, so an issue is
+           # matched through the closing references the digest recognized, not
+           # through the single issue that entry happens to name first.
+           | ($issue | numkey) as $inum
+           | ([$s.current_prs[] | select(.recognized_closing_refs | index($inum))]
+              | sort_by(.pr | numkey)) as $prs
+           | if ($prs | length) == 0 then .out += [node(3; "no linked pull request")]
+             else reduce $prs[] as $pr (.;
+                    if (.seen | index($pr.pr)) then .out += [node(3; "ref pr \($pr.pr)")]
+                    else .seen += [$pr.pr]
+                         | .out += ([node(3; "pr \($pr.pr) \($pr.title)")]
+                                    + check_nodes($pr; 4)
+                                    + [node(4; "diagnosis \($pr.diagnosis)")])
+                    end)
+             end)) as $current_block
+
+      # Every open pull request the digest carries is reachable. Those that no
+      # current issue reaches are listed on their own rather than omitted.
+      | ([$s.current_prs[] | select([.pr] | inside($current_block.seen) | not)]
+         | sort_by(.pr | numkey)) as $other_prs
+
+      | [node(1; "progress")]
+        + [node(2; "milestones")]
+        + (if ($s.progress.milestones | length) == 0 then [node(3; "none")]
+           else ($s.progress.milestones
+                 | sort_by(.title)
+                 | map(node(3; .title), node(4; "closed \(.closed) of \(.total)"))) end)
+        + [node(2; "features")]
+        + (if ($s.progress.features | length) == 0 then [node(3; "none")]
+           else ($s.progress.features
+                 | sort_by(.issue | numkey)
+                 | map(node(3; .issue), node(4; "closed \(.closed) of \(.total)"))) end)
+        + category("current"; $current_block.out)
+        + category("next"; ($s.next | map(node(2; .))))
+        + category("blocked"; ($s.blocked | ordered | map(node(2; .))))
+        + category("attention"; ($s.attention | ordered | map(node(2; .))))
+        + category("pull requests without a current issue"; ($other_prs | map(
+            [node(2; "pr \(.pr) \(.title)"),
+             node(3; (if .issue == null then "no linked issue" else "issue \(.issue)" end))]
+            + check_nodes(.; 3)
+            + [node(3; "diagnosis \(.diagnosis)")]) | add // []))
+        + category("done"; ($s.done | ordered | map(node(2; .))))
+      | .[]
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Renderers. Both consume the same node stream on stdin.
+# ---------------------------------------------------------------------------
+
+render_outline() {
+    # Literal root, two UTF-8 spaces per level (SPEC section 13 point 5).
+    printf 'repository\n'
+    local depth label indent
+    while IFS=$'\t' read -r depth label; do
+        [[ -z "$depth" ]] && continue
+        indent=""
+        local n=0
+        while ((n < depth)); do
+            indent="$indent  "
+            n=$((n + 1))
+        done
+        printf '%s%s\n' "$indent" "$label"
+    done
+}
+
+# Label escaping, in the contract order: & first, otherwise the entities
+# introduced by the later substitutions would themselves be escaped.
+escape_label() {
+    local s="$1"
+    s="${s//&/&amp;}"
+    s="${s//\"/&quot;}"
+    s="${s//</&lt;}"
+    s="${s//>/&gt;}"
+    printf '%s' "$s"
+}
+
+render_mermaid() {
+    printf 'flowchart TD\n'
+    # parent_at[d] holds the mermaid id of the most recent node at depth d,
+    # so a node at depth d attaches to parent_at[d-1]. Bash 3.2: plain arrays.
+    local -a parent_at
+    local seq=1 depth label id
+    parent_at[0]="n0001"
+    printf '  n0001["repository"]\n'
+    while IFS=$'\t' read -r depth label; do
+        [[ -z "$depth" ]] && continue
+        seq=$((seq + 1))
+        id="$(printf 'n%04d' "$seq")"
+        printf '  %s["%s"]\n' "$id" "$(escape_label "$label")"
+        printf '  %s --> %s\n' "${parent_at[$((depth - 1))]}" "$id"
+        parent_at[depth]="$id"
+    done
+}
+
+render() {
+    case "$FORMAT" in
+        outline) render_outline ;;
+        mermaid) render_mermaid ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Preview selection.
+#
+# SPEC section 13 point 7: the SAME node prefix is selected for both formats
+# before rendering, and an explicit "omitted N" leaf is appended. Silent
+# omission is forbidden. The prefix must therefore satisfy the limits in the
+# more verbose format as well, which is why both are measured.
+# ---------------------------------------------------------------------------
+
+NODES_FILE="$(mktemp)"
+RENDER_FILE="$(mktemp)"
+trap 'rm -f "$NODES_FILE" "$RENDER_FILE"' EXIT
+
+case "$TYPE" in
+    dependencies) build_dependencies > "$NODES_FILE" ;;
+    ci) build_ci > "$NODES_FILE" ;;
+    status) build_status > "$NODES_FILE" ;;
+esac
+
+TOTAL="$(wc -l < "$NODES_FILE" | tr -d '[:space:]')"
+
+# Render the first $1 nodes, appending the omitted leaf when truncating.
+render_prefix() {
+    local keep="$1" omitted=$((TOTAL - $1))
+    {
+        head -n "$keep" "$NODES_FILE"
+        if ((omitted > 0)); then
+            printf '1\tomitted %d\n' "$omitted"
+        fi
+    } | render
+}
+
+prefix_fits() {
+    local keep="$1" fmt
+    for fmt in outline mermaid; do
+        FORMAT="$fmt" render_prefix "$keep" > "$RENDER_FILE"
+        (($(wc -c < "$RENDER_FILE") > PREVIEW_MAX_BYTES)) && return 1
+        (($(wc -l < "$RENDER_FILE") > PREVIEW_MAX_LINES)) && return 1
+    done
+    return 0
+}
+
+REQUESTED_FORMAT="$FORMAT"
+
+if [[ "$FULL" == "true" ]]; then
+    FORMAT="$REQUESTED_FORMAT"
+    render_prefix "$TOTAL"
+    exit 0
+fi
+
+# Rendered size is monotonic in the node count, so a binary search finds the
+# largest admissible prefix deterministically.
+if prefix_fits "$TOTAL"; then
+    KEEP="$TOTAL"
+else
+    LO=0
+    HI="$TOTAL"
+    while ((LO < HI)); do
+        MID=$(((LO + HI + 1) / 2))
+        if prefix_fits "$MID"; then
+            LO="$MID"
+        else
+            HI=$((MID - 1))
+        fi
+    done
+    KEEP="$LO"
+fi
+
+FORMAT="$REQUESTED_FORMAT"
+render_prefix "$KEEP"

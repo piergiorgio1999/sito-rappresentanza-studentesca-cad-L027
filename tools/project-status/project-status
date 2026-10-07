@@ -1,0 +1,433 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+FORMAT="md"
+MODE="status"
+REPO=""
+DIAGNOSE_ALL=false
+SELECTED_PRS=()
+
+usage() {
+    echo "Usage: project-status [diagnose] [md|json] [--repo OWNER/REPO] [--pr NUMBER ... | --all]" >&2
+    echo "       project-status map TYPE FORMAT [--full] [--repo OWNER/REPO]" >&2
+}
+
+# Map modes are a mode of this tool, not a fifth custom tool (SPEC-V1.md
+# section 13 point 4). Dispatched before option parsing because the map
+# grammar is positional and disjoint from the digest grammar.
+if [[ "${1:-}" == "map" ]]; then
+    shift
+    exec "$(dirname "$0")/map" "$@"
+fi
+
+while (($#)); do
+    case "$1" in
+        diagnose) MODE="diagnose" ;;
+        md|json) FORMAT="$1" ;;
+        --repo)
+            (($# >= 2)) || { usage; exit 2; }
+            REPO="$2"
+            shift
+            ;;
+        --pr)
+            (($# >= 2)) || { usage; exit 2; }
+            [[ "$2" =~ ^[0-9]+$ ]] || { echo "project-status: --pr requires a numeric PR" >&2; exit 2; }
+            SELECTED_PRS+=("$2")
+            shift
+            ;;
+        --all) DIAGNOSE_ALL=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage; exit 2 ;;
+    esac
+    shift
+done
+
+command -v jq >/dev/null 2>&1 || { echo "project-status: jq is required" >&2; exit 1; }
+if [[ "$MODE" == "diagnose" ]]; then
+    if [[ "$DIAGNOSE_ALL" == "true" && "${#SELECTED_PRS[@]}" -gt 0 ]]; then
+        echo "project-status: use either --all or one or more --pr selectors" >&2
+        exit 2
+    fi
+    if [[ "$DIAGNOSE_ALL" != "true" && "${#SELECTED_PRS[@]}" -eq 0 ]]; then
+        echo "project-status: diagnose requires --pr NUMBER or --all" >&2
+        exit 2
+    fi
+elif [[ "$DIAGNOSE_ALL" == "true" || "${#SELECTED_PRS[@]}" -gt 0 ]]; then
+    echo "project-status: --pr and --all require diagnose mode" >&2
+    exit 2
+fi
+
+gh_with_repo() {
+    if [[ -n "$REPO" ]]; then
+        gh "$@" --repo "$REPO"
+    else
+        gh "$@"
+    fi
+}
+
+run_gh() {
+    if [[ -n "${PROJECT_STATUS_MOCK_DIR:-}" ]]; then
+        case "$1" in
+            issues) cat "$PROJECT_STATUS_MOCK_DIR/issues.json" ;;
+            prs) cat "$PROJECT_STATUS_MOCK_DIR/prs.json" ;;
+            pr_files) jq --argjson number "$2" '[.[] | select(.number == $number) | .files[]?]' "$PROJECT_STATUS_MOCK_DIR/prs.json" ;;
+            repo) printf '%s\n' "${PROJECT_STATUS_MOCK_REPOSITORY:-fixture/repository}" ;;
+        esac
+        return
+    fi
+    case "$1" in
+        issues) gh_with_repo issue list --state all --limit 1000 --json number,title,state,labels,milestone,subIssues,blockedBy,blocking ;;
+        prs) gh_with_repo pr list --state all --limit 1000 --json number,title,state,labels,closingIssuesReferences,statusCheckRollup,mergeStateStatus,headRefOid,headRefName,baseRefName,body ;;
+        pr_files) gh_with_repo pr view "$2" --json files --jq '[.files[].path]' ;;
+        repo)
+            if [[ -n "$REPO" ]]; then
+                gh repo view "$REPO" --json nameWithOwner --jq '.nameWithOwner'
+            else
+                gh repo view --json nameWithOwner --jq '.nameWithOwner'
+            fi
+            ;;
+    esac
+}
+
+if [[ -n "${PROJECT_STATUS_MOCK_DIR:-}" ]]; then
+    issues_json="$(run_gh issues)"
+    prs_json="$(run_gh prs)"
+else
+    command -v gh >/dev/null 2>&1 || { echo "project-status: gh is required" >&2; exit 1; }
+    if prs_json="$(run_gh prs 2>/dev/null)"; then
+        :
+    else
+        echo "project-status: closingIssuesReferences unavailable; using PR label fallback" >&2
+        prs_json="$(gh_with_repo pr list --state all --limit 1000 --json number,title,state,labels,statusCheckRollup,mergeStateStatus,headRefOid,headRefName,baseRefName,body)"
+    fi
+    if issues_json="$(run_gh issues 2>/dev/null)"; then
+        issue_features=true
+    else
+        issue_features=false
+        issues_json="$(gh_with_repo issue list --state all --limit 1000 --json number,title,state,labels,milestone)"
+    fi
+fi
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf '%s\n' "$issues_json" >"$tmpdir/issues.json"
+printf '%s\n' "$prs_json" >"$tmpdir/prs.json"
+
+pr_files_file="$tmpdir/pr-files.jsonl"
+: >"$pr_files_file"
+if [[ "$MODE" == "diagnose" ]]; then
+    while IFS= read -r pr_number; do
+        files="$(run_gh pr_files "$pr_number")"
+        jq -cn --argjson pr "$pr_number" --argjson files "$files" '{pr:$pr,files:$files}' >>"$pr_files_file"
+    done < <(jq -r '.[] | select(.state == "OPEN") | .number' <<<"$prs_json")
+fi
+pr_files="$(jq -s '.' "$pr_files_file")"
+
+if [[ "$MODE" == "diagnose" ]]; then
+    if [[ "$DIAGNOSE_ALL" == "true" ]]; then
+        target_prs_json="$(jq '[.[] | select(.state == "OPEN") | .number] | unique | sort' <<<"$prs_json")"
+    else
+        target_prs_json="$(printf '%s\n' "${SELECTED_PRS[@]}" | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber) | unique | sort')"
+        missing_prs="$(jq -nr --argjson requested "$target_prs_json" --argjson prs "$prs_json" '$requested - [$prs[] | select(.state == "OPEN") | .number] | join(",")')"
+        if [[ -n "$missing_prs" ]]; then
+            echo "project-status: requested PRs are not open or visible: $missing_prs" >&2
+            exit 1
+        fi
+    fi
+else
+    target_prs_json="$(jq '[.[] | select(.state == "OPEN") | .number] | unique | sort' <<<"$prs_json")"
+fi
+
+diagnostics='[]'
+if [[ "$MODE" == "diagnose" ]]; then
+    if [[ -n "${PROJECT_STATUS_MOCK_DIR:-}" ]]; then
+        diagnostics="$(jq --argjson targets "$target_prs_json" '[.[] | select(.number as $number | $targets | index($number)) | .diagnostics[]?]' "$PROJECT_STATUS_MOCK_DIR/prs.json")"
+    else
+        diagnostics_file="$tmpdir/diagnostics.jsonl"
+        : >"$diagnostics_file"
+        # jq variables in the nested filter are intentionally protected from Bash expansion.
+        # shellcheck disable=SC2016
+        while IFS=$'\t' read -r pr_number run_id; do
+            [[ -n "$run_id" ]] || continue
+            run="$(gh_with_repo run view "$run_id" --json name,url)"
+            [[ -n "$run" ]] || continue
+            while IFS=$'\t' read -r job_id job_name step_name; do
+                job_log="$(gh_with_repo run view "$run_id" --job "$job_id" --log-failed 2>/dev/null || true)"
+                clean_log="$(printf '%s\n' "$job_log" | awk '
+                    BEGIN { esc = sprintf("%c", 27) }
+                    {
+                        sub(/\r$/, "")
+                        gsub(esc "\\[[0-?]*[ -/]*[@-~]", "")
+                        gsub(esc "[@-_]", "")
+                        gsub("\\^\\[\\[[0-?]*[ -/]*[@-~]", "")
+                        print
+                    }
+                ')"
+                messages="$(printf '%s\n' "$clean_log" | awk -F '\t' '
+                    NF >= 3 {
+                        message = $3
+                        for (i=4; i<=NF; i++) message = message FS $i
+                        sub(/^[^[:space:]]+[[:space:]]+/, "", message)
+                        print message
+                        next
+                    }
+                    { print }
+                ')"
+                error_line="$(printf '%s\n' "$messages" | grep -E -m1 'error\[[^]]+\]:|(^|[[:space:]])(error:|ERROR|Error:|fatal:|FAIL([:[:space:]]|$)|❌|(linking|scope-guard|agent-config-check):)' | grep -Ev 'Process completed with exit code' || true)"
+                error="$error_line"
+                if [[ "$error" == *'error['* ]]; then
+                    detail="$(printf '%s\n' "$messages" | grep -E -m1 'pull_request_target|workflow_call|workflow_run' || true)"
+                    if [[ -n "$detail" && "$error" != *"$detail"* ]]; then
+                        error="$error; $detail"
+                    fi
+                fi
+                error="$(printf '%s' "$error" | cut -c1-300)"
+                error="${error:-failed step; inspect targeted job log}"
+                location="$(printf '%s\n' "$messages" | grep -Eo '[[:alnum:]_./-]+\.[[:alnum:]_+-]+:[0-9]+(:[0-9]+)?' | head -n1 || true)"
+                case "$job_name" in
+                    scope-guard)
+                        evidence_text="$(printf '%s\n' "$messages" | awk '
+                          /^✅ .* -> / || /^Scopes touched:/ || /^(documentation|fixtures|github|go|python|rust|shell|swift|template|typescript)$/ || /^❌ scope-guard:/
+                        ')"
+                        ;;
+                    anti-rot)
+                        evidence_text="$(printf '%s\n' "$messages" | grep -E '^❌ ' | grep -v '^❌ agent-config-check: FAILED$' || true)"
+                        ;;
+                    linking)
+                        evidence_text="$(printf '%s\n' "$messages" | grep -E '^linking:' || true)"
+                        ;;
+                    security)
+                        evidence_text="$(printf '%s\n' "$messages" | awk '
+                          /error\[[^]]+\]:/ {capture=1; count=0}
+                          capture && count < 12 {print; count++}
+                        ')"
+                        ;;
+                    *) evidence_text="$error" ;;
+                esac
+                evidence_text="${evidence_text:-$error}"
+                evidence="$(printf '%s\n' "$evidence_text" | jq -Rsc 'split("\n") | map(select(length > 0)) | .[:20]')"
+                affected_paths="$(
+                  {
+                    printf '%s\n' "$evidence_text" | awk '
+                      /^✅ .* -> / {line=$0; sub(/^✅ /,"",line); sub(/ -> .*$/,"",line); print line}
+                      /^❌ / {
+                        for (i=1; i<=NF; i++) {
+                          token=$i
+                          gsub(/[(),:]/,"",token)
+                          if (token == "TEMPLATE_VERSION" || token ~ /^\.?[[:alnum:]_{}@+.-]+\/[[:alnum:]_.{}@+\/-]+$/ || token ~ /^[[:alnum:]_.{}@+-]+\.(md|json|txt|yml|yaml|sh)$/) print token
+                        }
+                      }
+                    '
+                    if [[ -n "$location" ]]; then printf '%s\n' "${location%%:*}"; fi
+                  } | sed 's|^\./||' | sort -u | jq -Rsc 'split("\n") | map(select(length > 0))'
+                )"
+                if [[ "$error" == "failed step; inspect targeted job log" ]]; then
+                    escalation="INSUFFICIENT: failed-step diagnostic was not recognized"
+                elif [[ "$job_name" == "security" && "$error" == *'error['* ]]; then
+                    escalation="INSUFFICIENT: security finding identifies rule and source span, not a safe remediation"
+                else
+                    escalation="FIX: address the reported failure"
+                fi
+                if [[ "$error" == *pending* || "$error" == *incomplete* ]]; then
+                    escalation="WAIT: external check incomplete"
+                fi
+                jq -cn --argjson pr "$pr_number" --arg workflow "$(jq -r '.name' <<<"$run")" \
+                    --arg job "$job_name" --arg step "$step_name" --arg error "$error" \
+                    --arg location "$location" --arg url "$(jq -r '.url' <<<"$run")" --arg escalation "$escalation" \
+                    --argjson evidence "$evidence" --argjson affected_paths "$affected_paths" \
+                    '{pr:$pr,workflow:$workflow,job:$job,step:$step,error:$error,evidence:$evidence,affected_paths:$affected_paths,location:($location | if length > 0 then . else null end),url:$url,escalation:$escalation}' \
+                    >>"$diagnostics_file"
+            done < <(gh_with_repo run view "$run_id" --json jobs --jq '
+              [.jobs[] | select(.conclusion == "failure")] as $failed |
+              $failed[] |
+              select(.name != "CI Gate" or ([$failed[] | select(.name != "CI Gate")] | length) == 0) |
+              [.databaseId,.name,([.steps[] | select(.conclusion == "failure") | .name][0] // "unknown")] | @tsv
+            ')
+        done < <(jq -r --argjson targets "$target_prs_json" '
+          def check_key: [(.workflowName // ""), (.name // .context // "unnamed")];
+          def current_checks: group_by(check_key) | map(sort_by(.startedAt // .completedAt // "") | last);
+          .[] | select(.state == "OPEN") | select(.number as $number | $targets | index($number)) | .number as $pr |
+          ((.statusCheckRollup // []) | current_checks[]) |
+          select(((.conclusion // .state // "") | ascii_upcase) | IN("FAILURE","ERROR","CANCELLED","TIMED_OUT","ACTION_REQUIRED")) |
+          (try (.detailsUrl // "" | capture("/actions/runs/(?<id>[0-9]+)").id) catch null) as $run_id |
+          select($run_id != null) | [$pr,$run_id] | @tsv
+        ' <<<"$prs_json" | sort -u)
+        diagnostics="$(jq -s '.' "$diagnostics_file")"
+    fi
+fi
+
+related_prs="$(jq -n --argjson diagnostics "$diagnostics" --argjson pr_files "$pr_files" '
+  [$diagnostics[] as $diagnostic |
+   ($diagnostic.affected_paths // [])[] as $path |
+   $pr_files[] |
+   select(.pr != $diagnostic.pr and (.files | index($path))) |
+   {pr:$diagnostic.pr,target:.pr,reason:("modifies failure path " + $path)}]
+  | unique_by([.pr,.target,.reason])
+')"
+
+repo="$(run_gh repo)"
+generated_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+digest="$(jq -n \
+    --arg repository "$repo" \
+    --arg generated_at "$generated_at" \
+    --slurpfile issues_file "$tmpdir/issues.json" \
+    --slurpfile prs_file "$tmpdir/prs.json" \
+    --argjson issue_features "${issue_features:-true}" \
+    --argjson diagnostics "$diagnostics" \
+    --argjson related_prs "$related_prs" \
+    --argjson target_prs "$target_prs_json" \
+    --argjson diagnose "$([[ "$MODE" == "diagnose" ]] && echo true || echo false)" '
+  ($issues_file[0]) as $issues |
+  ($prs_file[0]) as $prs |
+  def labels: (.labels // []) | map(if type == "object" then .name else . end);
+  def subissues: if (.subIssues | type) == "object" then (.subIssues.nodes // []) else (.subIssues // []) end;
+  def blocked_by: if (.blockedBy | type) == "object" then (.blockedBy.nodes // []) else (.blockedBy // []) end;
+  def priority: (labels | map(select(test("^priority:P[012]$"))) | first // "priority:none");
+  def check_key: [(.workflowName // ""), (.name // .context // "unnamed")];
+  def current_checks: group_by(check_key) | map(sort_by(.startedAt // .completedAt // "") | last);
+  def issue_number: .number;
+  def linked_prs($issue): [$prs[] | select(.state == "OPEN") | select([.closingIssuesReferences[]?.number] | index($issue))];
+  def is_blocked: ((blocked_by | length) > 0) or ((labels | index("status:blocked")) != null);
+  def issue_attention: ((labels | index("status:attention")) != null);
+  def check_failed: ([((.statusCheckRollup // []) | current_checks[]) | (.conclusion // .state // "") | ascii_upcase | IN("FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED")] | any);
+  def attention($pr): ((labels | index("status:attention")) != null) or ($pr.mergeStateStatus == "CONFLICTING") or ($pr | check_failed);
+  def failed_outcome: ((.conclusion // .state // "") | ascii_downcase) as $outcome |
+    $outcome == "failure" or $outcome == "error" or $outcome == "cancelled" or $outcome == "timed_out" or $outcome == "action_required";
+  def pending_outcome: (((.status // "") | ascii_downcase) != "completed") and ((.conclusion // "") == "" or .conclusion == null);
+  def digest_checks:
+    current_checks as $checks |
+    ([$checks[] | select(failed_outcome)]) as $failed |
+    ([$failed[] | select((.name // .context // "") != "CI Gate")]) as $root_failed |
+    ([$checks[] | select(pending_outcome)]) as $pending |
+    if ($root_failed | length) > 0 then $root_failed
+    elif ($failed | length) > 0 then $failed
+    elif ($pending | length) > 0 then $pending
+    else ([$checks[] | select((.name // .context // "") == "CI Gate")]) as $gate |
+      if ($gate | length) > 0 then $gate else $checks end
+    end;
+  def check_icon:
+    . as $check |
+    (($check.conclusion // $check.state // "") | ascii_downcase) as $outcome |
+    if $outcome == "success" then "🟢"
+    elif ($check | pending_outcome) then "🟡"
+    elif ($outcome == "skipped" or $outcome == "neutral" or $outcome == "not_applicable") then "⚪"
+    else "🔴" end;
+  def check_label:
+    . as $check |
+    ($check | check_icon) as $icon |
+    (($check.name // $check.context // "unnamed") + " " + $icon + " " + (($check.conclusion // $check.state // "unknown") | ascii_downcase));
+  def pr_state($number): first($prs[] | select(.number == $number) | .state) // "UNKNOWN";
+  def diagnostic_insufficient($number):
+    first($diagnostics[] | select(.pr == $number and (.escalation | startswith("INSUFFICIENT:"))) | .escalation) // null;
+  def declared_closing_refs:
+    [(.body // "") |
+      match("(?i)(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[[:space:]:]+#(?<number>[0-9]+)"; "g") |
+      .captures[] | select(.name == "number") | .string | tonumber] | unique | sort;
+  def confirmed_dependencies:
+    . as $pr |
+    (([$prs[] | select(.state == "OPEN" and (.headRefName // "") != "" and .headRefName == ($pr.baseRefName // "")) |
+        {type:"pr",number:.number,state:.state,source:"stacked base branch"}]) +
+     ([$pr.closingIssuesReferences[]?.number as $issue_number |
+        $issues[] | select(.number == $issue_number) | blocked_by[]? as $blocker |
+        (linked_prs($blocker.number)) as $blocking_prs |
+        if ($blocking_prs | length) > 0 then
+          $blocking_prs[] | {type:"pr",number:.number,state:.state,
+            source:("Issue #" + ($issue_number|tostring) + " blocked by Issue #" + ($blocker.number|tostring))}
+        else
+          {type:"issue",number:$blocker.number,state:($blocker.state // "UNKNOWN"),
+            source:("blocking relation of Issue #" + ($issue_number|tostring))}
+        end])) |
+    unique_by([.type,.number,.source]);
+  def related:
+    . as $pr |
+    [$related_prs[] | select(.pr == $pr.number) | . + {state:pr_state(.target)}] |
+    unique_by([.target,.reason]);
+  def pr_diagnosis:
+    if ((.statusCheckRollup // []) | current_checks | length) == 0 then "WAIT: no checks visible"
+    elif ([((.statusCheckRollup // []) | current_checks[]) | . as $check | select(((($check.status // "") | ascii_downcase) != "completed") and (($check.conclusion // "") == "" or $check.conclusion == null))] | length) > 0 then "WAIT: external check incomplete"
+    elif ([((.statusCheckRollup // []) | current_checks[]) | ((.conclusion // .state // "") | ascii_downcase) | select(. == "failure" or . == "error" or . == "cancelled" or . == "timed_out" or . == "action_required")] | length) > 0 then "FIX: check failure"
+    else "PASS: checks complete" end;
+  def issue_text: ("#" + (.number|tostring) + " " + .title);
+  def milestone_progress:
+    [ $issues[] | select(.milestone != null) | .milestone.title ] | unique | map(. as $m |
+      {title: $m, closed: ([$issues[] | select(.milestone.title == $m and .state == "CLOSED")] | length), total: ([$issues[] | select(.milestone.title == $m)] | length)});
+  def feature_progress:
+    [$issues[] | select((subissues | length) > 0)] | map(. as $feature |
+      {issue: ($feature | issue_text), closed: ([$feature | subissues[] | select(.state == "CLOSED")] | length), total: (($feature | subissues) | length)});
+  ($issues | map(select(.state == "CLOSED") | issue_text)) as $done |
+  ($issues | map(select(.state == "OPEN") | select(is_blocked | not) | select(issue_attention | not) | select((linked_prs(.number) | length) > 0))) as $current_issues |
+  ($current_issues | map(issue_text)) as $current |
+  ([$prs[] | select(.state == "OPEN") | select(.number as $number | $target_prs | index($number)) | . as $pr |
+    ([.closingIssuesReferences[]?.number] | first // null) as $issue_number |
+    ($pr | confirmed_dependencies) as $confirmed_dependencies |
+    ($pr | related) as $related_for_pr |
+    ($pr | declared_closing_refs) as $declared_closing_refs |
+    ([.closingIssuesReferences[]?.number] | unique | sort) as $recognized_closing_refs |
+    {issue: (if $issue_number == null then null else "#" + ($issue_number|tostring) end),
+     pr: ("#" + (.number|tostring)), title: .title,
+     checks: [((.statusCheckRollup // []) | digest_checks[]) | check_label],
+     declared_closing_refs:$declared_closing_refs, recognized_closing_refs:$recognized_closing_refs,
+     dependencies:$confirmed_dependencies, related:$related_for_pr,
+     diagnosis: (if any($confirmed_dependencies[]; .state == "OPEN")
+       then "WAIT: structured dependency is still open"
+       elif diagnostic_insufficient($pr.number) != null then diagnostic_insufficient($pr.number)
+       else ($pr | pr_diagnosis) end)}]
+   | sort_by(.pr | ltrimstr("#") | tonumber)) as $current_prs |
+  ($issues | map(select(.state == "OPEN") | select(is_blocked) | issue_text)) as $blocked |
+  ($issues | map(select(.state == "OPEN") | select(is_blocked) | .number)) as $blocked_numbers |
+  ($issues | map(select(.state == "OPEN") | select(is_blocked | not) | select(issue_attention) | issue_text)) as $label_attention |
+  ($prs | map(select(.state == "OPEN") | select(any(.closingIssuesReferences[]?; true)) | select(attention(.)) | select(any(.closingIssuesReferences[]?.number; . as $n | ($blocked_numbers | index($n)) == null)) | "PR #" + (.number|tostring) + " " + .title)) as $pr_attention |
+  ($issues | map(select(.state == "OPEN") | select((linked_prs(.number) | length) == 0) | select(is_blocked | not) | select(issue_attention | not) | {text: issue_text, priority: priority, number: .number}) | sort_by((if .priority == "priority:P0" then 0 elif .priority == "priority:P1" then 1 elif .priority == "priority:P2" then 2 else 3 end), .number) | map(.text)) as $next |
+  ({repository: $repository, generated_at: $generated_at, phase: "V1", progress: {milestones: milestone_progress, features: feature_progress}, current: ($current | sort), current_prs: $current_prs, done: ($done | sort), next: $next, blocked: ($blocked | sort), attention: (($label_attention + $pr_attention) | unique | sort)} + if $diagnose then {ci_diagnostics: $diagnostics} else {} end)
+  ' )"
+
+if [[ "$FORMAT" == "json" ]]; then
+    jq . <<<"$digest"
+else
+    markdown="$(jq -r '
+      def list_or_none: if length == 0 then "none" else join("\n") end;
+      def dependency_lines:
+        if (.dependencies | length) == 0 then ["DEPENDS-ON: none"]
+        else [.dependencies[] | "DEPENDS-ON: \(.type | ascii_upcase) #\(.number) [\(.state)] — \(.source)"]
+        end;
+      def related_lines:
+        [.related[] | "RELATED: PR #\(.target) [\(.state)] — \(.reason)"];
+      def linking_lines:
+        if any(.checks[]?; startswith("linking ")) then
+          ["Closing references:",
+           "- Declared in body: " + (if (.declared_closing_refs | length) == 0 then "none" else ([.declared_closing_refs[] | "#" + tostring] | join(", ")) end),
+           "- Recognized by GitHub: " + (if (.recognized_closing_refs | length) == 0 then "none" else ([.recognized_closing_refs[] | "#" + tostring] | join(", ")) end),
+           "- Required: exactly one GitHub-recognized closing Issue"]
+        else [] end;
+      def pr_block:
+        . as $pr |
+        ([$pr.pr + " " + $pr.title + (if $pr.issue then " (" + $pr.issue + ")" else " (no closing Issue)" end),
+          "", (if ($pr.checks | length) == 0 then "no checks visible" else ($pr.checks | join("\n")) end), ""] +
+         ($pr | linking_lines) + (if ($pr | linking_lines | length) > 0 then [""] else [] end) +
+         ($pr | dependency_lines) + ($pr | related_lines) + ["", $pr.diagnosis]) | join("\n");
+      (["# Project Status", "", "Repository: \(.repository)", "Generated: \(.generated_at)", "Phase: \(.phase)", "", "## Progress", (.progress | tostring), "", "## Current", (.current | list_or_none), "", "## Current PR", (if (.current_prs | length) == 0 then "none" else (.current_prs[] | pr_block) end)] + (if has("ci_diagnostics") then ["", "## CI Diagnostics", (if (.ci_diagnostics | length) == 0 then "none" else (.ci_diagnostics[] | ["PR #\(.pr) — \(.workflow)", "- Job: \(.job)", "- Step: \(.step)", "- Error: \(.error)", (if .location then "- Location: \(.location)" else empty end), (if ((.evidence // []) | length) > 1 then "- Direct evidence:\n" + ([.evidence[] | "  - " + .] | join("\n")) else empty end), "- Escalation: \(.escalation)"] | join("\n")) end)] else [] end) + ["", "## Next", (.next | list_or_none), "", "## Blocked", (.blocked | list_or_none), "", "## Attention", (.attention | list_or_none)]) | join("\n")
+    ' <<<"$digest")"
+    if [[ "$MODE" == "diagnose" ]]; then
+        selected_count="$(jq 'length' <<<"$target_prs_json")"
+        diagnostic_count="$(jq 'length' <<<"$diagnostics")"
+        max_lines=$((40 + selected_count * 40 + diagnostic_count * 10))
+        max_bytes=$((4096 + selected_count * 4096 + diagnostic_count * 1024))
+    else
+        max_lines=100
+        max_bytes=8192
+    fi
+    lines="$(printf '%s\n' "$markdown" | wc -l | tr -d ' ')"
+    if (( lines > max_lines )); then
+        markdown="$(printf '%s\n' "$markdown" | awk -v max="$max_lines" 'NR < max { print } NR == max { print "… truncated"; exit }')"
+    fi
+    bytes="$(printf '%s' "$markdown" | wc -c | tr -d ' ')"
+    if (( bytes > max_bytes )); then
+        marker='… truncated'
+        marker_bytes="$(printf '%s' "$marker" | wc -c | tr -d ' ')"
+        prefix_bytes=$((max_bytes - marker_bytes))
+        prefix="$(printf '%s' "$markdown" | LC_ALL=C head -c "$prefix_bytes" | iconv -f UTF-8 -t UTF-8 -c)"
+        markdown="${prefix}${marker}"
+    fi
+    printf '%s\n' "$markdown"
+fi
