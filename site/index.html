@@ -519,7 +519,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
     <button role="tab" id="t-orari" data-tab="orari" aria-controls="tab-orari"><span aria-hidden="true">🗓️</span>Orari</button>
     <button role="tab" id="t-esami" data-tab="esami" aria-controls="tab-esami"><span aria-hidden="true">⏳</span>Esami<i class="beta">beta</i></button>
     <button role="tab" id="t-testi" data-tab="testi" aria-controls="tab-testi"><span aria-hidden="true">📚</span><em class="two">Testi e pagine dei corsi</em><i class="beta">beta</i></button>
-    <button role="tab" id="t-market" data-tab="market" aria-controls="tab-market"><span aria-hidden="true">🛍️</span><em class="two">Marketplace</em><i class="soonb">presto</i></button>
+    <button role="tab" id="t-market" data-tab="market" aria-controls="tab-market"><span aria-hidden="true">📖</span><em class="two">Marketplace</em></button>
     <button role="tab" id="t-segnala" data-tab="segnala" aria-controls="tab-segnala"><span aria-hidden="true">💬</span><em class="two">Contattaci e FAQ</em></button>
     <button role="tab" id="t-news" data-tab="news" aria-controls="tab-news"><span aria-hidden="true">📰</span>News<i class="soonb">presto</i></button>
     <hr class="side-sep">
@@ -705,7 +705,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
   <!-- ===== Marketplace ===== -->
   <section class="panel" id="tab-market" role="tabpanel" aria-labelledby="t-market" hidden>
     <div class="ph">
-      <h2 id="marketTitle">Marketplace <span class="soonb big">prossimamente</span></h2>
+      <h2 id="marketTitle">Marketplace</h2>
       <p class="note" id="marketIntro">Libri usati e tutoraggi tra studenti.</p>
     </div>
     <div class="mk-tabs" role="group" aria-label="Categorie del marketplace" id="mkMarketSeg">
@@ -713,19 +713,22 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
         <span class="mk-cap">student to student</span>
         <div class="seg mk-seg">
           <button type="button" data-mk="libro" aria-pressed="true">📚 Libri usati</button>
-          <button type="button" data-mk="ripetizioni" aria-pressed="false">🎓 Tutoraggi</button>
+          <button type="button" data-mk="ripetizioni" aria-pressed="false">🧑‍🏫 Tutoraggi</button>
         </div>
       </div>
     </div>
     <div id="mkMarket">
-      <p class="note market-disclaimer" id="mkDisclaimer" hidden>Questa è una bacheca tra studenti: annunci e accordi sono gestiti direttamente da chi compra, vende o fa ripetizioni. Gli annunci non sono verificati e la rappresentanza non partecipa agli accordi né è responsabile di vendite, pagamenti o lezioni. Valuta con attenzione prima di procedere.</p>
-      <div class="soon" id="mkSoon" hidden><b>🚧 Prossimamente · lavori in corso</b><span>La bacheca di libri usati e ripetizioni tra studenti apre a breve: qui sotto vedi un'anteprima di come funzionerà. Seguici su Instagram per sapere quando apre.</span></div>
+      <div class="soon" id="mkWorkBox">
+        <b id="mkWipTitle">Work in progress · 📖 🧑‍🏫</b>
+        <span id="mkWipCopy">La bacheca di libri usati e ripetizioni tra studenti è in preparazione.</span>
+        <p class="note market-disclaimer" id="mkDisclaimer" hidden>Questa è una bacheca tra studenti: annunci e accordi sono gestiti direttamente da chi compra, vende o fa ripetizioni. Gli annunci non sono verificati e la rappresentanza non partecipa agli accordi né è responsabile di vendite, pagamenti o lezioni. Valuta con attenzione prima di procedere.</p>
       <div class="mk-bar">
         <input type="search" id="mkSearch" placeholder="Cerca per titolo o insegnamento" aria-label="Cerca negli annunci">
         <button class="btn" type="button" id="mkNew">Pubblica annuncio</button>
       </div>
       <p class="note" id="mkInfo"></p>
       <div class="cards" id="mkList"></div>
+      </div>
     </div>
   </section>
   <!-- ===== News ===== -->
@@ -2411,9 +2414,9 @@ function renderMarket(){
     ? 'Libri usati · Cerca un testo o condividi un annuncio con gli altri studenti.'
     : 'Tutoraggi · Offri o cerca ripetizioni tra studenti.';
   $('mkDisclaimer').hidden = false;
-  /* I libri usati e i tutoraggi sono in cantiere. */
   const live = FEATURES.market;
-  $('mkSoon').hidden = live;
+  $('mkWorkBox').classList.toggle('soon', !live);
+  $('mkWipTitle').hidden = live; $('mkWipCopy').hidden = live;
   $('mkNew').disabled = !live; $('mkSearch').disabled = !live;
   $('mkNew').textContent = mkTab==='libro' ? 'Vendi un libro' : 'Offri tutoraggi';
   if(!live){ $('mkInfo').textContent=''; $('mkList').innerHTML = sampleCards(mkTab); return; }
