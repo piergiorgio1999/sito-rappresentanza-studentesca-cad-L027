@@ -1,5 +1,11 @@
 # Agent-Ready Template
 
+## Orari Chimica
+
+Il sito statico è mantenuto in [`site/`](site/). GitHub è la fonte autorevole condivisa tra Codex e Claude; le modifiche vanno proposte con branch e PR seguendo [`AGENTS.md`](AGENTS.md). I push su `main` pubblicano `site/` sul progetto Cloudflare Pages `orari-chimica`.
+
+Per abilitare il deploy configura i secrets GitHub `CLOUDFLARE_ACCOUNT_ID` e `CLOUDFLARE_API_TOKEN`. Il token deve avere permesso Pages Write sull'account Cloudflare. La procedura completa è in [`docs/pages-deployment.md`](docs/pages-deployment.md).
+
 Template Copier per repository GitHub-native orientati agli agenti di coding.
 Fornisce governance, scope isolation, CI deterministica, controlli di
 sicurezza e un digest read-only dello stato GitHub.

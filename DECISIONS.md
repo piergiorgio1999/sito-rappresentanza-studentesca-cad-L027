@@ -164,3 +164,9 @@ dimostrabile con le fonti supportate. In particolare, la mappa CI rappresenta
 la sequenza contrattuale della SPEC e non pretende di estrarre la DAG YAML. La
 mappa dipendenze analizza soltanto manifest JSON esplicitamente supportati e
 segnala gli altri manifest riconosciuti come non disponibili.
+
+## 2026-10-07 — GitHub come fonte del sito Orari Chimica
+
+Il sito statico vive in `site/` ed è versionato nello stesso repository del progetto. GitHub `main` è la fonte autorevole condivisa tra Codex e Claude; ogni modifica segue il flusso Issue, branch e PR già definito dal repository.
+
+Il progetto Cloudflare Pages `orari-chimica` usa Direct Upload: Cloudflare non consente di aggiungere Git integration a un progetto esistente. GitHub Actions distribuisce quindi `site/` a Pages sui push a `main` usando secrets GitHub, senza commit o credenziali nel repository. Il deploy non è attivo finché entrambi i secrets richiesti non sono configurati.
