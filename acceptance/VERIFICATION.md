@@ -1,4 +1,4 @@
-# V1.2 Acceptance Verification
+# V1.3 Acceptance Verification
 
 Verification baseline: `origin/main` after V1 release. Local scripts are under
 `acceptance/scripts/`; they do not write to GitHub and use temporary fixture

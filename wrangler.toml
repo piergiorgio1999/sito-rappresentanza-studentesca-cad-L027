@@ -1,0 +1,12 @@
+name = "orari-chimica"
+pages_build_output_dir = "./site"
+compatibility_date = "2026-10-01"
+
+[env.production]
+compatibility_date = "2026-10-03"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "orari-chimica-db"
+database_id = "0eb8dc99-b706-4c07-9741-8c9635c428c7"
+migrations_dir = "migrations"
