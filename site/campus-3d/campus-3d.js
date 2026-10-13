@@ -410,7 +410,7 @@
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(corners.flatMap((p) => [p.x, 0.12, p.z]), 3));
       geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
       geometry.setIndex([0, 2, 1, 0, 3, 2]);
-      planImageMaterial = new THREE.MeshBasicMaterial({ map: planTexture, transparent: true, opacity: planOpacity, side: THREE.DoubleSide, depthWrite: false });
+      planImageMaterial = new THREE.MeshBasicMaterial({ map: planTexture, transparent: true, opacity: planOpacity, side: THREE.DoubleSide, depthWrite: false, toneMapped: false });
       planImagePlane = new THREE.Mesh(geometry, planImageMaterial); planLayerGroup.add(planImagePlane);
     }
     planLayerGroup.visible = true;
@@ -548,7 +548,7 @@
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
     geometry.setIndex([0, 2, 1, 0, 3, 2]);
     geometry.computeVertexNormals();
-    ground = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff, side: THREE.DoubleSide }));
+    ground = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false }));
     ground.receiveShadow = true;
     scene.add(ground);
   }
@@ -600,6 +600,7 @@
     const code = String(props['addr:housenumber'] || props.ref || '').trim().toUpperCase();
     if (code && officialPlanCodes.has(code)) return;
     const b = lookup.get(code);
+    if (!b) return; // Only the CU buildings already included in the campus plan.
     const rawHeight = b?.height || props.height;
     const rawLevels = b?.levels || props['building:levels'];
     const height = heightInfo({ height: rawHeight, levels: rawLevels }).value;
@@ -638,9 +639,9 @@
     createMaterials(texture);
     buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x82776c, 1.65));
-    scene.add(new THREE.AmbientLight(0xffffff, 0.48));
-    const sun = new THREE.DirectionalLight(0xfff4e8, 2.15);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x82776c, 0.72));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+    const sun = new THREE.DirectionalLight(0xfff4e8, 0.95);
     sun.position.set(-mapWidth * 0.35, 620, mapDepth * 0.5);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -661,6 +662,8 @@
       else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) addPolygon(feature, polygon, lookup);
     }
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.85;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -793,6 +796,24 @@
       if (planImageMaterial) planImageMaterial.opacity = planOpacity;
     });
   }
+  async function loadDependency(path, ready) {
+    if (ready()) return;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `${path}?v=128&attempt=${attempt}`;
+          script.async = false;
+          script.onload = () => ready() ? resolve() : reject(new Error('Libreria 3D non inizializzata.'));
+          script.onerror = () => { script.remove(); reject(new Error('Impossibile caricare la libreria 3D locale.')); };
+          document.head.append(script);
+        });
+        return;
+      } catch (error) {
+        if (attempt === 1) throw error;
+      }
+    }
+  }
   async function init() {
     bindUI();
     if (reducedMotion) {
@@ -814,6 +835,8 @@
       drawFootprints();
       if (!buildings.length || !Array.isArray(context.features)) throw new Error('Il dataset non contiene geometrie valide.');
       $('count').textContent = `${buildings.length} / ${buildings.length}`;
+      await loadDependency('vendor/three.min.js', () => typeof window.THREE?.WebGLRenderer === 'function');
+      await loadDependency('vendor/OrbitControls.js', () => typeof window.THREE?.OrbitControls === 'function');
       const queryCode = new URLSearchParams(location.hash.split('?')[1] || '').get('code') || new URLSearchParams(location.search).get('code');
       if (queryCode) selectBuilding(queryCode, { animate: false, notify: false });
       const photo = new THREE.TextureLoader().load('campus-agea-2020.png', () => {}, undefined, () => fallbackToPhoto('L’ortofoto AGEA non è disponibile; le impronte cliccabili restano attive.'));
@@ -826,9 +849,9 @@
       tourButton.disabled = reducedMotion;
       if (selectedCode) {
         const selected = buildings.find((b) => b.code === selectedCode);
-      if (selected) flyTo(planPointsByCode.get(selectedCode) || (selected.centroid ? project([selected.centroid.lon, selected.centroid.lat]) : null), 500, 0);
+        if (selected) flyTo(planPointsByCode.get(selectedCode) || (selected.centroid ? project([selected.centroid.lon, selected.centroid.lat]) : null), 500, 0);
       }
-    notifyParent('campus-ready');
+      notifyParent('campus-ready');
     } catch (error) {
       if (renderer) renderer.setAnimationLoop(null);
       mapHost.classList.remove('active');

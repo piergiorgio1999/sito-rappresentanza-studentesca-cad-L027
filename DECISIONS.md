@@ -225,3 +225,10 @@ duplicano i volumi dei codici CU presenti nella planimetria. Ricerca e pannello
 aule restano nella pagina principale; messaggi iframe limitati alla stessa
 origine sincronizzano selezione, colori e controlli della vista. Se WebGL non
 è disponibile, resta utilizzabile la mappa vettoriale 2D originale.
+
+L'ulteriore richiesta del proprietario limita i volumi 3D ai codici CU della
+planimetria, escludendo le estrusioni degli edifici del quartiere. L'illuminazione
+usa tone mapping fotografico e intensità ridotte per conservare dettaglio nei
+tetti; ortofoto e planimetria mantengono i colori originali. Le dipendenze locali
+vengono caricate in ordine, con un nuovo tentativo in caso di errore di rete;
+un caricamento non riuscito lascia visibile il ripiego 2D.
