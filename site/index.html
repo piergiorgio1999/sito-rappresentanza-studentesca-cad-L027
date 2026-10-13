@@ -860,6 +860,18 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
         </div>
       </details>
 
+      <details class="panel" id="pPar">
+        <summary><span>Canali paralleli <span class="tut-note">(altri canali del tuo anno)</span></span></summary>
+        <div class="panel-body" id="parBody">
+          <p>Aggiungi le lezioni di un insegnamento del tuo anno tenute in un altro canale: per seguire un altro docente o recuperare una lezione in un orario diverso.</p>
+          <label>Insegnamento <select id="parCourse"></select></label>
+          <label>Canale <select id="parCh"></select></label>
+          <p class="err" id="parErr" role="alert"></p>
+          <button class="btn" type="button" id="parAdd">Aggiungi al quadro</button>
+        </div>
+        <div class="panel-body" id="parNone" hidden=""><p>Per il tuo anno c’è un solo canale.</p></div>
+      </details>
+
       <details class="panel" id="pOpt">
         <summary><span>Altro <span class="tut-note">(per aggiungere corsi/impegni personalizzati)</span></span></summary>
         <div class="panel-body">
@@ -2108,7 +2120,7 @@ function render(){
 }
 
 /* ---------- Elenco e sovrapposizioni ---------- */
-const kindLabel = k => k==='arr' ? ' (arretrato)' : k==='opt' ? ' (opzionale)' : k==='tut' ? ' (tutoraggio)' : '';
+const kindLabel = k => k==='arr' ? ' (arretrato)' : k==='opt' ? ' (opzionale)' : k==='tut' ? ' (tutoraggio)' : k==='par' ? ' (canale parallelo)' : '';
 let LIST = [];
 function renderText(blocks){
   LIST = [];
@@ -2145,7 +2157,7 @@ function renderSelectors(){
   const hint=$('hint');
   if(y===3){ hint.hidden=false; hint.textContent = 'Per corsi diversi apri «Altro» in basso e scegli «Altro» per inserire manualmente corso, orari e altre info.'; }
   else hint.hidden=true;
-  renderExtrasList(); renderArrForm(); renderC3();
+  renderExtrasList(); renderArrForm(); renderParForm(); renderC3();
 }
 /* III anno: secondo selettore per il corso a scelta (Chim. Ind. I oppure Chim. Fis. III per canale) */
 const C3_OPTS = [['CI1','Unico','Chim. Industriale I'],['CF3','A-I','Chim. Fisica III · A–I'],['CF3','J-Z','Chim. Fisica III · J–Z']];
@@ -2164,7 +2176,7 @@ function renderExtrasList(){
   $('extras').innerHTML = state.extras[state.year].map(x=>{
     const f = x.blocks[0] ? normRoom({...x.blocks[0]}) : {};
     const c = colorOf({c:x.c, name:x.title, r:f.r, p:f.p});
-    return `<li><span class="dot" style="background:${c.ink}"></span><span>${esc(x.title)}${x.sub?', '+esc(x.sub):''} <span class="kind">${x.kind==='arr'?'arretrato':x.kind==='tut'?'tutoraggio':'opzionale'}</span></span><button type="button" data-rm="${x.id}" aria-label="Rimuovi ${esc(x.title)}">×</button></li>`;
+    return `<li><span class="dot" style="background:${c.ink}"></span><span>${esc(x.title)}${x.sub?', '+esc(x.sub):''} <span class="kind">${x.kind==='arr'?'arretrato':x.kind==='tut'?'tutoraggio':x.kind==='par'?'canale parallelo':'opzionale'}</span></span><button type="button" data-rm="${x.id}" aria-label="Rimuovi ${esc(x.title)}">×</button></li>`;
   }).join('');
 }
 
@@ -2206,6 +2218,39 @@ $('arrAdd').addEventListener('click', ()=>{
   const blocks = s.b.filter(a=>a[3]===c).map(a=>({d:a[0], s:a[1], e:a[2], p:a[4], r:a[5]||s.room, ...(a[6]||{})}));
   state.extras[state.year].push({id:state.nid++, kind:'arr', c, ch:String(ch), title:COURSES[c].n, sub:'Canale '+ch, blocks});
   save(); renderExtrasList(); render();
+});
+
+/* ---------- Canali paralleli: stesso anno, altro canale ---------- */
+function renderParForm(){
+  const y=state.year, chs=Object.keys(SCH[y]||{}).filter(ch=>+ch!==+state.ch[y]);
+  $('parBody').hidden = !chs.length; $('parNone').hidden = !!chs.length;
+  if(!chs.length) return;
+  const keys=[...new Set(chs.flatMap(ch=>SCH[y][ch].b.map(a=>a[3])))].filter(k=>COURSES[k]&&!COURSES[k].label);
+  const prev=$('parCourse').value;
+  $('parCourse').innerHTML = keys.map(k=>`<option value="${k}">${COURSES[k].n}</option>`).join('');
+  if(keys.includes(prev)) $('parCourse').value=prev;
+  fillParChannels();
+}
+function fillParChannels(){
+  const y=state.year, c=$('parCourse').value, opts=[];
+  Object.keys(SCH[y]||{}).forEach(ch=>{
+    if(+ch===+state.ch[y]) return;
+    const bl=SCH[y][ch].b.filter(a=>a[3]===c);
+    if(!bl.length) return;
+    opts.push(`<option value="${ch}">Canale ${ch}, ${esc([...new Set(bl.map(a=>a[4]))].join(', '))}</option>`);
+  });
+  $('parCh').innerHTML = opts.join('');
+  $('parErr').textContent='';
+}
+$('parCourse').addEventListener('change', fillParChannels);
+$('parAdd').addEventListener('click', ()=>{
+  const y=state.year, c=$('parCourse').value, ch=$('parCh').value, err=$('parErr');
+  if(!c||!ch) return;
+  if(state.extras[y].some(x=>x.kind==='par' && x.c===c && x.ch===String(ch))){ err.textContent='È già nel quadro.'; return; }
+  const s=SCH[y][ch];
+  const blocks = s.b.filter(a=>a[3]===c).map(a=>({d:a[0], s:a[1], e:a[2], p:a[4], r:a[5]||s.room, ...(a[6]||{})}));
+  state.extras[y].push({id:state.nid++, kind:'par', c, ch:String(ch), title:COURSES[c].n, sub:'Canale '+ch, blocks});
+  err.textContent=''; save(); renderExtrasList(); render();
 });
 
 /* ---------- Opzionali ---------- */
@@ -2281,7 +2326,7 @@ function openEdit(b){
   if(b.ref.t==='base'){
     const o = baseBlocks(state.year, state.ch[state.year])[b.ref.idx];
     orig = b.mod ? `Orario ufficiale: ${DAYS[o.d]} ${tm(o.s)}–${tm(o.e)}, ${o.r}` : 'Orario ufficiale';
-  }else orig = b.kind==='arr' ? 'Esame arretrato' : b.kind==='tut' ? 'Tutoraggio' : 'Opzionale';
+  }else orig = b.kind==='arr' ? 'Esame arretrato' : b.kind==='tut' ? 'Tutoraggio' : b.kind==='par' ? 'Canale parallelo' : 'Opzionale';
   $('edOrig').textContent = orig;
   $('edDay').value=b.d; $('edFrom').value=b.s; $('edTo').value=b.e;
   $('edRoom').value=b.r||''; $('edBld').value=b.bld||''; $('edProf').value=b.p||'';
@@ -2507,7 +2552,7 @@ const hm = h => String(Math.floor(h)).padStart(2,'0') + ':' + (h%1 ? '30' : '00'
 const ampm = h => { const H=Math.floor(h), m=h%1?'30':'00'; return `${((H+11)%12)+1}:${m} ${H<12?'AM':'PM'}`; };
 const WD = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 function fullName(b){ return b.kind!=='tut' && (b.kind!=='opt' || b.c!=='X') && FULL[b.c] && b.name===COURSES[b.c].n ? FULL[b.c] : b.name; }
-const kindWord = k => k==='arr' ? 'Arretrato' : k==='opt' ? 'Opzionale' : k==='tut' ? 'Tutoraggio' : 'Lezione';
+const kindWord = k => k==='arr' ? 'Arretrato' : k==='opt' ? 'Opzionale' : k==='tut' ? 'Tutoraggio' : k==='par' ? 'Canale parallelo' : 'Lezione';
 function makeCSV(){
   const occ = occurrences(), y = state.year, ch = state.ch[y];
   if(state.csvFmt==='gcal'){
