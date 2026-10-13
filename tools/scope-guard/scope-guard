@@ -14,6 +14,7 @@ require_git
 
 SCOPE_MAP="$ROOT/scope-map.json"
 DECISIONS_FILE="DECISIONS.md"
+GENERATED_INDEX_FILE=".template/index/files.txt"
 BASE_REF="${1:-}"
 
 cd "$ROOT"
@@ -42,7 +43,27 @@ classify_file() {
     classify_path "$SCOPE_MAP" "$1"
 }
 
+# The tracked-file index is metadata only when it matches the canonical list
+# accepted by agent-config-check: tracked paths (excluding template-only),
+# with an optional ./ prefix, compared in sorted order. Keep duplicates so
+# cmp rejects them; do not repair or normalize any other content.
+generated_index_is_valid() {
+    local expected_file actual_file result=0
+    expected_file="$(mktemp)"
+    actual_file="$(mktemp)"
+    if ! git cat-file -e "HEAD:$GENERATED_INDEX_FILE" 2>/dev/null; then
+        rm -f "$expected_file" "$actual_file"
+        return 1
+    fi
+    git ls-tree -r --name-only HEAD | grep -v '^\.template-only/' | LC_ALL=C sort > "$expected_file"
+    git show "HEAD:$GENERATED_INDEX_FILE" | LC_ALL=C sort | sed 's|^\./||' > "$actual_file"
+    cmp -s "$actual_file" "$expected_file" || result=$?
+    rm -f "$expected_file" "$actual_file"
+    return "$result"
+}
+
 unclassified=0
+invalid_generated_index=0
 scopes_touched=""
 
 while IFS= read -r f; do
@@ -55,11 +76,24 @@ while IFS= read -r f; do
     if [[ "$scope" == "unclassified" ]]; then
         echo "❌ $f -> unclassified"
         unclassified=1
-    else
-        echo "✅ $f -> $scope"
+        continue
+    fi
+
+    if [[ "$f" == "$GENERATED_INDEX_FILE" ]]; then
+        if generated_index_is_valid; then
+            echo "✅ $f -> $scope (classified; valid generated metadata excluded from scope count)"
+            continue
+        fi
+        echo "❌ $f -> $scope (generated metadata is stale or invalid)"
+        echo "scope-guard: ACTION regenerate $GENERATED_INDEX_FILE from tracked files"
+        invalid_generated_index=1
         scopes_touched="$scopes_touched
 $scope"
+        continue
     fi
+    echo "✅ $f -> $scope"
+    scopes_touched="$scopes_touched
+$scope"
 done <<< "$CHANGED_FILES"
 
 unique_scopes="$(echo "$scopes_touched" | sed '/^$/d' | sort -u)"
@@ -99,6 +133,11 @@ status=0
 if [[ "$unclassified" -eq 1 ]]; then
     echo "❌ scope-guard: unclassified files present"
     echo "scope-guard: ACTION add each unclassified path to exactly one scope in scope-map.json"
+    status=1
+fi
+
+if [[ "$invalid_generated_index" -eq 1 ]]; then
+    echo "❌ scope-guard: generated index is stale or invalid"
     status=1
 fi
 

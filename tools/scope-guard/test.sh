@@ -57,6 +57,15 @@ run_guard_with_event() {
     (cd "$dir" && GITHUB_EVENT_PATH="$event" SCOPE_GUARD_PR_NUMBER="${SCOPE_GUARD_PR_NUMBER:-}" GH_TOKEN="${GH_TOKEN:-}" PATH="${fake_bin:+$fake_bin:}$PATH" ./tools/scope-guard/scope-guard main)
 }
 
+write_generated_index() {
+    local dir="$1"
+    mkdir -p "$dir/.template/index"
+    : > "$dir/.template/index/files.txt"
+    git -C "$dir" add .template/index/files.txt
+    git -C "$dir" ls-files | grep -v '^\.template-only/' | sed 's|^|./|' | LC_ALL=C sort > "$dir/.template/index/files.txt"
+    git -C "$dir" add .template/index/files.txt
+}
+
 # Case 1: single functional scope only -> pass
 repo="$(make_repo)"
 mkdir -p "$repo/tools/scope-guard"
@@ -190,6 +199,44 @@ printf '# Architectural Decisions\n' > "$repo/DECISIONS.md"
 git -C "$repo" add -A
 git -C "$repo" commit -q -m "single scope + truncated decisions"
 assert_exit "single scope + DECISIONS.md deletion fails" 1 run_guard "$repo"
+rm -rf "$repo"
+
+# Case 13: a canonical generated index is metadata alongside one functional scope
+repo="$(make_repo)"
+mkdir -p "$repo/checks/python"
+echo "x" > "$repo/checks/python/thing"
+git -C "$repo" add checks/python/thing
+write_generated_index "$repo"
+git -C "$repo" commit -q -m "single scope with generated index"
+assert_exit "valid generated index is excluded from the scope count" 0 run_guard "$repo"
+grep -Fq '.template/index/files.txt -> template (classified; valid generated metadata excluded from scope count)' <<<"$last_output"
+rm -rf "$repo"
+
+# Case 14: a stale or duplicated index fails closed
+repo="$(make_repo)"
+mkdir -p "$repo/checks/python"
+echo "x" > "$repo/checks/python/thing"
+git -C "$repo" add checks/python/thing
+write_generated_index "$repo"
+printf '%s\n' './DECISIONS.md' >> "$repo/.template/index/files.txt"
+git -C "$repo" add .template/index/files.txt
+git -C "$repo" commit -q -m "single scope with invalid generated index"
+# An uncommitted repair must not mask the invalid blob at HEAD.
+git -C "$repo" ls-tree -r --name-only HEAD | grep -v '^\.template-only/' | sed 's|^|./|' | LC_ALL=C sort > "$repo/.template/index/files.txt"
+assert_exit "invalid generated index fails" 1 run_guard "$repo"
+grep -Fq 'generated metadata is stale or invalid' <<<"$last_output"
+rm -rf "$repo"
+
+# Case 15: an ordinary template file still counts as a functional scope
+repo="$(make_repo)"
+mkdir -p "$repo/checks/python" "$repo/.template/contracts"
+echo "x" > "$repo/checks/python/thing"
+echo "contract" > "$repo/.template/contracts/thing.md"
+git -C "$repo" add checks/python/thing .template/contracts/thing.md
+write_generated_index "$repo"
+git -C "$repo" commit -q -m "cross-scope change with generated index"
+assert_exit "ordinary template file remains in the scope count" 1 run_guard "$repo"
+grep -Fq 'multiple scopes touched' <<<"$last_output"
 rm -rf "$repo"
 
 echo
