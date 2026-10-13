@@ -24,6 +24,8 @@ La scena si ferma quando la scheda del browser è nascosta. Se WebGL non è disp
 
 La base e le coperture usano l’ortofoto AGEA; pareti, altezze e geometrie non descrivono con precisione costruttiva gli edifici. La scena non fornisce né scarica mesh fotogrammetriche.
 
+La scena usa coordinate destrorse: +X verso est, +Y verso l’alto e +Z verso sud, quindi il nord geografico corrisponde a −Z.
+
 ## Collegamenti
 
 - Vista autonoma: torna a `../index.html#mappa/CU...` sullo stesso hosting.

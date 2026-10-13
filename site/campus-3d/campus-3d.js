@@ -161,7 +161,7 @@
   function flyTo(point, distance = 520, duration = 850) {
     if (!camera || !controls || !point) return;
     stopCameraFlight();
-    const target = new THREE.Vector3(point.x, 0, point.n);
+    const target = new THREE.Vector3(point.x, 0, -point.n);
     const offset = new THREE.Vector3(distance * 0.48, distance * 0.72, distance * 0.83);
     const fromTarget = controls.target.clone();
     const fromPosition = camera.position.clone();
@@ -290,7 +290,7 @@
       mapWidth / 2, -0.08, mapDepth / 2,
       -mapWidth / 2, -0.08, mapDepth / 2
     ], 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
     geometry.setIndex([0, 2, 1, 0, 3, 2]);
     geometry.computeVertexNormals();
     ground = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff, side: THREE.DoubleSide }));
@@ -308,20 +308,20 @@
     if (outer.length < 4) return null;
     const first = project(outer[0]);
     const shape = new THREE.Shape();
-    shape.moveTo(first.x, -first.n);
+    shape.moveTo(first.x, first.n);
     for (let i = 1; i < outer.length - 1; i += 1) {
       const p = project(outer[i]);
-      shape.lineTo(p.x, -p.n);
+      shape.lineTo(p.x, p.n);
     }
     for (const ring of rings.slice(1)) {
       const hole = closeRing(ring);
       if (hole.length < 4) continue;
       const p0 = project(hole[0]);
       const path = new THREE.Path();
-      path.moveTo(p0.x, -p0.n);
+      path.moveTo(p0.x, p0.n);
       for (let i = 1; i < hole.length - 1; i += 1) {
         const p = project(hole[i]);
-        path.lineTo(p.x, -p.n);
+        path.lineTo(p.x, p.n);
       }
       shape.holes.push(path);
     }
@@ -331,7 +331,7 @@
     const positions = geometry.attributes.position;
     const uvs = geometry.attributes.uv;
     for (let i = 0; i < positions.count; i += 1) {
-      uvs.setXY(i, positions.getX(i) / mapWidth + 0.5, positions.getZ(i) / mapDepth + 0.5);
+      uvs.setXY(i, positions.getX(i) / mapWidth + 0.5, 0.5 - positions.getZ(i) / mapDepth);
     }
     uvs.needsUpdate = true;
   }
