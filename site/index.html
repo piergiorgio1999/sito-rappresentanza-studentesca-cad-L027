@@ -531,6 +531,8 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .mp-poi-key{position:absolute;left:12px;top:12px;z-index:4;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:.76rem;display:grid;gap:3px;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:default}.mp-poi-key b{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#822433}.mp-poi-key label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}.mp-poi-key input{width:auto;min-height:0;margin:0}.mp-poi-key .dot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:10px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .mp-map.has-3d .mp-poi-key{display:none}
 @media(max-width:699px){.mp-poi-key{font-size:.68rem;padding:5px 7px;top:8px;left:8px}}
+.mp-s.custom{fill:color-mix(in srgb,var(--bc) 60%,transparent);stroke:var(--bc);stroke-width:2;animation:none}.mp-s.custom:hover,.mp-s.custom.hov{fill:color-mix(in srgb,var(--bc) 75%,#fff);stroke:#fff}.mp-s.custom.on{fill:color-mix(in srgb,var(--bc) 80%,transparent);stroke:#1f1f1f;stroke-width:3}
+.mp-bcol{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 10px}.mp-bcol label{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:.88rem;cursor:pointer}.mp-bcol .sw{position:relative;width:30px;height:30px;border-radius:8px;border:2px solid #1f1f1f;display:inline-block;box-shadow:inset 0 0 0 2px #fff}.mp-bcol .sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;min-height:0;padding:0;border:0;cursor:pointer}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -2904,9 +2906,21 @@ function mpDrawer(c){
   ${(BLD_LIBS[c]||[]).length?`<p class="h">Biblioteche</p><ul class="mp-rooms">${BLD_LIBS[c].map(l=>`<li>📖 <a href="${l.u}" target="_blank" rel="noopener" style="color:var(--sap);font-weight:600">${esc(l.n)}</a><span class="fl">${flName(l.p)}</span></li>`).join('')}</ul>`:''}
   <p class="h">Aule</p>${rooms.length?`<ul class="mp-rooms">${rooms.map(r=>`<li class="${r===mpRoom?'hl':''}">🚪 ${esc(r)}<span class="fl">${esc(ROOM_FLOOR[c+'|'+r]||BLD_FLOOR[c]||'piano da confermare')}</span></li>`).join('')}</ul>`:`<p class="mp-empty">Nessuna aula del corso registrata in questo edificio.</p>`}
   <p class="h">Le tue lezioni qui</p>${les.length?`<ul class="mp-les">${les.map(l=>`<li>${DAYN[l.d]||''} ${tm(l.s)}–${tm(l.e)} · <b>${esc(l.name||'')}</b>${l.r?' · '+esc(l.r):''}</li>`).join('')}</ul>`:`<p class="mp-empty">Nessuna lezione del tuo orario qui.</p>`}
+  <p class="h">Colore sulla mappa</p><div class="mp-bcol"><label><span class="sw" style="background:${mpBColors[c]||'#ffffff'}"><input type="color" id="mpBCol" value="${mpBColors[c]||(LEZ_BLD.includes(c)?$('mpColL').value:'#822433')}" aria-label="Colore dell’edificio ${c}"></span> Scegli un colore per ${c}</label><button type="button" class="lk" id="mpBColReset"${mpBColors[c]?'':' hidden'}>Ripristina</button></div>
   <div class="mp-act"><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Indicazioni con Maps</a></div></div>`;
+  const bc=$('mpBCol'), bsw=bc.parentElement; ['input','change'].forEach(ev=>bc.addEventListener(ev,()=>{ bsw.style.background=bc.value; mpSetBColor(c,bc.value); }));
+  $('mpBColReset').addEventListener('click',()=>{ bsw.style.background='#ffffff'; mpSetBColor(c,''); });
   const d=$('mpDrawer'); d.classList.add('open'); d.setAttribute('aria-hidden','false'); d.scrollTop=0; $('mpBack').hidden=innerWidth>=700;
 }
+/* colore personale per edificio, scelto dal pannello laterale */
+const MP_BCOL_KEY='orariChimicaBuildingColors';
+let mpBColors={}; try{ mpBColors=JSON.parse(localStorage.getItem(MP_BCOL_KEY)||'{}')||{}; }catch(e){ mpBColors={}; }
+function mpSaveBColors(){ try{ if(localStorage.getItem('orariChimicaRemember')) localStorage.setItem(MP_BCOL_KEY,JSON.stringify(mpBColors)); }catch(e){} }
+function mpApplyBColors(){ $('mpSvg').querySelectorAll('.mp-s').forEach(p=>{ const v=mpBColors[p.dataset.b]; p.classList.toggle('custom',!!v); if(v) p.style.setProperty('--bc',v); else p.style.removeProperty('--bc'); });
+  window.dispatchEvent(new Event('campus:colors')); }
+function mpSetBColor(c,v){ if(v&&/^#[\da-f]{6}$/i.test(v)) mpBColors[c]=v; else delete mpBColors[c]; mpSaveBColors(); mpApplyBColors();
+  const r=$('mpBColReset'); if(r) r.hidden=!mpBColors[c]; }
+requestAnimationFrame(mpApplyBColors);
 function mpClose(){ mpSel=null; mpRoom=''; const d=$('mpDrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden','true'); $('mpBack').hidden=true;
   document.querySelectorAll('.mp-s.on').forEach(x=>x.classList.remove('on')); if(location.hash.startsWith('#mappa/')) history.replaceState(null,'','#mappa'); window.dispatchEvent(new Event('campus:clear')); }
 $('mpX').onclick=mpClose; $('mpBack').onclick=mpClose;
@@ -4081,7 +4095,7 @@ updAccTab();
 <script>(function(){var m=document.getElementById('mpMap');if(!m)return;var K='orariChimicaMapColors',rem=function(){try{return !!localStorage.getItem('orariChimicaRemember')}catch(e){return false}};
 var c={};try{c=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
 [['mpColL','--mpL','L'],['mpColS','--mpS','S']].forEach(function(x){var i=document.getElementById(x[0]);if(!i)return;if(c[x[2]]){i.value=c[x[2]];m.style.setProperty(x[1],c[x[2]])}
-i.addEventListener('input',function(){m.style.setProperty(x[1],i.value);c[x[2]]=i.value;if(rem()){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}});});})();</script>
+var up=function(){m.style.setProperty(x[1],i.value);c[x[2]]=i.value;if(rem()){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}};i.addEventListener('input',up);i.addEventListener('change',up);});})();</script>
 <script>(function(){var K='orariChimicaFont',b=document.body,g=document.getElementById('stFont');
 function set(v){b.classList.remove('f-lexend','f-atkinson','f-opendyslexic');if(v&&v!=='std')b.classList.add('f-'+v);if(g)g.querySelectorAll('[data-font]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.font===(v||'std'))})}
 var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v);
@@ -4101,7 +4115,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
   const map=document.getElementById('mpMap');
   let active=false, loadTimer=0;
   const send=(target,data)=>target.contentWindow?.postMessage(data,location.origin);
-  const colors=()=>({lesson:document.getElementById('mpColL').value,selected:document.getElementById('mpColS').value});
+  const colors=()=>({lesson:document.getElementById('mpColL').value,selected:document.getElementById('mpColS').value,custom:{...mpBColors}});
   function context(target){
     send(target,{type:'campus-context',selectedCode:mpSel||'',plan:{viewBox:{...MP_VB},image:document.getElementById('mpImg').src,
       features:CODES.map(code=>({code,path:MAPD.shapes[code],name:bTitle(code),lesson:LEZ_BLD.includes(code)})),colors:colors()}});
@@ -4144,10 +4158,12 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     if(dialog.open)send(frame,{type:'campus-clear'});
     viewport();
   });
-  ['mpColL','mpColS'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  const pushColors=()=>{
     if(active)send(inlineFrame,{type:'campus-colors',...colors()});
     if(dialog.open)send(frame,{type:'campus-colors',...colors()});
-  }));
+  };
+  ['mpColL','mpColS'].forEach(id=>['input','change'].forEach(ev=>document.getElementById(id).addEventListener(ev,pushColors)));
+  window.addEventListener('campus:colors',pushColors);
   window.addEventListener('resize',viewport);
   window.addEventListener('scroll',viewport,{passive:true});
   new MutationObserver(()=>{if(active)send(inlineFrame,{type:'campus-active',active:!document.getElementById('tab-mappa').hidden&&!dialog.open});})

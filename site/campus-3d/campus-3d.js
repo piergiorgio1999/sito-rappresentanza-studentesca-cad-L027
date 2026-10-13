@@ -69,7 +69,7 @@
   let planPointsByCode = new Map();
   let planVisible = true;
   let planOpacity = 0.8;
-  let planColors = { lesson: '#f2b400', selected: '#2f8fd0' };
+  let planColors = { lesson: '#f2b400', selected: '#2f8fd0', custom: {} };
   let parentActive = true;
   let pendingSelectedCode = '';
   let pendingCamera = null;
@@ -367,6 +367,7 @@
     if (plan.colors) {
       if (typeof plan.colors.lesson === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.lesson)) planColors.lesson = plan.colors.lesson;
       if (typeof plan.colors.selected === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.selected)) planColors.selected = plan.colors.selected;
+      planColors.custom = sanitizeCustom(plan.colors.custom);
     }
     if (planLayerGroup) {
       scene.remove(planLayerGroup);
@@ -489,14 +490,23 @@
       selectBuilding(code, { notify: false, animate: false });
     }
   }
+  function sanitizeCustom(value) {
+    const out = {};
+    if (value && typeof value === 'object') for (const [code, color] of Object.entries(value)) {
+      if (/^CU\d{3}$/i.test(code) && typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)) out[code.toUpperCase()] = color;
+    }
+    return out;
+  }
   function updatePlanSelection() {
     for (const [code, mesh] of planMeshesByCode) {
       const feature = mesh.userData.planFeature || {};
-      mesh.material[0].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xffffff);
-      mesh.material[1].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xb6a99e);
+      const custom = planColors.custom[code];
+      // il colore scelto dall'utente vale anche quando l'edificio è selezionato; la selezione resta nel contorno
+      mesh.material[0].color.set(custom || (code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xffffff));
+      mesh.material[1].color.set(custom || (code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xb6a99e));
     }
     for (const [code, outline] of planOutlinesByCode) {
-      outline.material.color.set(code === selectedCode ? planColors.selected : planFeaturesLesson(code) ? planColors.lesson : 0x822433);
+      outline.material.color.set(code === selectedCode ? (planColors.custom[code] ? 0x1f1f1f : planColors.selected) : planColors.custom[code] || (planFeaturesLesson(code) ? planColors.lesson : 0x822433));
       outline.visible = planVisible;
     }
     planStage.querySelectorAll('.plan-fallback-path').forEach((path) => path.classList.toggle('selected', path.dataset.code === selectedCode));
@@ -522,6 +532,7 @@
     else if (message.type === 'campus-colors') {
       if (typeof message.lesson === 'string' && /^#[\da-f]{6}$/i.test(message.lesson)) planColors.lesson = message.lesson;
       if (typeof message.selected === 'string' && /^#[\da-f]{6}$/i.test(message.selected)) planColors.selected = message.selected;
+      planColors.custom = sanitizeCustom(message.custom);
       updatePlanSelection();
     } else if (message.type === 'campus-select' && typeof message.code === 'string') {
       pendingSelectedCode = message.code;
