@@ -552,6 +552,12 @@ body.mp-full-open{overflow:hidden}
 @media(min-width:700px){body:has(.mp-drawer.open) .mp-map.mp-full .mp-modes{right:calc(min(420px,92vw) + 12px)}}
 @media(max-width:699px){.mp-modes{top:auto;bottom:12px;left:12px;right:64px;max-width:none;justify-content:flex-start}.mp-switch button{padding:4px 9px;font-size:.74rem}.mp-map .mp-legend{bottom:62px}.mp-map.has-3d .mp-legend{bottom:62px}}
 @media(prefers-reduced-motion:reduce){.mp-switch::before{transition:none}}
+.mp-pick{position:fixed;z-index:90;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:0 14px 34px rgba(0,0,0,.2);display:grid;gap:8px;width:226px}
+.mp-pick-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.mp-pick-grid button{width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(0,0,0,.15);cursor:pointer;padding:0}
+.mp-pick-grid button[aria-pressed="true"]{outline:3px solid #1f1f1f;outline-offset:2px}
+.mp-pick-hex{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600}
+.mp-pick-hex input{min-height:34px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -4217,6 +4223,38 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     history.replaceState(null,'',location.pathname+location.hash);
     setTimeout(()=>{ dim='3d'; base='satellite'; apply(); setFull(true); },300);
   }
+})();
+</script>
+
+<script>
+/* selettore colori della mappa: tavolozza propria, perché il selettore nativo in alcuni browser
+   (Safari, pagine incorporate) si chiude senza comunicare il colore scelto */
+(function(){
+  const COLORS=['#f2b400','#2f8fd0','#822433','#C54C00','#F69240','#C79900','#D7A900','#70A489','#AAC9B6','#006778','#00B3BE','#A6BCC6','#D3DEE4','#AAA38E','#D7D3C7','#5b3f8f','#d6336c','#1f1f1f'];
+  const pop=document.createElement('div'); pop.className='mp-pick'; pop.hidden=true; pop.setAttribute('role','dialog'); pop.setAttribute('aria-label','Scegli un colore');
+  pop.innerHTML='<div class="mp-pick-grid">'+COLORS.map(c=>`<button type="button" data-c="${c}" style="background:${c}" aria-label="Colore ${c}"></button>`).join('')+'</div><label class="mp-pick-hex">Codice <input type="text" maxlength="7" spellcheck="false" aria-label="Codice colore esadecimale"></label>';
+  document.body.append(pop);
+  let target=null;
+  const hex=pop.querySelector('input');
+  function set(c){ if(!target||!/^#[0-9a-f]{6}$/i.test(c)) return; target.value=c.toLowerCase(); target.dispatchEvent(new Event('input',{bubbles:true})); target.dispatchEvent(new Event('change',{bubbles:true})); mark(); }
+  function mark(){ pop.querySelectorAll('[data-c]').forEach(b=>b.setAttribute('aria-pressed',String(target&&b.dataset.c.toLowerCase()===target.value.toLowerCase()))); if(target) hex.value=target.value; }
+  function open(input,anchor){
+    target=input; pop.hidden=false; mark();
+    const r=anchor.getBoundingClientRect(), w=pop.offsetWidth, h=pop.offsetHeight;
+    let x=Math.min(innerWidth-w-8,Math.max(8,r.left)), y=r.top-h-8; if(y<8) y=r.bottom+8;
+    pop.style.left=x+'px'; pop.style.top=y+'px';
+    pop.querySelector('[aria-pressed="true"]')?.focus() || pop.querySelector('[data-c]').focus();
+  }
+  function close(){ pop.hidden=true; target=null; }
+  document.addEventListener('click',e=>{
+    const sw=e.target.closest('.mp-legend label, .mp-bcol label');
+    if(sw){ const input=sw.querySelector('input[type="color"]'); if(input){ e.preventDefault(); e.stopPropagation(); if(target===input&&!pop.hidden) close(); else open(input,sw.querySelector('.sw')||sw); } return; }
+    if(!pop.hidden && !e.target.closest('.mp-pick')) close();
+  },true);
+  pop.addEventListener('click',e=>{ const b=e.target.closest('[data-c]'); if(b){ set(b.dataset.c); close(); } });
+  hex.addEventListener('input',()=>{ let v=hex.value.trim(); if(v&&v[0]!=='#') v='#'+v; if(/^#[0-9a-f]{6}$/i.test(v)) set(v); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!pop.hidden){ e.stopPropagation(); close(); } },true);
+  addEventListener('resize',close);
 })();
 </script>
 
