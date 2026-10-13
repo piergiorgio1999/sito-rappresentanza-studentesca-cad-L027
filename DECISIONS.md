@@ -164,3 +164,14 @@ dimostrabile con le fonti supportate. In particolare, la mappa CI rappresenta
 la sequenza contrattuale della SPEC e non pretende di estrarre la DAG YAML. La
 mappa dipendenze analizza soltanto manifest JSON esplicitamente supportati e
 segnala gli altri manifest riconosciuti come non disponibili.
+
+## 2026-10-13 — Identità visiva Sapienza come base del sito
+
+Per gli elaborati Sapienza di questo progetto, la guida
+`.template/brand/sapienza/LINEE_GUIDA.md`, derivata dal manuale *Elementi base*
+del giugno 2007, è la base per layout, caratteri, colori e uso del marchio.
+Le tavole sono conservate come esempi visivi, non come file master del logo.
+Le misure e i codici di stampa non vengono convertiti in specifiche web
+inventate. Una richiesta esplicita dell'utente prevale; l'agente segnala
+prima il conflitto e la modifica prevista. La decisione mantiene riconoscibile
+l'identità del sito e rende tracciabili le deviazioni deliberate.
