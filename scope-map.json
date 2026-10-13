@@ -35,12 +35,6 @@
       ]
     },
     {
-      "name": "website",
-      "paths": [
-        "site/**"
-      ]
-    },
-    {
       "name": "typescript",
       "paths": [
         "checks/typescript/**",
