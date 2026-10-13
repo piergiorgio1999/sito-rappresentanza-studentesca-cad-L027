@@ -532,8 +532,8 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .mp-s.on{fill:color-mix(in srgb,var(--mpS) 70%,transparent);stroke:#1f1f1f;stroke-width:3;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 @media(prefers-reduced-motion:no-preference){.mp-s.lez:not(.on){animation:mpPulse 2.6s ease-in-out infinite}}
 @keyframes mpPulse{50%{stroke:color-mix(in srgb,var(--mpL) 25%,transparent)}}
-.mp-poi-m{cursor:pointer}.mp-poi-m circle{stroke:#fff;stroke-width:1.2;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}.mp-poi-m text{pointer-events:none}.mp-poi.hide-bar .c-bar,.mp-poi.hide-water .c-water,.mp-poi.hide-food .c-food,.mp-poi.hide-serv .c-serv{display:none}
-.mp-poi-key{position:absolute;left:12px;top:12px;z-index:4;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:.76rem;display:grid;gap:3px;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:default}.mp-poi-key b{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#822433}.mp-poi-key label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}.mp-poi-key input{width:auto;min-height:0;margin:0}.mp-poi-key .dot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:10px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.mp-poi-m{cursor:pointer}.mp-poi-m circle{filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 2px 3px rgba(0,0,0,.5))}.mp-poi-m:hover circle{stroke:#ffd166}.mp-poi-m text{pointer-events:none}.mp-poi.hide-bar .c-bar,.mp-poi.hide-water .c-water,.mp-poi.hide-food .c-food,.mp-poi.hide-serv .c-serv{display:none}
+.mp-poi-key{position:absolute;left:12px;top:12px;z-index:4;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:.76rem;display:grid;gap:3px;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:default}.mp-poi-key b{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#822433}.mp-poi-key label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}.mp-poi-key input{width:auto;min-height:0;margin:0}.mp-poi-key .dot{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:12px;background:#fff;border:2.5px solid;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .mp-map.has-3d .mp-poi-key{display:none}
 @media(max-width:699px){.mp-poi-key{font-size:.68rem;padding:5px 7px;top:8px;left:8px}}
 .mp-s.custom{fill:color-mix(in srgb,var(--bc) 60%,transparent);stroke:var(--bc);stroke-width:2;animation:none}.mp-s.custom:hover,.mp-s.custom.hov{fill:color-mix(in srgb,var(--bc) 75%,#fff);stroke:#fff}.mp-s.custom.on{fill:color-mix(in srgb,var(--bc) 80%,transparent);stroke:#1f1f1f;stroke-width:3}
@@ -2807,8 +2807,8 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   function add(x,y,p){
     const m=document.createElementNS(NS,'g'); m.setAttribute('class','mp-poi-m c-'+p.cat); m.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     m.setAttribute('role','img'); m.setAttribute('aria-label',p.name); m.dataset.name=p.name; m.dataset.note=p.note||'';
-    const c=document.createElementNS(NS,'circle'); c.setAttribute('r', p.cat==='bar'?8.5:6.2); c.setAttribute('fill',MP_POI_CAT[p.cat].color);
-    const t=document.createElementNS(NS,'text'); t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','central'); t.setAttribute('font-size', p.cat==='bar'?9:6.8); t.textContent=p.icon;
+    const c=document.createElementNS(NS,'circle'); c.setAttribute('r', p.cat==='bar'?13:10); c.setAttribute('fill','#fff'); c.setAttribute('stroke',MP_POI_CAT[p.cat].color); c.setAttribute('stroke-width', p.cat==='bar'?3.6:3);
+    const t=document.createElementNS(NS,'text'); t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','central'); t.setAttribute('font-size', p.cat==='bar'?14:11); t.textContent=p.icon;
     const ti=document.createElementNS(NS,'title'); ti.textContent=p.name+(p.note?' · '+p.note:'');
     m.append(c,t,ti); g.append(m); placed.push({x,y,cat:p.cat});
   }
@@ -2836,7 +2836,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   }
   function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
   const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
-  key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="background:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
+  key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
   drawPlan();
