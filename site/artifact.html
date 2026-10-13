@@ -2806,7 +2806,8 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     const ti=document.createElementNS(NS,'title'); ti.textContent=p.name+(p.note?' · '+p.note:'');
     m.append(c,t,ti); g.append(m); placed.push({x,y,cat:p.cat});
   }
-  function shapeCenter(code){ const p=svg.querySelector(`[data-b="${code}"]`); if(!p) return null; const b=p.getBBox(); return [b.x+b.width/2,b.y+b.height/2]; }
+  function shapeCenter(code){ const d=MAPD.shapes[code]; if(!d) return null; const n=(d.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number); if(n.length<4) return null;
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; for(let i=0;i+1<n.length;i+=2){ x0=Math.min(x0,n[i]); x1=Math.max(x1,n[i]); y0=Math.min(y0,n[i+1]); y1=Math.max(y1,n[i+1]); } return [(x0+x1)/2,(y0+y1)/2]; }
   function drawPlan(){ MP_POI_PLAN.forEach(p=>{ const c=shapeCenter(p.code); if(c) add(c[0],c[1],p); }); }
   /* lon/lat → coordinate della planimetria: inversa della calibrazione affine usata dalla vista 3D */
   function geoToPdf(al, lon, lat){
@@ -2832,9 +2833,10 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="background:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
-  requestAnimationFrame(drawPlan);
+  drawPlan();
   Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
-    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); }).catch(()=>{});
+    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); else waterMissing(); }).catch(waterMissing);
+  function waterMissing(){ const l=key.querySelector('[data-cat="water"] .n'); if(l&&!g.querySelector('.c-water')) l.textContent=' · in caricamento sul sito'; }
   /* tocco su un segnaposto: etichetta */
   $('mpMap').addEventListener('click',e=>{ const m=e.target.closest('.mp-poi-m'), t=$('mpTip'); if(!m) return;
     e.stopPropagation(); const r=$('mpMap').getBoundingClientRect(), b=m.getBoundingClientRect();
