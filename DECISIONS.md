@@ -175,3 +175,15 @@ Le misure e i codici di stampa non vengono convertiti in specifiche web
 inventate. Una richiesta esplicita dell'utente prevale; l'agente segnala
 prima il conflitto e la modifica prevista. La decisione mantiene riconoscibile
 l'identità del sito e rende tracciabili le deviazioni deliberate.
+
+## 2026-10-13 — Indice file generato come metadato di scope
+
+`.template/index/files.txt` resta classificato da `scope-map.json`, ma lo
+scope-guard lo esclude dal conteggio funzionale solo quando il blob a `HEAD`
+corrisponde all'elenco canonico dei file nel tree dello stesso commit, con la
+stessa normalizzazione del prefisso `./` e dell'ordinamento usata da
+`agent-config-check`. Indice obsoleto, manuale o duplicato fallisce chiuso;
+ogni altro file template continua a contare nello scope `template`. Questo
+consente gli aggiornamenti necessari dell'indice nella stessa PR di un singolo
+scope senza introdurre eccezioni generali o cambiare la classificazione dei
+path.
