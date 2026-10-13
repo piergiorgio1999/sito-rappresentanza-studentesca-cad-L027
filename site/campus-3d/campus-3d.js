@@ -11,7 +11,7 @@
   // (strade incluse), più piazzale Aldo Moro con il CNR e piazzale del Verano.
   const CAMPUS_POLY = [[12.520515, 41.901737], [12.515571, 41.905544], [12.510446, 41.904041], [12.512053, 41.901077], [12.512066, 41.900238], [12.512032, 41.900211], [12.512301, 41.899673], [12.518137, 41.901863], [12.519517, 41.90102]];
   // Area dell'ortofoto ad alta risoluzione: contiene il confine con un piccolo margine.
-  const ORTHO_BOUNDS = { west: 12.5098, south: 41.8992, east: 12.5214, north: 41.9062 };
+  const ORTHO_BOUNDS = { west: 12.5098, south: 41.8992, east: 12.5232, north: 41.9062 };
   // CNR: ospite d'onore. Sagoma di ripiego disegnata sull'ortofoto; se OSM la fornisce, si usa quella.
   const CNR = { code: 'CNR', name: 'Consiglio Nazionale delle Ricerche', note: '(non Sapienza ma omaggiato per simpatia)', height: 24,
     ring: [[12.512315, 41.900665], [12.512735, 41.900782], [12.513108, 41.900507], [12.513473, 41.900297], [12.513473, 41.900254], [12.512554, 41.899911], [12.512467, 41.899868], [12.51235, 41.899889]] };
@@ -30,6 +30,11 @@
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
   const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+  if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
+    const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
+    location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
+    return;
+  }
   document.body.classList.toggle('embedded', embedded);
   let buildings = [];
   let selectedCode = '';
@@ -84,6 +89,9 @@
   let cnrMesh = null;
   let cnrOutline = null;
   let extraMask = [];
+  let planMask = [];
+  let maskCanvas = null;
+  let roofTexture = null;
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const setStatus = (html, error = false) => {
@@ -178,8 +186,8 @@
       ['Centroide', `${b.centroid.lat.toFixed(6)}, ${b.centroid.lon.toFixed(6)}`],
       ['Fonte', 'OpenStreetMap contributors']
     ];
-    $('detailGrid').innerHTML = items.map(([label, value]) => `<div><span class="detail-label">${esc(label)}</span><span class="detail-value">${esc(value)}</span></div>`).join('');
-    $('osmLinks').innerHTML = (b.osm_elements || [{ id: b.osm_id, type: b.osm_type || 'way' }]).map((entry) => {
+    if ($('detailGrid')) $('detailGrid').innerHTML = items.map(([label, value]) => `<div><span class="detail-label">${esc(label)}</span><span class="detail-value">${esc(value)}</span></div>`).join('');
+    if ($('osmLinks')) $('osmLinks').innerHTML = (b.osm_elements || [{ id: b.osm_id, type: b.osm_type || 'way' }]).map((entry) => {
       const type = ['way', 'node', 'relation'].includes(entry.type) ? entry.type : 'way';
       const id = String(entry.id || '').replace(/[^0-9]/g, '');
       return id ? `<a href="https://www.openstreetmap.org/${type}/${encodeURIComponent(id)}" target="_blank" rel="noopener">OSM ${esc(id)} ↗</a>` : '';
@@ -198,9 +206,19 @@
   function stopTour() {
     if (tourTimer) window.clearTimeout(tourTimer);
     tourTimer = 0;
+    const wasOn = Boolean(controls?.autoRotate);
     if (controls) controls.autoRotate = false;
-    tourButton.textContent = 'Tour manuale';
+    tourButton.textContent = 'Rotazione';
     tourButton.setAttribute('aria-pressed', 'false');
+    if (wasOn) notifyParent('campus-rotation', { on: false });
+  }
+  /* baricentro (area) del confine CU e distanza che lo inquadra tutto */
+  function campusCentroid() { return project(polygonCentroid(CAMPUS_POLY)); }
+  function campusFitDistance() {
+    const c = polygonCentroid(CAMPUS_POLY);
+    const radius = Math.max(...CAMPUS_POLY.map((p) => Math.hypot((p[0] - c[0]) * metersPerLon, (p[1] - c[1]) * metersPerLat)));
+    const aspect = Math.max(0.6, Math.min(1.6, camera?.aspect || 1));
+    return radius * (aspect < 1 ? 1.9 / aspect : 1.55);
   }
   function stopCameraFlight() {
     if (cameraTweenId) cancelAnimationFrame(cameraTweenId);
@@ -284,31 +302,32 @@
     resizeRenderer();
   }
   function startTour() {
-    if (!controls || reducedMotion || !buildings.length || currentView !== '3d') return;
+    if (!controls || reducedMotion || currentView !== '3d' || viewDim === '2d') return;
     stopTour();
-    flyTo(campusCenter(), 1450, 1100);
-    tourButton.textContent = 'Ferma tour';
+    flyTo(campusCentroid(), campusFitDistance(), 1100);
+    tourButton.textContent = 'Ferma rotazione';
     tourButton.setAttribute('aria-pressed', 'true');
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.75;
-    tourTimer = window.setTimeout(stopTour, 12000);
+    controls.autoRotateSpeed = 0.6;
+    notifyParent('campus-rotation', { on: true });
   }
   function setAerial(visible) {
     showAerial = visible;
     $('aerialImage').hidden = !visible;
     if (photoTexture) {
-      normalRoof.map = visible ? photoTexture : null;
-      selectedRoof.map = visible ? photoTexture : null;
+      normalRoof.map = visible ? roofTexture : null;
+      selectedRoof.map = visible ? roofTexture : null;
       normalRoof.needsUpdate = true;
       selectedRoof.needsUpdate = true;
     }
     if (orthoMesh) orthoMesh.visible = visible;
-    if (cnrMesh) { cnrMesh.material[0].map = visible ? photoTexture : null; cnrMesh.material[0].needsUpdate = true; }
+    if (cnrMesh) { cnrMesh.material[0].map = visible ? roofTexture : null; cnrMesh.material[0].needsUpdate = true; }
+    extrasGroup?.traverse((o) => { if (o.userData.texturedTop) { o.material[0].map = visible ? roofTexture : null; o.material[0].needsUpdate = true; } });
     for (const mesh of planMeshesByCode.values()) {
-      mesh.material[0].map = visible ? photoTexture : null;
+      mesh.material[0].map = visible ? roofTexture : null;
       mesh.material[0].needsUpdate = true;
     }
-    $('aerialToggle').setAttribute('aria-pressed', String(visible));
+    $('aerialToggle')?.setAttribute('aria-pressed', String(visible));
   }
   function setBuildingVisibility(visible) {
     showBuildings = visible;
@@ -384,7 +403,7 @@
     planBuildingsGroup = new THREE.Group();
     planLayerGroup.add(planBuildingsGroup);
     scene.add(planLayerGroup);
-    planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear();
+    planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear(); planMask = [];
     for (const feature of plan.features) {
       const code = String(feature.code || '').toUpperCase();
       if (!code) continue;
@@ -401,7 +420,7 @@
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0.16, 0);
       applyRoofUVs(geometry);
-      const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false });
+      const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false });
       const walls = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xb6a99e, roughness: 0.94, metalness: 0 });
       const mesh = new THREE.Mesh(geometry, [roof, walls]);
       mesh.userData.code = code;
@@ -410,6 +429,8 @@
       mesh.castShadow = true; mesh.receiveShadow = true;
       planBuildingsGroup.add(mesh); pickables.push(mesh);
       planMeshesByCode.set(code, mesh);
+      if (code === MINERVA.arches.code) cutArches(mesh, parsed.rings);
+      for (const ring of parsed.rings) planMask.push(ring.map(([x, y]) => worldToLonLat(pdfToWorld(x, y))));
       const pts = parsed.rings.flat().map(([x, y]) => pdfToWorld(x, y));
       const centroid = pts.reduce((a, p) => ({ x: a.x + p.x / pts.length, z: a.z + p.z / pts.length }), { x: 0, z: 0 });
       planPointsByCode.set(code, { x: centroid.x, n: -centroid.z });
@@ -455,6 +476,12 @@
       }
     }
     for (const code of officialPlanCodes) { activeCodeMeshes.delete(code); activeCodeOutlines.delete(code); }
+    buildMinervaArea();
+    compositeOrtho();
+    applyViewMode();
+  }
+  function worldToLonLat(w) {
+    return [bounds.west + (w.x + mapWidth / 2) / metersPerLon, bounds.south + (-w.z + mapDepth / 2) / metersPerLat];
   }
   function setupPlanFallback(plan) {
     const image = document.createElement('img'); image.src = plan.image; image.alt = 'Planimetria vettoriale originale Sapienza';
@@ -541,12 +568,17 @@
     else if (message.type === 'campus-clear') { stopCameraFlight(); selectedCode = ''; updateSelectionMaterials(); updatePlanSelection(); renderList(); drawFootprints(); }
     else if (message.type === 'campus-camera') {
       if (!controls) pendingCamera = message;
-      else if (message.action === 'fit') flyTo(campusCenter(), 1300, 700);
+      else if (message.action === 'fit') flyTo(campusCentroid(), campusFitDistance(), 700);
       else if (message.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(message.factor) || 1)));
     } else if (message.type === 'campus-viewport') {
       occlusion = { right: Math.max(0, Number(message.right) || 0), bottom: Math.max(0, Number(message.bottom) || 0) };
       resizeRenderer();
     } else if (message.type === 'campus-active') { parentActive = Boolean(message.active); handleVisibility(); }
+    else if (message.type === 'campus-view') {
+      if (message.dim === '2d' || message.dim === '3d') viewDim = message.dim;
+      if (message.base === 'satellite' || message.base === 'carta') viewBase = message.base;
+      applyViewMode(); scheduleTiles(50);
+    } else if (message.type === 'campus-rotate') { if (message.on) startTour(); else stopTour(); }
   }
 
   function polygonCentroid(ring) {
@@ -606,6 +638,9 @@
     orthoCanvas.width = width; orthoCanvas.height = height;
     orthoSource = document.createElement('canvas');
     orthoSource.width = width; orthoSource.height = height;
+    roofTexture = new THREE.CanvasTexture(orthoSource);
+    roofTexture.encoding = THREE.sRGBEncoding;
+    roofTexture.anisotropy = 8;
     const texture = new THREE.CanvasTexture(orthoCanvas);
     texture.encoding = THREE.sRGBEncoding;
     texture.anisotropy = 8;
@@ -631,19 +666,26 @@
     const ctx = orthoCanvas.getContext('2d');
     const { width, height } = orthoCanvas;
     const toPx = canvasMapper(ORTHO_BOUNDS, width, height);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx); ctx.fill();
+    if (!maskCanvas) { maskCanvas = document.createElement('canvas'); maskCanvas.width = width; maskCanvas.height = height; }
+    const mask = maskCanvas.getContext('2d', { willReadFrequently: true });
+    mask.clearRect(0, 0, width, height);
+    mask.fillStyle = '#000'; mask.strokeStyle = '#000'; mask.lineJoin = 'round'; mask.lineCap = 'round';
+    mask.beginPath(); tracePath(mask, CAMPUS_POLY, toPx); mask.fill();
     const px = metersToPx(ORTHO_BOUNDS, width);
     for (const ring of extraMask) {
-      ctx.beginPath(); tracePath(ctx, ring, toPx); ctx.fill();
-      ctx.lineJoin = 'round'; ctx.lineWidth = 24 * px; ctx.strokeStyle = '#000'; ctx.stroke();
+      mask.beginPath(); tracePath(mask, ring, toPx); mask.fill();
+      mask.lineWidth = 24 * px; mask.stroke();
     }
+    // ogni edificio CU resta dentro il confine, con qualche metro di margine
+    for (const ring of planMask) { mask.beginPath(); tracePath(mask, ring, toPx); mask.fill(); mask.lineWidth = 12 * px; mask.stroke(); }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(maskCanvas, 0, 0);
     ctx.globalCompositeOperation = 'source-in';
     ctx.drawImage(orthoSource, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     if (photoTexture) photoTexture.needsUpdate = true;
+    if (roofTexture) roofTexture.needsUpdate = true;
   }
   function loadHighResOrtho() {
     const { width, height } = orthoCanvas;
@@ -696,9 +738,6 @@
     for (const line of map.rail || []) { ctx.beginPath(); tracePath(ctx, line, toPx, false); ctx.strokeStyle = BASE_COLORS.rail; ctx.lineWidth = Math.max(1, 1.2 * px); ctx.stroke(); }
     ctx.setLineDash([]);
     for (const rings of map.buildings || []) fillRings(rings, BASE_COLORS.building, BASE_COLORS.buildingLine);
-    // filo del confine sotto il bordo dell'ortofoto
-    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx);
-    ctx.strokeStyle = 'rgba(130,36,51,.55)'; ctx.lineWidth = Math.max(2, 2.5 * px); ctx.stroke();
     if (baseTexture) baseTexture.needsUpdate = true;
   }
   function createGround(context) {
@@ -737,7 +776,7 @@
     geometry.translate(0, 0.04, 0);
     applyRoofUVs(geometry);
     geometry.computeVertexNormals();
-    cnrMesh = new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false }), new THREE.MeshStandardMaterial({ color: 0xcfc8bf, roughness: 0.9, metalness: 0 })]);
+    cnrMesh = new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), new THREE.MeshStandardMaterial({ color: 0xcfc8bf, roughness: 0.9, metalness: 0 })]);
     cnrMesh.castShadow = true; cnrMesh.receiveShadow = true;
     cnrMesh.userData.guest = true;
     buildingGroup.add(cnrMesh);
@@ -753,6 +792,15 @@
     if (cnrOutline) cnrOutline.visible = on;
     if (cnrMesh) cnrMesh.material[1].color.set(on ? 0x1f5f8b : 0xcfc8bf);
     if (on && CNR.centroid) flyTo(project(CNR.centroid), 520, reducedMotion ? 0 : 850);
+  }
+  function convexHull(points) {
+    const pts = [...new Map(points.map((p) => [`${p[0]},${p[1]}`, p])).values()].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (pts.length < 3) return pts;
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lower = [], upper = [];
+    for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); }
+    for (const p of pts.slice().reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
   }
   function ringArea(ring) {
     let a = 0;
@@ -784,12 +832,296 @@
       const mensa = /lollis/i.test(label) && (item.building || item.amenity);
       if (verano || mensa) outer.forEach((ring) => extraMask.push(ring));
     }
+    const veranoPts = (map.named || []).filter((item) => /piazzale del verano/i.test(item.name || '')).flatMap((item) => (item.rings || []).filter(Array.isArray).flat());
+    if (veranoPts.length >= 3) extraMask.push(convexHull(veranoPts));
     if (cnrRing) {
       const levels = Number(String((map.named.find((n) => n.rings?.includes(cnrRing)) || {}).levels || '').replace(',', '.'));
       addGuestBuilding(cnrRing, Number.isFinite(levels) && levels > 0 ? levels * 3.6 : CNR.height);
       CNR.osm = true;
     }
     compositeOrtho();
+  }
+  /* ---------- piazzale della Minerva: vasca, scalinata del Rettorato, arcate, statua ---------- */
+  // Coordinate in punti della planimetria ufficiale (stessa calibrazione dei volumi CU).
+  const MINERVA = {
+    // vasca a U davanti alla statua, leggermente rialzata
+    basin: [[270.8, 535.8], [315, 535.8], [315, 555], [305.8, 555], [305.8, 540], [280, 540], [280, 555], [270.8, 555]],
+    basinHeight: 0.45,
+    statue: [292.5, 536.6],
+    // scalinata: bordo inferiore, lati verso le arcate, pianerottolo davanti al corpo centrale
+    stairs: { front: 518.3, left: 271.7, right: 313.3, facade: 497.5, landingLeft: 285, landingRight: 299.2, landingFront: 505.8, steps: 14, riser: 0.15 },
+    // arcate del Rettorato (CU001): rettangoli sottratti al volume fino a una quota
+    arches: { code: 'CU001', rects: [[266.0, 489.5, 272.5, 499.0], [312.3, 489.5, 318.8, 499.0]], heightRatio: 0.62, maxHeight: 12 }
+  };
+  let extrasGroup = null;
+  function pdfShape(points) {
+    const shape = new THREE.Shape();
+    points.forEach(([x, y], i) => { const w = pdfToWorld(x, y); if (i) shape.lineTo(w.x, -w.z); else shape.moveTo(w.x, -w.z); });
+    return shape;
+  }
+  function extrudeShape(shapes, depth, base) {
+    const geometry = new THREE.ExtrudeGeometry(shapes, { depth, bevelEnabled: false, curveSegments: 1 });
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, base, 0);
+    return geometry;
+  }
+  /* differenza poligono − rettangolo allineato agli assi (coordinate planimetria):
+     il piano fuori dal rettangolo è diviso in quattro regioni convesse e il poligono
+     viene ritagliato su ciascuna (Sutherland–Hodgman). */
+  function clipConvex(poly, inside, intersect) {
+    let out = poly;
+    const result = [];
+    for (let i = 0; i < out.length; i += 1) {
+      const a = out[i], b = out[(i + 1) % out.length];
+      const ia = inside(a), ib = inside(b);
+      if (ia) result.push(a);
+      if (ia !== ib) result.push(intersect(a, b));
+    }
+    return result.length >= 3 ? result : null;
+  }
+  function clipHalf(poly, axis, value, keepLess) {
+    const inside = (p) => (keepLess ? p[axis] <= value : p[axis] >= value);
+    const intersect = (a, b) => { const t = (value - a[axis]) / (b[axis] - a[axis]); return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]; };
+    return clipConvex(poly, inside, intersect);
+  }
+  function subtractRect(poly, [x0, y0, x1, y1]) {
+    const pieces = [];
+    const left = clipHalf(poly, 0, x0, true); if (left) pieces.push(left);
+    const right = clipHalf(poly, 0, x1, false); if (right) pieces.push(right);
+    let mid = clipHalf(poly, 0, x0, false); mid = mid && clipHalf(mid, 0, x1, true);
+    if (mid) {
+      const top = clipHalf(mid, 1, y0, true); if (top) pieces.push(top);
+      const bottom = clipHalf(mid, 1, y1, false); if (bottom) pieces.push(bottom);
+    }
+    return pieces;
+  }
+  function polyArea(poly) { let a = 0; for (let i = 0; i < poly.length; i += 1) { const p = poly[i], q = poly[(i + 1) % poly.length]; a += p[0] * q[1] - q[0] * p[1]; } return Math.abs(a / 2); }
+  function cutArches(mesh, rings) {
+    const cfg = MINERVA.arches;
+    const height = mesh.userData.height || 15;
+    const archTop = Math.min(cfg.maxHeight, height * cfg.heightRatio);
+    let pieces = rings.map((ring) => ring.slice());
+    for (const rect of cfg.rects) pieces = pieces.flatMap((piece) => subtractRect(piece, rect));
+    pieces = pieces.filter((piece) => polyArea(piece) > 0.5);
+    if (!pieces.length) return;
+    // parte superiore: sagoma intera sopra le arcate
+    const upperShapes = rings.map((ring) => pdfShape(ring));
+    const upper = extrudeShape(upperShapes, height - archTop, 0.16 + archTop);
+    applyRoofUVs(upper);
+    mesh.geometry.dispose();
+    mesh.geometry = upper;
+    // parte inferiore: sagoma meno le arcate
+    const lower = extrudeShape(pieces.map((piece) => pdfShape(piece)), archTop, 0.16);
+    applyRoofUVs(lower);
+    const base = new THREE.Mesh(lower, mesh.material);
+    base.userData = { ...mesh.userData, part: 'arcades' };
+    base.castShadow = true; base.receiveShadow = true;
+    mesh.parent.add(base);
+    pickables.push(base);
+  }
+  function buildMinervaArea() {
+    if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
+    extrasGroup = new THREE.Group();
+    planLayerGroup.add(extrasGroup);
+    const stone = new THREE.MeshStandardMaterial({ color: 0xb9ae9c, roughness: 0.92, metalness: 0 });
+    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xebe4d7, roughness: 0.9, metalness: 0 });
+    const edge = new THREE.LineBasicMaterial({ color: 0x9c9282, transparent: true, opacity: 0.7 });
+    // vasca
+    const basin = extrudeShape([pdfShape(MINERVA.basin)], MINERVA.basinHeight, 0);
+    applyRoofUVs(basin);
+    const basinMesh = new THREE.Mesh(basin, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), stone]);
+    basinMesh.userData.texturedTop = true;
+    basinMesh.castShadow = true; basinMesh.receiveShadow = true;
+    extrasGroup.add(basinMesh);
+    // scalinata: gradini concentrici che girano di 90° agli angoli (diagonali dal bordo al pianerottolo)
+    const s = MINERVA.stairs;
+    for (let i = 0; i < s.steps; i += 1) {
+      const t = i / s.steps;
+      const front = s.front + t * (s.landingFront - s.front);
+      const left = s.left + t * (s.landingLeft - s.left);
+      const right = s.right + t * (s.landingRight - s.right);
+      const step = extrudeShape([pdfShape([[left, s.facade], [right, s.facade], [right, front], [left, front]])], (i + 1) * s.riser, 0);
+      const mesh = new THREE.Mesh(step, [stoneTop, stone]);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      extrasGroup.add(mesh);
+      extrasGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(step, 20), edge));
+    }
+    const statue = pdfToWorld(...MINERVA.statue);
+    MINERVA.world = { x: statue.x, z: statue.z, y: MINERVA.basinHeight };
+    const axisA = pdfToWorld(292.4, 500), axisB = pdfToWorld(292.4, 600);
+    MINERVA.facing = Math.atan2(axisB.x - axisA.x, axisB.z - axisA.z);
+    loadMinervaModel();
+  }
+  /* statua: si carica solo se esiste models/minerva.json (es. {"file":"minerva.glb","height":9,"rotationDeg":0}) */
+  let minervaLoaded = false;
+  async function loadMinervaModel() {
+    if (minervaLoaded || !MINERVA.world) return;
+    let config;
+    try { const response = await fetch('models/minerva.json', { cache: 'no-cache' }); if (!response.ok) return; config = await response.json(); } catch (_) { return; }
+    if (!config?.file || !/^[\w.-]+\.(glb|gltf)$/i.test(config.file)) return;
+    minervaLoaded = true;
+    try {
+      await loadDependency(window.location.origin + '/campus-3d/vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function')
+        .catch(() => loadDependency('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function'));
+    } catch (_) { minervaLoaded = false; return; }
+    new THREE.GLTFLoader().load(`models/${config.file}`, (gltf) => {
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = (Number(config.height) || 9) / Math.max(0.001, size.y);
+      model.scale.setScalar(scale);
+      const scaled = new THREE.Box3().setFromObject(model);
+      const center = scaled.getCenter(new THREE.Vector3());
+      const holder = new THREE.Group();
+      model.position.set(-center.x, -scaled.min.y, -center.z);
+      holder.add(model);
+      holder.position.set(MINERVA.world.x + (Number(config.offset?.[0]) || 0), MINERVA.world.y, MINERVA.world.z + (Number(config.offset?.[1]) || 0));
+      holder.rotation.y = MINERVA.facing + ((Number(config.rotationDeg) || 0) * Math.PI / 180);
+      holder.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      holder.userData.minerva = true;
+      extrasGroup.add(holder);
+    }, undefined, () => { minervaLoaded = false; });
+  }
+
+  /* ---------- modalità della vista (comandate dalla pagina principale) ---------- */
+  let viewDim = '3d';
+  let viewBase = 'satellite';
+  function setFlat(flat) {
+    const s = flat ? 0.02 : 1;
+    for (const group of [buildingGroup, planBuildingsGroup, extrasGroup]) if (group) group.scale.y = s;
+  }
+  function applyViewMode() {
+    if (!renderer) return;
+    const satellite = viewBase === 'satellite';
+    setAerial(satellite);
+    planVisible = !satellite;
+    planOpacity = 1;
+    if (planImageMaterial) planImageMaterial.opacity = 1;
+    if (planImagePlane) planImagePlane.visible = planVisible;
+    for (const tile of detailTiles.values()) if (tile.mesh) tile.mesh.visible = satellite;
+    updatePlanSelection();
+    const flat = viewDim === '2d';
+    setFlat(flat);
+    controls.enableRotate = !flat;
+    if (flat) {
+      stopTour();
+      controls.minPolarAngle = 0; controls.maxPolarAngle = 0.0001;
+      const target = controls.target.clone();
+      const height = Math.max(300, camera.position.distanceTo(target));
+      camera.position.set(target.x, height, target.z + 0.001);
+    } else {
+      controls.minPolarAngle = 0.08; controls.maxPolarAngle = Math.PI / 2.04;
+      if (camera.position.y > 0 && Math.abs(camera.position.x - controls.target.x) < 1) flyTo({ x: controls.target.x, n: -controls.target.z }, camera.position.distanceTo(controls.target) * 0.8, reducedMotion ? 0 : 700);
+    }
+    controls.update();
+  }
+
+  /* ---------- tasselli di dettaglio dell'ortofoto (caricati vicino alla camera) ---------- */
+  const TILE_M = 64;
+  const TILE_PX = smallScreen ? 384 : 512;
+  const detailTiles = new Map();
+  let tileManifest = null;
+  let tileTimer = 0;
+  let tileLoads = 0;
+  async function loadTileManifest() {
+    try { const response = await fetch('tiles/manifest.json', { cache: 'no-cache' }); if (response.ok) tileManifest = await response.json(); } catch (_) { tileManifest = null; }
+  }
+  function tileGrid() {
+    const dLon = TILE_M / metersPerLon, dLat = TILE_M / metersPerLat;
+    return { dLon, dLat, cols: Math.ceil((ORTHO_BOUNDS.east - ORTHO_BOUNDS.west) / dLon), rows: Math.ceil((ORTHO_BOUNDS.north - ORTHO_BOUNDS.south) / dLat) };
+  }
+  function tileBounds(c, r, grid) {
+    const west = ORTHO_BOUNDS.west + c * grid.dLon, north = ORTHO_BOUNDS.north - r * grid.dLat;
+    return { west, east: west + grid.dLon, north, south: north - grid.dLat };
+  }
+  function tileInsideMask(b) {
+    if (!maskCanvas) return false;
+    const ctx = maskCanvas.getContext('2d', { willReadFrequently: true });
+    const toPx = canvasMapper(ORTHO_BOUNDS, maskCanvas.width, maskCanvas.height);
+    const [x0, y0] = toPx([b.west, b.north]), [x1, y1] = toPx([b.east, b.south]);
+    const w = Math.max(1, Math.round(x1 - x0)), h = Math.max(1, Math.round(y1 - y0));
+    const data = ctx.getImageData(Math.max(0, Math.round(x0)), Math.max(0, Math.round(y0)), w, h).data;
+    for (let i = 3; i < data.length; i += 16) if (data[i] > 0) return true;
+    return false;
+  }
+  function tileSource(c, r, b) {
+    const key = `${c}_${r}`;
+    if (tileManifest?.tiles?.includes(key) && typeof tileManifest.path === 'string') return tileManifest.path.replace('{c}', c).replace('{r}', r);
+    return `/api/campus-ortho?bbox=${[b.west, b.south, b.east, b.north].map((v) => v.toFixed(6)).join(',')}&w=${TILE_PX}&h=${Math.round(TILE_PX * (metersPerLat * (b.north - b.south)) / (metersPerLon * (b.east - b.west)))}`;
+  }
+  function loadTile(c, r, b) {
+    const key = `${c}_${r}`;
+    const entry = { state: 'loading', mesh: null, used: performance.now() };
+    detailTiles.set(key, entry);
+    tileLoads += 1;
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      tileLoads -= 1;
+      if (!detailTiles.has(key)) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0);
+      // stesso confine del suolo
+      const toPx = canvasMapper(ORTHO_BOUNDS, maskCanvas.width, maskCanvas.height);
+      const [x0, y0] = toPx([b.west, b.north]), [x1, y1] = toPx([b.east, b.south]);
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(maskCanvas, x0, y0, x1 - x0, y1 - y0, 0, 0, canvas.width, canvas.height);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 8;
+      texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+      const mesh = planeMesh(b, new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false }), -0.03);
+      mesh.renderOrder = 2;
+      mesh.visible = viewBase === 'satellite';
+      scene.add(mesh);
+      entry.mesh = mesh; entry.state = 'ready';
+    };
+    image.onerror = () => { tileLoads -= 1; entry.state = 'failed'; };
+    image.src = tileSource(c, r, b);
+  }
+  function disposeTile(key) {
+    const entry = detailTiles.get(key);
+    if (entry?.mesh) { scene.remove(entry.mesh); entry.mesh.geometry.dispose(); entry.mesh.material.map?.dispose(); entry.mesh.material.dispose(); }
+    detailTiles.delete(key);
+  }
+  function updateDetailTiles() {
+    tileTimer = 0;
+    if (!camera || !maskCanvas || viewBase !== 'satellite') return;
+    const grid = tileGrid();
+    const frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const near = [];
+    for (let r = 0; r < grid.rows; r += 1) for (let c = 0; c < grid.cols; c += 1) {
+      const b = tileBounds(c, r, grid);
+      const sw = project([b.west, b.south]), ne = project([b.east, b.north]);
+      const box = new THREE.Box3(new THREE.Vector3(sw.x, -1, -ne.n), new THREE.Vector3(ne.x, 30, -sw.n));
+      if (!frustum.intersectsBox(box)) continue;
+      const center = new THREE.Vector3((sw.x + ne.x) / 2, 0, -(sw.n + ne.n) / 2);
+      const distance = camera.position.distanceTo(center);
+      if (distance < 330) near.push({ c, r, b, distance });
+    }
+    near.sort((a, b) => a.distance - b.distance);
+    const wanted = new Set();
+    for (const tile of near.slice(0, 36)) {
+      const key = `${tile.c}_${tile.r}`;
+      wanted.add(key);
+      const entry = detailTiles.get(key);
+      if (entry) { entry.used = performance.now(); continue; }
+      if (tileLoads >= 4) continue;
+      if (!tileInsideMask(tile.b)) { detailTiles.set(key, { state: 'empty', mesh: null, used: performance.now() }); continue; }
+      loadTile(tile.c, tile.r, tile.b);
+    }
+    // tieni al massimo 48 tasselli: scarta quelli lontani usati meno di recente
+    if (detailTiles.size > 48) {
+      const old = [...detailTiles.entries()].filter(([key]) => !wanted.has(key)).sort((a, b) => a[1].used - b[1].used);
+      for (const [key] of old.slice(0, detailTiles.size - 48)) disposeTile(key);
+    }
+    if (near.length && tileLoads) scheduleTiles(400);
+  }
+  function scheduleTiles(delay = 250) {
+    if (!tileTimer) tileTimer = window.setTimeout(updateDetailTiles, delay);
   }
   function makeShape(rings) {
     const outer = closeRing(rings[0]);
@@ -872,7 +1204,7 @@
     camera = new THREE.PerspectiveCamera(48, 1, 1, 8000);
     camera.position.set(0, 850, 1050);
     createGround(context);
-    createMaterials(texture);
+    createMaterials(roofTexture);
     buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
     addGuestBuilding(CNR.ring, CNR.height);
@@ -917,10 +1249,11 @@
     controls.maxPolarAngle = Math.PI / 2.04;
     controls.screenSpacePanning = true;
     controls.addEventListener('start', stopTour);
+    controls.addEventListener('change', () => scheduleTiles());
     controls.update();
     if (pendingCamera) {
       const command = pendingCamera; pendingCamera = null;
-      if (command.action === 'fit') flyTo(campusCenter(), 1300, 0);
+      if (command.action === 'fit') flyTo(campusCentroid(), campusFitDistance(), 0);
       else if (command.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(command.factor) || 1)));
     }
     const raycaster = new THREE.Raycaster();
@@ -938,7 +1271,7 @@
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickables, false)[0];
-      if (hit?.object.userData.guest) { showGuest(true); return; }
+      if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
       showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);
     });
@@ -1057,6 +1390,7 @@
     }
   }
   async function init() {
+    loadTileManifest();
     bindUI();
     if (reducedMotion) {
       tourButton.disabled = true;
@@ -1101,5 +1435,7 @@
       if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(error.message || '') }); }
     }
   }
+  // accesso per verifiche automatiche e diagnosi (sola lettura della camera)
+  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; } };
   init();
 })();
