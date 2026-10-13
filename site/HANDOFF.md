@@ -15,11 +15,8 @@ Deploy: Cloudflare Pages `orari-chimica.pages.dev`. Output directory: `site/`. F
   - Panels use `<section class="panel" id="tab-X" ... hidden>`.
 - Watch out for TDZ errors: `draw()` runs at startup, so it must not reference `const` values declared later in the file.
 
-## TODO (user request, still open)
-Add three new pages to the sidebar, below "Lost media (Pelican story)":
-1. **Safe Zone**: all the information from the Sapienza site, with reference links.
-2. **DSA, ADHD e disabilità**: same purpose as the Safe Zone page.
-3. **Organigramma Sapienza**: explain Rettorato, Facoltà, Dipartimento, CAD, Qualità, Erasmus and the other bodies, with who is responsible and what each one does.
+## Pagine informative (in lavorazione su Issue #7)
+Sono state aggiunte tre schede alla sidebar dopo "Lost media (Pelican story)": Safe Zone, DSA/ADHD/disabilità e Organigramma. Ogni scheda contiene riferimenti istituzionali; `index.html` e `artifact.html` devono restare allineati.
 
 ### Research already collected
 **Safe Zone**
@@ -74,20 +71,17 @@ Add three new pages to the sidebar, below "Lost media (Pelican story)":
   - Teacher mediation and peer tutoring.
   - Grants for monetary contributions, taxi vouchers and study aids.
   - Ausilioteca.
-- Still to check: the disability percentage required for fee exemption. The disability services page fetch was not completed.
+- Soglie confermate dalla pagina Sapienza sulle esenzioni: con riconoscimento ex art. 3, comma 1 o 3, Legge 104/1992 si paga solo il bollo da €16 e non la tassa regionale; con invalidità riconosciuta (anche inferiore al 66%) si è esonerati dai contributi universitari, ma si pagano bollo e tassa regionale. Con DSA certificato sono dovuti bollo e tassa regionale. Fonte: https://www.uniroma1.it/it/node/136590.
 
 **Organi di Ateneo** (https://www.uniroma1.it/it/pagina/governo)
-- Rettrice: Antonella Polimeni, in office since 01/12/2020. The Rettore elections for 2026–2032 are under way.
-  - Candidates: Carcaterra, D'Urso, Faccini, Lucidi, Sarto.
-  - Source: https://www.uniroma1.it/en/node/539557
-  - Check the outcome before publishing.
+- Rettrice in carica: Antonella Polimeni. The election for 2026–2032 is in progress; the second ballot is scheduled for 13–16 October 2026. Do not publish a successor before official proclamation. Maria Sabrina Sarto withdrew on 12 October. Sources: https://www.uniroma1.it/it/node/539034 and https://www.uniroma1.it/it/node/550955.
 - Prorettore vicario: Giuseppe Ciccarone.
 - Senato Accademico: 35 members. Sets direction and planning, and checks teaching and research.
 - CdA: 10 members. Handles financial and staff planning.
 - Nucleo di valutazione: 9 members, including 2 students. Also acts as OIV. Coordinator for 2026–2029: Prof.ssa Giovanna Iannantuoni.
 - Team Qualità (presidio AQ): coordinator Ersilia Barbato.
 - Also: Collegio direttori di dipartimento, Collegio revisori dei conti, CUG (https://www.uniroma1.it/it/pagina/comitato-unico-di-garanzia), Prorettori e delegati.
-- Direttrice generale: still to check. Lead: `4.1_del._2_obiettivi_direttrice_generale.pdf` on uniroma1.it.
+- Direttrice generale: Loredana Segreto (dal 1 novembre 2024). Source: https://www.uniroma1.it/it/pagina/direttrice-generale.
 
 **CAD Scienze Chimiche** (https://corsidilaurea.uniroma1.it/it/course/33605/organization)
 - Presidente: Federico Marini.
@@ -95,10 +89,9 @@ Add three new pages to the sidebar, below "Lost media (Pelican story)":
 - Tutor: Scipioni, Cavaliere, D'Abramo.
 - Didactic contact: Dott.ssa Giulia Vollono, Segreteria didattica Chimica.
 
-### Still to find
-- Preside of the SMFN Facoltà.
-- Direttore of the Dipartimento di Chimica.
-- Erasmus contact for Chimica.
-- AQ/Commissione paritetica of the degree course.
-- Consiglio degli studenti.
-- Comitato Pari Opportunità (Viola is Presidentessa).
+### Figure verificate per la scheda organigramma
+- Preside SMFN: Gabriele Favero; Vicepreside vicaria: Marta Della Seta. https://smfn.web.uniroma1.it/it/preside
+- Direttore Dipartimento di Chimica: Osvaldo Lanzalunga. https://chimica.web.uniroma1.it/it/node/6
+- Referente accademica Erasmus Chimica: Ilaria Fratoddi; referente amministrativo di Facoltà: Francesco Serranò. https://chimica.web.uniroma1.it/it/erasmus
+- CAD Scienze Chimiche: Federico Marini (presidente), Giulia Vollono (referente didattica). https://corsidilaurea.uniroma1.it/it/course/33605/organization
+- Restano da approfondire con pagine/fonti dedicate: composizione attuale della Commissione paritetica del corso, Consiglio degli studenti e Comitato pari opportunità.
