@@ -153,6 +153,14 @@
 ./site/_headers
 ./site/apple-touch-icon.png
 ./site/artifact.html
+./site/campus-3d/README.md
+./site/campus-3d/campus-3d.js
+./site/campus-3d/campus-agea-2020.pgw
+./site/campus-3d/campus-agea-2020.png
+./site/campus-3d/campus-agea-2020.prj
+./site/campus-3d/campus-buildings.json
+./site/campus-3d/index.html
+./site/campus-3d/maps-config.js
 ./site/copertine/B00028108/9788808399663_III_ed_italiana.jpg
 ./site/copertine/B015F27B6/9788808183507_3_ed_italiana.jpg
 ./site/copertine/B018560AD/9788895122670_edizione.jpg
