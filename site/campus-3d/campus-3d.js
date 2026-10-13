@@ -4,7 +4,9 @@
   const CONTEXT_SOURCE = 'campus-context.geojson';
   const CHEMISTRY = new Set(['CU014', 'CU032', 'CU035']);
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
-  const bounds = { west: 12.5035, south: 41.8965, east: 12.5235, north: 41.9075 };
+  const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
+  // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
+  const FADE = { center: [12.514862, 41.902740], inner: 470, outer: 860 };
   // Ritaglio AGEA locale (ripiego e vista ortofoto 2D).
   const PHOTO_BOUNDS = { west: 12.505, south: 41.898, east: 12.519, north: 41.906 };
   // Confine della CU in 3D fotografico: lato esterno delle strade che la circondano
@@ -445,11 +447,33 @@
       outline.userData.code = code; planBuildingsGroup.add(outline); planOutlinesByCode.set(code, outline);
     }
     if (plan.image) {
-      planTexture = new THREE.TextureLoader().load(plan.image, (texture) => {
-        texture.encoding = THREE.sRGBEncoding; texture.needsUpdate = true;
-        if (officialPlan === plan) notifyParent('campus-overlay-ready');
-      }, undefined, () => { if (officialPlan === plan) fallbackToPhoto('La planimetria non può essere caricata.'); });
+      // la carta bianca della planimetria diventa trasparente e i bordi sfumano: sotto si vede la cartina muta
+      const planCanvas = document.createElement('canvas');
+      planTexture = new THREE.CanvasTexture(planCanvas);
       planTexture.encoding = THREE.sRGBEncoding;
+      planTexture.anisotropy = 8;
+      const planImg = new Image();
+      planImg.onload = () => {
+        planCanvas.width = planImg.naturalWidth; planCanvas.height = planImg.naturalHeight;
+        const pctx = planCanvas.getContext('2d', { willReadFrequently: true });
+        pctx.drawImage(planImg, 0, 0);
+        const data = pctx.getImageData(0, 0, planCanvas.width, planCanvas.height);
+        const px = data.data, w = planCanvas.width, h = planCanvas.height;
+        for (let y = 0; y < h; y += 1) for (let x = 0; x < w; x += 1) {
+          const i = (y * w + x) * 4;
+          const light = Math.min(px[i], px[i + 1], px[i + 2]);
+          let a = light > 246 ? 0 : light > 226 ? (246 - light) / 20 : 1;
+          const ex = (x / w - 0.5) * 2, ey = (y / h - 0.5) * 2;
+          const r = Math.sqrt(ex * ex + ey * ey);
+          a *= r < 0.82 ? 1 : Math.max(0, 1 - (r - 0.82) / 0.3);
+          px[i + 3] = Math.round(px[i + 3] * a);
+        }
+        pctx.putImageData(data, 0, 0);
+        planTexture.needsUpdate = true;
+        if (officialPlan === plan) notifyParent('campus-overlay-ready');
+      };
+      planImg.onerror = () => { if (officialPlan === plan) fallbackToPhoto('La planimetria non può essere caricata.'); };
+      planImg.src = plan.image;
       const box = plan.viewBox;
       const corners = [[box.x, box.y], [box.x + box.w, box.y], [box.x + box.w, box.y + box.h], [box.x, box.y + box.h]].map(([x, y]) => pdfToWorld(x, y));
       const geometry = new THREE.BufferGeometry();
@@ -606,7 +630,7 @@
   }
   /* ---------- suolo: cartina muta dei dintorni + ortofoto ritagliata sul confine CU ---------- */
   const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) < 700;
-  const BASE_COLORS = { bg: '#eeeae5', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
+  const BASE_COLORS = { bg: '#e9e4df', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
   function canvasMapper(area, width, height) {
     return ([lon, lat]) => [((lon - area.west) / (area.east - area.west)) * width, ((area.north - lat) / (area.north - area.south)) * height];
   }
@@ -738,6 +762,12 @@
     for (const line of map.rail || []) { ctx.beginPath(); tracePath(ctx, line, toPx, false); ctx.strokeStyle = BASE_COLORS.rail; ctx.lineWidth = Math.max(1, 1.2 * px); ctx.stroke(); }
     ctx.setLineDash([]);
     for (const rings of map.buildings || []) fillRings(rings, BASE_COLORS.building, BASE_COLORS.buildingLine);
+    // bordo circolare: la cartina si dissolve nel colore dello sfondo, niente rettangolo
+    const [cx, cy] = toPx(FADE.center);
+    const fade = ctx.createRadialGradient(cx, cy, FADE.inner * px, cx, cy, FADE.outer * px);
+    fade.addColorStop(0, 'rgba(233,228,223,0)');
+    fade.addColorStop(1, 'rgba(233,228,223,1)');
+    ctx.fillStyle = fade; ctx.fillRect(0, 0, width, height);
     if (baseTexture) baseTexture.needsUpdate = true;
   }
   function createGround(context) {
@@ -950,6 +980,10 @@
     MINERVA.world = { x: statue.x, z: statue.z, y: MINERVA.basinHeight };
     const axisA = pdfToWorld(292.4, 500), axisB = pdfToWorld(292.4, 600);
     MINERVA.facing = Math.atan2(axisB.x - axisA.x, axisB.z - axisA.z);
+    if (!MINERVA.initialView && !selectedCode && !pendingSelectedCode) {
+      MINERVA.initialView = true;
+      flyTo({ x: statue.x, n: -statue.z }, 115, 0);
+    }
     loadMinervaModel();
   }
   /* statua: si carica solo se esiste models/minerva.json (es. {"file":"minerva.glb","height":9,"rotationDeg":0}) */

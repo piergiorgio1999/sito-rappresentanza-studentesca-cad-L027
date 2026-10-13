@@ -4,10 +4,10 @@
    dentro la Città Universitaria e le sagome con nome usate dalla scena 3D
    (CNR, Piazzale del Verano, mensa De Lollis). Risposta in cache all'edge per 7 giorni. */
 const MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-const MAP = '41.8965,12.5035,41.9075,12.5235';
+const MAP = '41.8946,12.5040,41.9108,12.5257';
 const CU = '41.8990,12.5095,41.9065,12.5215';
 const TTL = 60 * 60 * 24 * 7;
-const VERSION = 'v1';
+const VERSION = 'v2';
 const QUERY = `[out:json][timeout:90];
 (
   way["highway"](${MAP});
