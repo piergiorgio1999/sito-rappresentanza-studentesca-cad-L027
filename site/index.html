@@ -520,21 +520,21 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .mp-stage img,.mp-stage svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .mp-stage img{pointer-events:none}
 .mp-s{fill:transparent;stroke:transparent;stroke-width:1;cursor:pointer;transition:fill .18s,stroke .18s;vector-effect:non-scaling-stroke;stroke-linejoin:round}
-.mp-s.lez{fill:rgba(255,196,0,.55);stroke:#f2b400;stroke-width:2}
+.mp-s.lez{fill:color-mix(in srgb,var(--mpL) 55%,transparent);stroke:var(--mpL);stroke-width:2}
 .mp-s:hover,.mp-s.hov{fill:rgba(255,255,255,.38);stroke:#fff;stroke-width:2.5}
-.mp-s.lez:hover,.mp-s.lez.hov{fill:rgba(255,214,70,.65);stroke:#fff}
+.mp-s.lez:hover,.mp-s.lez.hov{fill:color-mix(in srgb,var(--mpL) 70%,#fff);stroke:#fff}
 .mp-s.hit{fill:rgba(47,95,150,.45);stroke:#2f5f96;stroke-width:2.5}
-.mp-s.on{fill:rgba(255,196,0,.78);stroke:#1f1f1f;stroke-width:3;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
+.mp-s.on{fill:color-mix(in srgb,var(--mpS) 70%,transparent);stroke:#1f1f1f;stroke-width:3;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 @media(prefers-reduced-motion:no-preference){.mp-s.lez:not(.on){animation:mpPulse 2.6s ease-in-out infinite}}
-@keyframes mpPulse{50%{stroke:rgba(242,180,0,.25)}}
+@keyframes mpPulse{50%{stroke:color-mix(in srgb,var(--mpL) 25%,transparent)}}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
 .mp-zoom button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--sap2);font-size:1.35rem;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .mp-zoom button:hover{background:var(--rose)}
 .mp-legend{position:absolute;left:12px;bottom:12px;z-index:4;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.mp-legend .sw{width:14px;height:14px;border-radius:4px;background:rgba(255,196,0,.55);border:2px solid #f2b400;display:inline-block}
-.mp-legend .sw.sel{background:rgba(255,196,0,.85);border-color:#1f1f1f;margin-left:6px}
+.mp-legend .sw{position:relative;width:18px;height:18px;border-radius:4px;background:color-mix(in srgb,var(--mpL) 55%,transparent);border:2px solid var(--mpL);display:inline-block;cursor:pointer}.mp-legend .sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;min-height:0;padding:0;border:0;cursor:pointer}.mp-legend label{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:.76rem;cursor:pointer}.mp-map{--mpL:#f2b400;--mpS:#2f8fd0}
+.mp-legend .sw.sel{background:color-mix(in srgb,var(--mpS) 70%,transparent);border-color:#1f1f1f;margin-left:6px}
 .mp-list{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:4px 14px}
 .mp-list summary{cursor:pointer;font-weight:700;padding:10px 0}
 .mp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:4px 0 14px}
@@ -1067,7 +1067,7 @@ dialog{background:#fff;color:var(--ink)}
         <svg id="mpSvg" viewBox="28 205 524 570" preserveAspectRatio="none" aria-label="Edifici selezionabili"></svg>
       </div>
       <div class="mp-tip" id="mpTip" hidden></div>
-      <div class="mp-legend"><span class="sw"></span> Lezioni triennale <span class="sw sel"></span> Selezionato</div>
+      <div class="mp-legend" title="Tocca un colore per cambiarlo"><label><span class="sw"><input type="color" id="mpColL" value="#f2b400" aria-label="Colore edifici con lezioni"></span> Lezioni triennale</label> <label><span class="sw sel"><input type="color" id="mpColS" value="#2f8fd0" aria-label="Colore edificio selezionato"></span> Selezionato</label></div>
       <div class="mp-zoom">
         <button type="button" id="mpIn" aria-label="Ingrandisci">+</button>
         <button type="button" id="mpOut" aria-label="Riduci">−</button>
@@ -3963,4 +3963,8 @@ updAccTab();
 </script>
 
 
+<script>(function(){var m=document.getElementById('mpMap');if(!m)return;var K='orariChimicaMapColors',rem=function(){try{return !!localStorage.getItem('orariChimicaRemember')}catch(e){return false}};
+var c={};try{c=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+[['mpColL','--mpL','L'],['mpColS','--mpS','S']].forEach(function(x){var i=document.getElementById(x[0]);if(!i)return;if(c[x[2]]){i.value=c[x[2]];m.style.setProperty(x[1],c[x[2]])}
+i.addEventListener('input',function(){m.style.setProperty(x[1],i.value);c[x[2]]=i.value;if(rem()){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}});});})();</script>
 </body></html>
