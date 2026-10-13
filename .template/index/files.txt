@@ -149,6 +149,7 @@
 ./scripts/release/prepare-release.sh
 ./scripts/release/release-wizard.sh
 ./scripts/verify-template.sh
+./scripts/campus-ortho-sr.sh
 ./site/HANDOFF.md
 ./site/_headers
 ./site/apple-touch-icon.png
