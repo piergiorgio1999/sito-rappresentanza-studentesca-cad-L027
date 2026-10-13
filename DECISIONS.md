@@ -187,3 +187,14 @@ ogni altro file template continua a contare nello scope `template`. Questo
 consente gli aggiornamenti necessari dell'indice nella stessa PR di un singolo
 scope senza introdurre eccezioni generali o cambiare la classificazione dei
 path.
+
+## 2026-10-13 — Pubblicazione automatica del sito Orari Chimica
+
+Su richiesta esplicita del proprietario del repository, ogni push su `main`
+pubblica il sito Orari Chimica esistente sul progetto Cloudflare Pages
+`orari-chimica`; è disponibile anche l'avvio manuale. Il workflow usa credenziali
+Cloudflare conservate esclusivamente nei GitHub Actions secrets e non stampa i
+valori. La decisione autorizza questa pubblicazione automatica per il sito
+esistente, in deroga al divieto generale di pubblicazione automatica della
+SPEC-V1; la SPEC congelata non viene modificata. Il deploy resta circoscritto
+allo scope GitHub e non introduce servizi a pagamento o eccezioni di scope.
