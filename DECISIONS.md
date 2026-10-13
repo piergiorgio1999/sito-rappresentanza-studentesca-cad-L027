@@ -198,3 +198,16 @@ valori. La decisione autorizza questa pubblicazione automatica per il sito
 esistente, in deroga al divieto generale di pubblicazione automatica della
 SPEC-V1; la SPEC congelata non viene modificata. Il deploy resta circoscritto
 allo scope GitHub e non introduce servizi a pagamento o eccezioni di scope.
+
+## 2026-10-13 — Vista campus 3D locale a costo zero
+
+La vista campus usa Three.js r128 e OrbitControls vendorizzati con licenza MIT,
+insieme all'ortofoto AGEA 2020 e alle geometrie OpenStreetMap già archiviate nel
+progetto. Non usa Google Maps, API key, servizi a pagamento, caricamento da CDN o
+mesh fotogrammetriche. Le geometrie sono estruse in modo schematico usando prima
+`height` OSM valido, poi `building:levels × 3 m`, infine una stima dichiarata di
+9 m. La planimetria Sapienza resta il riferimento per aule e lezioni; la selezione
+CU continua a sincronizzarsi fra le due viste e i messaggi iframe restano
+same-origin. L'ortofoto con sagome vettoriali resta il ripiego quando WebGL non è
+disponibile. L'ortofoto AGEA è attribuita secondo CC BY 4.0; i dati OSM secondo
+ODbL 1.0. I volumi sono indicativi e non costituiscono rilievi o fotogrammetria.

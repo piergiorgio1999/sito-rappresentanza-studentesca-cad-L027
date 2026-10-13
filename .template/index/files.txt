@@ -47,6 +47,8 @@
 ./.template/contracts/custom-tools.md
 ./.template/index/architecture.txt
 ./.template/index/files.txt
+./.template/index/files.txt
+./.template/index/files.txt
 ./.template/manifests/todo.md
 ./.template/template-manifest.json
 ./AGENTS.md
@@ -55,6 +57,8 @@
 ./CLAUDE.md
 ./CODE_OF_CONDUCT.md
 ./CONTRIBUTING.md
+./DECISIONS.md
+./DECISIONS.md
 ./DECISIONS.md
 ./README.md
 ./SECURITY.md
@@ -159,8 +163,12 @@
 ./site/campus-3d/campus-agea-2020.png
 ./site/campus-3d/campus-agea-2020.prj
 ./site/campus-3d/campus-buildings.json
+./site/campus-3d/campus-context.geojson
 ./site/campus-3d/index.html
-./site/campus-3d/maps-config.js
+./site/campus-3d/vendor/LICENSE.three
+./site/campus-3d/vendor/OrbitControls.js
+./site/campus-3d/vendor/PROVENANCE.txt
+./site/campus-3d/vendor/three.min.js
 ./site/copertine/B00028108/9788808399663_III_ed_italiana.jpg
 ./site/copertine/B015F27B6/9788808183507_3_ed_italiana.jpg
 ./site/copertine/B018560AD/9788895122670_edizione.jpg
@@ -260,7 +268,6 @@
 ./template-fixtures/go.mod
 ./template-fixtures/package.json
 ./template-fixtures/pyproject.toml
-./template-only/.keep
 ./tests/fixtures/go/.keep
 ./tests/fixtures/python/.keep
 ./tests/fixtures/rust/.keep

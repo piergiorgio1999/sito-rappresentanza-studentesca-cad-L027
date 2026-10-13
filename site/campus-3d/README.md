@@ -1,34 +1,31 @@
-# Città Universitaria · esplorazione 3D
+# Città Universitaria · esplorazione 3D locale
 
-Prototipo statico separato dal sito. Con una chiave Google Maps JavaScript API browser valida mostra la vista satellitare/fotorealistica 3D e marker interattivi ancorati alla mesh. Senza chiave non invia richieste a Google: presenta la planimetria AGEA 2020 e le impronte cliccabili OpenStreetMap, con stato esplicito “Vista fotorealistica in preparazione”.
+Prototipo statico senza chiavi, API a pagamento o installazione di dipendenze. La scena 3D usa Three.js r128 e OrbitControls distribuiti localmente con licenza MIT, l’ortofoto AGEA 2020 e le geometrie OpenStreetMap. La volumetria è schematica: non è fotogrammetria e non rappresenta un rilievo degli edifici.
 
-## Avvio locale
+## Avvio e controlli
 
-Per i moduli di dati statici usa un server HTTP dalla cartella di consegna (ad esempio `python3 -m http.server 8000`) e apri `http://localhost:8000`. Non serve installare dipendenze: il prototipo carica Maps JavaScript API dinamicamente solo quando `maps-config.js` contiene una chiave.
+Servire questa cartella con un server HTTP statico e aprire `index.html`. Le risorse JavaScript, i dati e le immagini sono locali; i collegamenti esterni sono usati solo per aprire le fonti OSM e la planimetria ufficiale.
 
-## Chiave Google opzionale
+- Trascina per orbitare, trascina con il tasto destro o due dita per spostarti, usa rotella o pinch per zoom.
+- `Vista ortofoto` alterna la scena 3D con l’ortofoto e le sagome CU selezionabili.
+- `Ortofoto` e `Edifici` mostrano o nascondono rispettivamente la base aerea e gli edifici estrusi.
+- `Tour manuale` avvia per pochi secondi una rotazione manuale; resta disattivato con `prefers-reduced-motion` e non parte automaticamente.
+- Cerca per codice o nome, filtra Chimica (CU014, CU032, CU035), oppure seleziona un edificio dalla lista, dalla mappa o dalla planimetria. La selezione apre i dettagli e mantiene il collegamento alle aule e lezioni.
 
-Aggiungi la tua chiave browser in `maps-config.js` (`window.MAPS_CONFIG.apiKey`). La chiave è usata dal browser e non va committata né condivisa in chat. Per la configurazione Google, abilita Maps JavaScript API e Maps 3D, limita la chiave ai referrer HTTP del dominio locale/di pubblicazione e verifica i requisiti di fatturazione del tuo account. Una chiave non configurata non causa chiamate Google. La pagina carica la versione `3.66` documentata al 13 ottobre 2026. La UI considera la scena pronta solo quando Maps segnala `gmp-steadychange` con `isSteady=true`; un errore `gmp-error` riporta alla planimetria.
+La scena si ferma quando la scheda del browser è nascosta. Se WebGL non è disponibile o viene perso, resta disponibile l’ortofoto con le impronte vettoriali.
 
-## Controlli
+## Dati, provenienza e limiti
 
-- Cerca per codice CU o nome, filtra Chimica (CU014, CU032, CU035), seleziona dalla lista, da un’impronta sulla planimetria o da un marker Maps 3D.
-- Il pannello dettaglio espone ID OSM, coordinate, tag presenti e link all’elemento sorgente.
-- “Mappa del sito” torna alla planimetria ufficiale: in standalone apre `https://orari-chimica.pi-er-gi.chatgpt.site/#mappa/CU...`; in iframe same-origin invia `postMessage({type: 'campus-return', code})`. Le selezioni si sincronizzano con `campus-select` senza chiudere la vista 3D.
-- Tour è solo manuale, ha durata limitata, si ferma alla selezione e resta disabilitato con preferenza `reduced motion`.
+- `campus-buildings.json` contiene 38 schede per 41 impronte OSM selezionate, con codici CU, centroidi e attributi pubblicati. Le quattro impronte CU029 sono aggregate in una scheda; i rispettivi ID OSM restano collegati. CU014, CU032 e CU035 sono presenti.
+- `campus-context.geojson` conserva l’estratto OSM campus di 530 impronte. I 38 edifici con codice CU sono collegati alle schede del campus; le altre geometrie contestuali non sono selezionabili. Attribuzione: © OpenStreetMap contributors, [ODbL 1.0 e termini](https://www.openstreetmap.org/copyright). Fonte dati: [API OpenStreetMap, area campus](https://api.openstreetmap.org/api/0.6/map?bbox=12.505,41.898,12.519,41.906).
+- Altezza usata per l’estrusione: tag OSM `height` valido; altrimenti `building:levels × 3 m`; altrimenti stima dichiarata di 9 m. Il dettaglio riporta il dato o la regola applicata. Tutti i volumi sono indicativi.
+- `campus-agea-2020.png` è il ritaglio dell’ortofoto Regione Lazio, mosaico AGEA 2020, WMS `geonode:2020_AGEA_25833_COG`; sidecar `.pgw` e `.prj`, CRS:84, bbox `[12.505, 41.898, 12.519, 41.906]`, 1200 × 923 px. Licenza dichiarata nei metadati: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribuzione: Regione Lazio, Geoportale, Ortofoto AGEA v. 2020. [Metadati](https://geoportale.regione.lazio.it/catalogue/csw_to_extra_format/r_lazio%3A92b0f7e3-3b75-4feb-ac5e-2382/ortofoto-agea-v-2020.html).
+- Three.js r128 e OrbitControls sono forniti in `vendor/` dalla distribuzione npm jsDelivr fissata alla versione `0.128.0`. `vendor/PROVENANCE.txt` registra gli URL e gli hash SHA-256; `vendor/LICENSE.three` contiene l’avviso MIT, da conservare con le copie ridistribuite.
 
-## Dati, licenze e limiti
+La base e le coperture usano l’ortofoto AGEA; pareti, altezze e geometrie non descrivono con precisione costruttiva gli edifici. La scena non fornisce né scarica mesh fotogrammetriche.
 
-- `campus-buildings.json`: 38 schede di edifici con 41 impronte OSM sull’area campus, con anelli multipli, codici CU, centroidi calcolati per area e attributi disponibili. Le quattro impronte CU029 sono aggregate in un’unica scheda e i quattro ID OSM sono conservati. Fonte OpenStreetMap contributors, ODbL 1.0; attribuzione e [termini](https://www.openstreetmap.org/copyright). Nessuna coordinata CU è stata sintetizzata. CU014, CU032 e CU035 sono presenti. Gli attributi di altezza e livelli sono quelli pubblicati in OSM; in loro assenza il dettaglio indica la stima convenzionale 9 m.
-- `campus-agea-2020.png` e sidecar `.pgw`/`.prj`: ritaglio ortofoto Regione Lazio Geoportale, mosaico AGEA 2020, WMS `geonode:2020_AGEA_25833_COG`, CRS:84, bbox `[12.505, 41.898, 12.519, 41.906]`, 1200 × 923 px. Licenza dichiarata nei metadati del dataset: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribuzione: Regione Lazio, Geoportale, Ortofoto AGEA v. 2020. [Metadati dataset](https://geoportale.regione.lazio.it/catalogue/csw_to_extra_format/r_lazio%3A92b0f7e3-3b75-4feb-ac5e-2382/ortofoto-agea-v-2020.html).
-- Le impronte e gli eventuali marker non sono fotogrammetria. Nessun mesh 3D di edifici viene finto o fornito. Le altezze mostrate sono solo dati OSM o stime schematiche dichiarate.
-- Le mappe Google sono dati/servizi Google soggetti ai [termini Google Maps Platform](https://cloud.google.com/maps-platform/terms). Questa cartella non effettua download o cache di Google Photorealistic 3D Tiles: la visualizzazione avviene tramite Maps JavaScript API.
+## Collegamenti
 
-## Riferimenti API primari
-
-- [Google Maps 3D: evento di click su marker](https://developers.google.com/maps/documentation/javascript/examples/3d/marker-click-event)
-- [Animazione camera Maps 3D](https://developers.google.com/maps/documentation/javascript/3d/animate-camera)
-- [Versioni Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/versions)
-- [Reference: disegno su mappa 3D e vincoli altitude/extruded](https://developers.google.com/maps/documentation/javascript/reference/3d-map-draw)
-
-I marker usano `RELATIVE_TO_MESH` per rimanere aderenti al terreno/mesh. La reference Google limita `extruded=true` a `RELATIVE_TO_GROUND` o `ABSOLUTE`, quindi non viene impostato insieme a `RELATIVE_TO_MESH`.
+- Vista autonoma: torna a `../index.html#mappa/CU...` sullo stesso hosting.
+- In iframe same-origin, `Mappa del sito` invia `postMessage({type: 'campus-return', code})`; la selezione invia `campus-select`. I messaggi in ingresso sono accettati solo dall’origine e dalla finestra parent previste.
+- L’apertura standalone torna alla planimetria Sapienza con il codice CU selezionato.
