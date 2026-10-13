@@ -958,12 +958,12 @@
     if (minervaLoaded || !MINERVA.world) return;
     let config;
     try { const response = await fetch('models/minerva.json', { cache: 'no-cache' }); if (!response.ok) return; config = await response.json(); } catch (_) { return; }
-    if (!config?.file || !/^[\w.-]+\.(glb|gltf)$/i.test(config.file)) return;
+    if (!config?.file || !/^[\w.-]+\.(glb|gltf|json)$/i.test(config.file)) return;
     minervaLoaded = true;
     try {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
     } catch (_) { minervaLoaded = false; return; }
-    new THREE.GLTFLoader().load(`models/${config.file}`, (gltf) => {
+    const onModel = (gltf) => {
       const model = gltf.scene;
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
@@ -991,7 +991,15 @@
       holder.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       holder.userData.minerva = true;
       extrasGroup.add(holder);
-    }, undefined, () => { minervaLoaded = false; });
+    };
+    const fail = () => { minervaLoaded = false; };
+    if (/\.json$/i.test(config.file)) {
+      // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
+      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+        const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
+        new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
+      }).catch(fail);
+    } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
   }
 
   /* ---------- modalità della vista (comandate dalla pagina principale) ---------- */
