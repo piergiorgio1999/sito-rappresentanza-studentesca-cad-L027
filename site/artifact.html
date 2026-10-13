@@ -718,6 +718,14 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style id="campus3d-dialog-style">
+#dlgCampus3D{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:#fff;color:var(--ink);overflow:hidden}
+#dlgCampus3D::backdrop{background:rgba(255,255,255,.8)}
+.campus3d-head{height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid var(--line);background:#fff}
+.campus3d-head h2{margin:0;font:700 17px Arial,sans-serif;color:#822433}
+#campus3dFrame{display:block;border:0;width:100%;height:calc(100% - 56px)}
+#campus3dOpen{margin:0 0 12px}
+</style>
 </head>
 <body>
 <header class="top">
@@ -1070,6 +1078,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
       <h2>Mappa della Città Universitaria</h2>
       <p class="note">Tocca la sagoma di un edificio per foto, aule e lezioni. In giallo gli edifici delle lezioni della triennale.</p>
     </div>
+    <button type="button" class="btn" id="campus3dOpen" aria-haspopup="dialog">Esplora il campus in 3D ↗</button>
     <div class="mp-bar">
       <input id="mpQ" type="search" placeholder="Cerca aula o edificio (es. Aula C, CU035, NEC, Fisica)" autocomplete="off" aria-label="Cerca aula o edificio">
       <div id="mpRes" class="mp-res" hidden></div>
@@ -3984,4 +3993,31 @@ i.addEventListener('input',function(){m.style.setProperty(x[1],i.value);c[x[2]]=
 function set(v){b.classList.remove('f-lexend','f-atkinson','f-opendyslexic');if(v&&v!=='std')b.classList.add('f-'+v);if(g)g.querySelectorAll('[data-font]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.font===(v||'std'))})}
 var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v);
 if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]');if(!x)return;set(x.dataset.font);try{if(localStorage.getItem('orariChimicaRemember'))localStorage.setItem(K,x.dataset.font)}catch(e){}});})();</script>
+
+<dialog id="dlgCampus3D" aria-labelledby="campus3dTitle">
+  <header class="campus3d-head"><h2 id="campus3dTitle">Esplora il campus</h2><button type="button" class="btn" id="campus3dClose">Chiudi ×</button></header>
+  <iframe id="campus3dFrame" title="Esplorazione tridimensionale della Città Universitaria" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</dialog>
+<script>
+(() => {
+  const dialog=document.getElementById('dlgCampus3D');
+  const frame=document.getElementById('campus3dFrame');
+  document.getElementById('campus3dOpen').addEventListener('click',()=>{
+    const code=typeof mpSel==='string'?mpSel:'';
+    frame.src='campus-3d/index.html'+(code?'?code='+encodeURIComponent(code):'');
+    dialog.showModal();
+  });
+  document.getElementById('campus3dClose').addEventListener('click',()=>dialog.close());
+  dialog.addEventListener('close',()=>{frame.src='about:blank';});
+  window.addEventListener('message',event=>{
+    if(event.origin!==location.origin||event.source!==frame.contentWindow||!dialog.open) return;
+    const data=event.data;
+    if(!data||!['campus-select','campus-return'].includes(data.type)) return;
+    const code=typeof data.code==='string'&&Object.hasOwn(MAPD.shapes,data.code)?data.code:'';
+    if(code) mpSelect(code,'',true);
+    if(data.type==='campus-return') dialog.close();
+  });
+})();
+</script>
+
 </body></html>
