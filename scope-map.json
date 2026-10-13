@@ -28,16 +28,16 @@
       ]
     },
     {
+      "name": "website",
+      "paths": [
+        "site/**"
+      ]
+    },
+    {
       "name": "documentation",
       "paths": [
         "*.md",
         "docs/**"
-      ]
-    },
-    {
-      "name": "website",
-      "paths": [
-        "site/**"
       ]
     },
     {
