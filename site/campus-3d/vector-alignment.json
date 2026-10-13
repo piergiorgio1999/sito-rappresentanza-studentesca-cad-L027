@@ -1,0 +1,24 @@
+{
+  "method": "Ordinary least-squares affine fit from centroids of shared official PDF paths and OSM campus footprints",
+  "sources": [
+    "site/index.html MAPD.shapes, official Sapienza planimetry in PDF point coordinates",
+    "site/campus-3d/campus-buildings.json, OSM footprints and area centroids"
+  ],
+  "sharedCodes": 38,
+  "anchorLonLat": [12.514820251950198, 41.90292714688689],
+  "axes": "+X east, +Y up, +Z south; PDF coordinates map to local X/Z meters",
+  "affine": {
+    "x": [0.3654854735204028, -0.9828139535292848, 406.2332459848437],
+    "zSouth": [0.9781487093095592, 0.3587328302611883, -476.7361407023791]
+  },
+  "residualMeters": {
+    "median": 3.1652794876604258,
+    "mean": 6.449491261853704,
+    "rms": 10.610966330265112,
+    "p90": 15.38456463983865,
+    "max": 37.093970497428266,
+    "maxCode": "CU023",
+    "CU035": 32.36760053212674
+  },
+  "limitations": "Approximate registration only. Original vector footprints are extruded without per-building warping; OSM meshes matching official codes are suppressed. Do not interpret this as a surveyed or photogrammetric model."
+}

@@ -211,3 +211,39 @@ CU continua a sincronizzarsi fra le due viste e i messaggi iframe restano
 same-origin. L'ortofoto con sagome vettoriali resta il ripiego quando WebGL non è
 disponibile. L'ortofoto AGEA è attribuita secondo CC BY 4.0; i dati OSM secondo
 ODbL 1.0. I volumi sono indicativi e non costituiscono rilievi o fotogrammetria.
+
+## 2026-10-13 — 3D sovrapposto alla mappa vettoriale esistente
+
+La mappa integra un livello 3D nello stesso riquadro della planimetria 2D.
+I volumi interattivi riprendono le sagome vettoriali ufficiali già presenti,
+con gli stessi codici CU, nomi, colori, aule e lezioni; la vista autonoma resta
+disponibile. Il piano della planimetria e i suoi volumi condividono la stessa
+trasformazione affine, senza deformazioni diverse per edificio. L'allineamento
+all'ortofoto è indicativo: la calibrazione su 38 centroidi OSM ha scarto RMS
+di circa 10,6 m e massimo di circa 37,1 m. Le geometrie OSM contestuali non
+duplicano i volumi dei codici CU presenti nella planimetria. Ricerca e pannello
+aule restano nella pagina principale; messaggi iframe limitati alla stessa
+origine sincronizzano selezione, colori e controlli della vista. Se WebGL non
+è disponibile, resta utilizzabile la mappa vettoriale 2D originale.
+
+L'ulteriore richiesta del proprietario limita i volumi 3D ai codici CU della
+planimetria, escludendo le estrusioni degli edifici del quartiere. L'illuminazione
+usa tone mapping fotografico e intensità ridotte per conservare dettaglio nei
+tetti; ortofoto e planimetria mantengono i colori originali. Le dipendenze locali
+vengono caricate in ordine, con un nuovo tentativo in caso di errore di rete;
+un caricamento non riuscito lascia visibile il ripiego 2D.
+
+## 2026-10-13 — Confine CU, dintorni muti, CNR e servizi
+
+Su indicazione del proprietario la scena 3D mostra l'ortofoto solo dentro il
+confine della Città Universitaria, tracciato sul lato esterno delle strade che la
+circondano (strade incluse), con piazzale Aldo Moro, piazzale del Verano e la mensa
+De Lollis. Fuori dal confine c'è una cartina 2D muta da OpenStreetMap, senza
+etichette. L'ortofoto AGEA 2020 ad alta risoluzione arriva dal WMS della Regione
+Lazio tramite la Pages Function `/api/campus-ortho` (cache all'edge); il ritaglio
+locale resta come ripiego. I tetti non sono illuminati, così hanno la stessa
+luminosità del suolo. Il CNR è mostrato in 3D come ospite, con la dicitura «non
+Sapienza ma omaggiato per simpatia». La planimetria 2D segna i due bar Sapienza
+(CU030, CU017), le fontanelle e gli altri servizi: quelli della legenda ufficiale
+sono posizionati sulle sagome, gli altri da OpenStreetMap (`/api/campus-osm`) con
+la calibrazione affine esistente, quindi con posizione indicativa.

@@ -161,6 +161,7 @@
 ./site/campus-3d/campus-buildings.json
 ./site/campus-3d/campus-context.geojson
 ./site/campus-3d/index.html
+./site/campus-3d/vector-alignment.json
 ./site/campus-3d/vendor/LICENSE.three
 ./site/campus-3d/vendor/OrbitControls.js
 ./site/campus-3d/vendor/PROVENANCE.txt
@@ -249,6 +250,8 @@
 ./site/copertine/BFC156FB8/9780801401343_original_work_reprint.jpg
 ./site/favicon-cad.svg
 ./site/functions/api/avvisi.js
+./site/functions/api/campus-ortho.js
+./site/functions/api/campus-osm.js
 ./site/icon-192.png
 ./site/icon-512.png
 ./site/icon-maskable-512.png
