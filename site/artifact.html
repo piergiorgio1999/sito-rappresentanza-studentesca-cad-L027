@@ -713,8 +713,10 @@ dialog{background:#fff;color:var(--ink)}
 .sz{display:inline-flex;align-items:center;gap:4px;margin-left:8px;vertical-align:middle;font-family:var(--sans);font-weight:400}
 .sz img{width:20px;height:auto;display:block}
 .sz small{font-size:.62rem;color:var(--muted);letter-spacing:0;text-transform:none;white-space:nowrap}
+body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}body.f-atkinson{--sans:"Atkinson Hyperlegible","Open Sans",Arial,sans-serif}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <header class="top">
@@ -1040,6 +1042,15 @@ dialog{background:#fff;color:var(--ink)}
         <div class="actions" style="margin-bottom:0">
           <button type="button" class="btn" id="stSave">💾 Salva su questo dispositivo</button>
           <button type="button" class="btn alt" id="stForget">Elimina i dati salvati</button>
+        </div>
+      </div>
+      <div class="card st-card">
+        <h3 class="h3" style="margin-top:0">Carattere del testo</h3>
+        <p class="note" style="margin-bottom:10px">Per chi ha dislessia o trova faticosa la lettura: cambia il font del testo del sito (i titoli restano invariati).</p>
+        <div class="fmts" id="stFont" role="group" aria-label="Carattere del testo">
+          <button type="button" class="fmt" data-font="std" aria-pressed="true"><span><b style="font-family:'Open Sans',Arial,sans-serif">Standard</b><small>Open Sans, carattere Sapienza</small></span></button>
+          <button type="button" class="fmt" data-font="lexend" aria-pressed="false"><span><b style="font-family:Lexend,sans-serif">Lexend</b><small>Ad alta leggibilità, pensato per ridurre lo sforzo di lettura</small></span></button>
+          <button type="button" class="fmt" data-font="atkinson" aria-pressed="false"><span><b style="font-family:'Atkinson Hyperlegible',sans-serif">Atkinson Hyperlegible</b><small>Lettere ben distinte (b/d, I/l/1)</small></span></button>
         </div>
       </div>
       <details class="card st-priv" open>
@@ -3967,4 +3978,8 @@ updAccTab();
 var c={};try{c=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
 [['mpColL','--mpL','L'],['mpColS','--mpS','S']].forEach(function(x){var i=document.getElementById(x[0]);if(!i)return;if(c[x[2]]){i.value=c[x[2]];m.style.setProperty(x[1],c[x[2]])}
 i.addEventListener('input',function(){m.style.setProperty(x[1],i.value);c[x[2]]=i.value;if(rem()){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}});});})();</script>
+<script>(function(){var K='orariChimicaFont',b=document.body,g=document.getElementById('stFont');
+function set(v){b.classList.remove('f-lexend','f-atkinson');if(v&&v!=='std')b.classList.add('f-'+v);if(g)g.querySelectorAll('[data-font]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.font===(v||'std'))})}
+var v=null;try{v=localStorage.getItem(K)}catch(e){}set(v);
+if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]');if(!x)return;set(x.dataset.font);try{if(localStorage.getItem('orariChimicaRemember'))localStorage.setItem(K,x.dataset.font)}catch(e){}});})();</script>
 </body></html>
