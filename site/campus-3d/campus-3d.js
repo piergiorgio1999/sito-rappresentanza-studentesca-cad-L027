@@ -961,8 +961,7 @@
     if (!config?.file || !/^[\w.-]+\.(glb|gltf)$/i.test(config.file)) return;
     minervaLoaded = true;
     try {
-      await loadDependency(window.location.origin + '/campus-3d/vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function')
-        .catch(() => loadDependency('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function'));
+      await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
     } catch (_) { minervaLoaded = false; return; }
     new THREE.GLTFLoader().load(`models/${config.file}`, (gltf) => {
       const model = gltf.scene;
@@ -975,8 +974,20 @@
       const holder = new THREE.Group();
       model.position.set(-center.x, -scaled.min.y, -center.z);
       holder.add(model);
-      holder.position.set(MINERVA.world.x + (Number(config.offset?.[0]) || 0), MINERVA.world.y, MINERVA.world.z + (Number(config.offset?.[1]) || 0));
+      const pedestal = Math.max(0, Number(config.pedestal) || 0);
+      const baseX = MINERVA.world.x + (Number(config.offset?.[0]) || 0), baseZ = MINERVA.world.z + (Number(config.offset?.[1]) || 0);
+      if (pedestal > 0) {
+        // basamento in pietra sotto la statua (dimensioni indicative)
+        const size = Number(config.pedestalSize) || 2.4;
+        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xe2d9c8, roughness: 0.9, metalness: 0 }));
+        block.position.set(baseX, MINERVA.world.y + pedestal / 2, baseZ);
+        block.rotation.y = MINERVA.facing;
+        block.castShadow = true; block.receiveShadow = true;
+        extrasGroup.add(block);
+      }
+      holder.position.set(baseX, MINERVA.world.y + pedestal, baseZ);
       holder.rotation.y = MINERVA.facing + ((Number(config.rotationDeg) || 0) * Math.PI / 180);
+      model.traverse((o) => { if (o.isMesh && o.material) { o.material.metalness = Math.min(o.material.metalness ?? 0.35, 0.35); o.material.needsUpdate = true; } });
       holder.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       holder.userData.minerva = true;
       extrasGroup.add(holder);
