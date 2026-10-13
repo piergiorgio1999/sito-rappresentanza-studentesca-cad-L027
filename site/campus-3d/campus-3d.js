@@ -3,7 +3,18 @@
   const SOURCE = 'campus-buildings.json';
   const CONTEXT_SOURCE = 'campus-context.geojson';
   const CHEMISTRY = new Set(['CU014', 'CU032', 'CU035']);
-  const bounds = { west: 12.505, south: 41.898, east: 12.519, north: 41.906 };
+  // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
+  const bounds = { west: 12.5035, south: 41.8965, east: 12.5235, north: 41.9075 };
+  // Ritaglio AGEA locale (ripiego e vista ortofoto 2D).
+  const PHOTO_BOUNDS = { west: 12.505, south: 41.898, east: 12.519, north: 41.906 };
+  // Confine della CU in 3D fotografico: lato esterno delle strade che la circondano
+  // (strade incluse), più piazzale Aldo Moro con il CNR e piazzale del Verano.
+  const CAMPUS_POLY = [[12.520515, 41.901737], [12.515571, 41.905544], [12.510446, 41.904041], [12.512053, 41.901077], [12.512066, 41.900238], [12.512032, 41.900211], [12.512301, 41.899673], [12.518137, 41.901863], [12.519517, 41.90102]];
+  // Area dell'ortofoto ad alta risoluzione: contiene il confine con un piccolo margine.
+  const ORTHO_BOUNDS = { west: 12.5098, south: 41.8992, east: 12.5214, north: 41.9062 };
+  // CNR: ospite d'onore. Sagoma di ripiego disegnata sull'ortofoto; se OSM la fornisce, si usa quella.
+  const CNR = { code: 'CNR', name: 'Consiglio Nazionale delle Ricerche', note: '(non Sapienza ma omaggiato per simpatia)', height: 24,
+    ring: [[12.512315, 41.900665], [12.512735, 41.900782], [12.513108, 41.900507], [12.513473, 41.900297], [12.513473, 41.900254], [12.512554, 41.899911], [12.512467, 41.899868], [12.51235, 41.899889]] };
   const $ = (id) => document.getElementById(id);
   const listNode = $('buildingList');
   const statusNode = $('status');
@@ -65,6 +76,14 @@
   let parentUnavailableSent = false;
   let latestParentContext = null;
   let occlusion = { right: 0, bottom: 0 };
+  let orthoMesh = null;
+  let orthoCanvas = null;
+  let orthoSource = null;
+  let baseCanvas = null;
+  let baseTexture = null;
+  let cnrMesh = null;
+  let cnrOutline = null;
+  let extraMask = [];
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const setStatus = (html, error = false) => {
@@ -78,7 +97,11 @@
     return { x: (lon - bounds.west) * metersPerLon - mapWidth / 2, n: (lat - bounds.south) * metersPerLat - mapDepth / 2 };
   }
   function imagePoint([lon, lat]) {
-    return [((lon - bounds.west) / (bounds.east - bounds.west)) * 1200, ((bounds.north - lat) / (bounds.north - bounds.south)) * 923];
+    return [((lon - PHOTO_BOUNDS.west) / (PHOTO_BOUNDS.east - PHOTO_BOUNDS.west)) * 1200, ((PHOTO_BOUNDS.north - lat) / (PHOTO_BOUNDS.north - PHOTO_BOUNDS.south)) * 923];
+  }
+  function campusCenter() {
+    const lons = CAMPUS_POLY.map((p) => p[0]), lats = CAMPUS_POLY.map((p) => p[1]);
+    return project([(Math.min(...lons) + Math.max(...lons)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2]);
   }
   function drawFootprints() {
     const svg = $('footprints');
@@ -214,6 +237,7 @@
     if (!b) return;
     const changed = selectedCode !== code;
     stopTour();
+    if (cnrMesh) showGuest(false);
     selectedCode = code;
     renderList();
     drawFootprints();
@@ -262,7 +286,7 @@
   function startTour() {
     if (!controls || reducedMotion || !buildings.length || currentView !== '3d') return;
     stopTour();
-    flyTo({ x: 0, n: 0 }, 1450, 1100);
+    flyTo(campusCenter(), 1450, 1100);
     tourButton.textContent = 'Ferma tour';
     tourButton.setAttribute('aria-pressed', 'true');
     controls.autoRotate = true;
@@ -278,8 +302,8 @@
       normalRoof.needsUpdate = true;
       selectedRoof.needsUpdate = true;
     }
-    if (ground) ground.material.map = visible ? photoTexture : null;
-    if (ground) ground.material.needsUpdate = true;
+    if (orthoMesh) orthoMesh.visible = visible;
+    if (cnrMesh) { cnrMesh.material[0].map = visible ? photoTexture : null; cnrMesh.material[0].needsUpdate = true; }
     for (const mesh of planMeshesByCode.values()) {
       mesh.material[0].map = visible ? photoTexture : null;
       mesh.material[0].needsUpdate = true;
@@ -376,7 +400,7 @@
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0.16, 0);
       applyRoofUVs(geometry);
-      const roof = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? photoTexture : null, roughness: 0.96, metalness: 0 });
+      const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false });
       const walls = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xb6a99e, roughness: 0.94, metalness: 0 });
       const mesh = new THREE.Mesh(geometry, [roof, walls]);
       mesh.userData.code = code;
@@ -506,7 +530,7 @@
     else if (message.type === 'campus-clear') { stopCameraFlight(); selectedCode = ''; updateSelectionMaterials(); updatePlanSelection(); renderList(); drawFootprints(); }
     else if (message.type === 'campus-camera') {
       if (!controls) pendingCamera = message;
-      else if (message.action === 'fit') flyTo({ x: 0, n: 0 }, 1300, 700);
+      else if (message.action === 'fit') flyTo(campusCenter(), 1300, 700);
       else if (message.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(message.factor) || 1)));
     } else if (message.type === 'campus-viewport') {
       occlusion = { right: Math.max(0, Number(message.right) || 0), bottom: Math.max(0, Number(message.bottom) || 0) };
@@ -537,26 +561,224 @@
     if (first[0] !== last[0] || first[1] !== last[1]) points.push(first);
     return points;
   }
-  function createGround(texture) {
+  /* ---------- suolo: cartina muta dei dintorni + ortofoto ritagliata sul confine CU ---------- */
+  const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) < 700;
+  const BASE_COLORS = { bg: '#eeeae5', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
+  function canvasMapper(area, width, height) {
+    return ([lon, lat]) => [((lon - area.west) / (area.east - area.west)) * width, ((area.north - lat) / (area.north - area.south)) * height];
+  }
+  function metersToPx(area, width) {
+    return width / ((area.east - area.west) * metersPerLon);
+  }
+  function tracePath(ctx, ring, toPx, close = true) {
+    ring.forEach((pt, i) => { const [x, y] = toPx(pt); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+    if (close) ctx.closePath();
+  }
+  function planeMesh(area, material, y) {
+    const sw = project([area.west, area.south]), ne = project([area.east, area.north]);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-      -mapWidth / 2, -0.08, -mapDepth / 2,
-      mapWidth / 2, -0.08, -mapDepth / 2,
-      mapWidth / 2, -0.08, mapDepth / 2,
-      -mapWidth / 2, -0.08, mapDepth / 2
+      sw.x, y, -ne.n, ne.x, y, -ne.n, ne.x, y, -sw.n, sw.x, y, -sw.n
     ], 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
     geometry.setIndex([0, 2, 1, 0, 3, 2]);
-    geometry.computeVertexNormals();
-    ground = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false }));
-    ground.receiveShadow = true;
+    return new THREE.Mesh(geometry, material);
+  }
+  function orthoSize() {
+    const aspect = ((ORTHO_BOUNDS.north - ORTHO_BOUNDS.south) * metersPerLat) / ((ORTHO_BOUNDS.east - ORTHO_BOUNDS.west) * metersPerLon);
+    const width = smallScreen ? 2048 : 4096;
+    return { width, height: Math.round(width * aspect) };
+  }
+  function createOrthoTexture() {
+    const { width, height } = orthoSize();
+    orthoCanvas = document.createElement('canvas');
+    orthoCanvas.width = width; orthoCanvas.height = height;
+    orthoSource = document.createElement('canvas');
+    orthoSource.width = width; orthoSource.height = height;
+    const texture = new THREE.CanvasTexture(orthoCanvas);
+    texture.encoding = THREE.sRGBEncoding;
+    texture.anisotropy = 8;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    // Ripiego immediato: il ritaglio AGEA locale, poi sostituito dai riquadri ad alta risoluzione.
+    const local = new Image();
+    local.onload = () => {
+      const toPx = canvasMapper(ORTHO_BOUNDS, width, height);
+      const [x0, y0] = toPx([PHOTO_BOUNDS.west, PHOTO_BOUNDS.north]);
+      const [x1, y1] = toPx([PHOTO_BOUNDS.east, PHOTO_BOUNDS.south]);
+      const ctx = orthoSource.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      if (!orthoSource.dataset.hires) ctx.drawImage(local, x0, y0, x1 - x0, y1 - y0);
+      compositeOrtho();
+    };
+    local.src = 'campus-agea-2020.png';
+    return texture;
+  }
+  /* applica il confine: fuori dal poligono l'ortofoto è trasparente e si vede la cartina muta */
+  function compositeOrtho() {
+    if (!orthoCanvas) return;
+    const ctx = orthoCanvas.getContext('2d');
+    const { width, height } = orthoCanvas;
+    const toPx = canvasMapper(ORTHO_BOUNDS, width, height);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx); ctx.fill();
+    const px = metersToPx(ORTHO_BOUNDS, width);
+    for (const ring of extraMask) {
+      ctx.beginPath(); tracePath(ctx, ring, toPx); ctx.fill();
+      ctx.lineJoin = 'round'; ctx.lineWidth = 24 * px; ctx.strokeStyle = '#000'; ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.drawImage(orthoSource, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    if (photoTexture) photoTexture.needsUpdate = true;
+  }
+  function loadHighResOrtho() {
+    const { width, height } = orthoCanvas;
+    const cols = Math.ceil(width / 2048), rows = Math.ceil(height / 2048);
+    const ctx = orthoSource.getContext('2d');
+    let pending = cols * rows, loaded = 0;
+    for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) {
+      const x0 = Math.round((c * width) / cols), x1 = Math.round(((c + 1) * width) / cols);
+      const y0 = Math.round((r * height) / rows), y1 = Math.round(((r + 1) * height) / rows);
+      const lon = (x) => ORTHO_BOUNDS.west + (x / width) * (ORTHO_BOUNDS.east - ORTHO_BOUNDS.west);
+      const lat = (y) => ORTHO_BOUNDS.north - (y / height) * (ORTHO_BOUNDS.north - ORTHO_BOUNDS.south);
+      const bbox = [lon(x0), lat(y1), lon(x1), lat(y0)].map((v) => v.toFixed(6)).join(',');
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        if (!orthoSource.dataset.hires) { orthoSource.dataset.hires = '1'; }
+        ctx.drawImage(image, x0, y0, x1 - x0, y1 - y0);
+        loaded += 1; pending -= 1;
+        compositeOrtho();
+      };
+      image.onerror = () => { pending -= 1; };
+      image.src = `/api/campus-ortho?bbox=${bbox}&w=${x1 - x0}&h=${y1 - y0}`;
+    }
+  }
+  function drawBase(map) {
+    const ctx = baseCanvas.getContext('2d');
+    const { width, height } = baseCanvas;
+    const toPx = canvasMapper(bounds, width, height);
+    const px = metersToPx(bounds, width);
+    ctx.fillStyle = BASE_COLORS.bg; ctx.fillRect(0, 0, width, height);
+    const fillRings = (rings, color, line) => {
+      ctx.beginPath();
+      for (const ring of rings) if (Array.isArray(ring) && ring.length > 2) tracePath(ctx, ring, toPx);
+      ctx.fillStyle = color; ctx.fill('evenodd');
+      if (line) { ctx.strokeStyle = line; ctx.lineWidth = Math.max(1, 0.5 * px); ctx.stroke(); }
+    };
+    for (const [, rings] of map.green || []) fillRings(rings, BASE_COLORS.green);
+    for (const rings of map.water || []) fillRings(rings, BASE_COLORS.water);
+    const roads = (map.roads || []).filter((road) => !road[3]);
+    const major = (kind) => /^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street)/.test(kind);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (const pass of ['casing', 'fill']) for (const [kind, meters, line] of roads) {
+      const w = Math.max(1, meters * px);
+      ctx.beginPath(); tracePath(ctx, line, toPx, false);
+      if (pass === 'casing') { if (!major(kind)) continue; ctx.strokeStyle = BASE_COLORS.casing; ctx.lineWidth = w + Math.max(2, 1.2 * px); }
+      else { ctx.strokeStyle = major(kind) ? BASE_COLORS.road : BASE_COLORS.minor; ctx.lineWidth = w; }
+      ctx.stroke();
+    }
+    ctx.setLineDash([3 * px, 3 * px]);
+    for (const line of map.rail || []) { ctx.beginPath(); tracePath(ctx, line, toPx, false); ctx.strokeStyle = BASE_COLORS.rail; ctx.lineWidth = Math.max(1, 1.2 * px); ctx.stroke(); }
+    ctx.setLineDash([]);
+    for (const rings of map.buildings || []) fillRings(rings, BASE_COLORS.building, BASE_COLORS.buildingLine);
+    // filo del confine sotto il bordo dell'ortofoto
+    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx);
+    ctx.strokeStyle = 'rgba(130,36,51,.55)'; ctx.lineWidth = Math.max(2, 2.5 * px); ctx.stroke();
+    if (baseTexture) baseTexture.needsUpdate = true;
+  }
+  function createGround(context) {
+    baseCanvas = document.createElement('canvas');
+    baseCanvas.width = smallScreen ? 2048 : 4096;
+    baseCanvas.height = Math.round(baseCanvas.width * (mapDepth / mapWidth));
+    // Prima dei dati OSM completi: le impronte locali del quartiere.
+    drawBase({ buildings: (context.features || []).filter((f) => f.geometry?.type === 'Polygon').map((f) => f.geometry.coordinates) });
+    baseTexture = new THREE.CanvasTexture(baseCanvas);
+    baseTexture.encoding = THREE.sRGBEncoding;
+    baseTexture.anisotropy = 8;
+    ground = planeMesh(bounds, new THREE.MeshBasicMaterial({ map: baseTexture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false }), -0.12);
     scene.add(ground);
+    orthoMesh = planeMesh(ORTHO_BOUNDS, new THREE.MeshBasicMaterial({ map: photoTexture, transparent: true, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }), -0.06);
+    orthoMesh.renderOrder = 1;
+    scene.add(orthoMesh);
   }
   function createMaterials(texture) {
+    // Tetti non illuminati: stessa luminosità dell'ortofoto al suolo, nessuna sovraesposizione.
     normalSide = new THREE.MeshStandardMaterial({ color: 0xd8d0c7, roughness: 0.88, metalness: 0 });
-    normalRoof = new THREE.MeshStandardMaterial({ color: 0xffffff, map: texture, roughness: 0.96, metalness: 0 });
+    normalRoof = new THREE.MeshBasicMaterial({ color: 0xffffff, map: texture, toneMapped: false });
     selectedSide = new THREE.MeshStandardMaterial({ color: 0x822433, roughness: 0.78, metalness: 0 });
-    selectedRoof = new THREE.MeshStandardMaterial({ color: 0xffeeee, map: texture, emissive: 0x641b27, emissiveIntensity: 0.26, roughness: 0.9, metalness: 0 });
+    selectedRoof = new THREE.MeshBasicMaterial({ color: 0xf2d4d9, map: texture, toneMapped: false });
+  }
+  /* ---------- CNR, ospite d'onore ---------- */
+  function addGuestBuilding(ring, height) {
+    if (cnrMesh) {
+      buildingGroup.remove(cnrMesh, cnrOutline);
+      pickables = pickables.filter((mesh) => mesh !== cnrMesh);
+      cnrMesh.geometry.dispose(); cnrOutline.geometry.dispose();
+    }
+    const shape = makeShape([ring]);
+    if (!shape) return;
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 1 });
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, 0.04, 0);
+    applyRoofUVs(geometry);
+    geometry.computeVertexNormals();
+    cnrMesh = new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false }), new THREE.MeshStandardMaterial({ color: 0xcfc8bf, roughness: 0.9, metalness: 0 })]);
+    cnrMesh.castShadow = true; cnrMesh.receiveShadow = true;
+    cnrMesh.userData.guest = true;
+    buildingGroup.add(cnrMesh);
+    pickables.push(cnrMesh);
+    cnrOutline = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 1), new THREE.LineBasicMaterial({ color: 0x1f5f8b, transparent: true, opacity: 0.95 }));
+    cnrOutline.visible = false;
+    buildingGroup.add(cnrOutline);
+    CNR.centroid = polygonCentroid(ring);
+  }
+  function showGuest(on) {
+    const card = $('guestCard');
+    if (card) { card.hidden = !on; if (on) card.querySelector('h2').focus({ preventScroll: true }); }
+    if (cnrOutline) cnrOutline.visible = on;
+    if (cnrMesh) cnrMesh.material[1].color.set(on ? 0x1f5f8b : 0xcfc8bf);
+    if (on && CNR.centroid) flyTo(project(CNR.centroid), 520, reducedMotion ? 0 : 850);
+  }
+  function ringArea(ring) {
+    let a = 0;
+    for (let i = 0; i < ring.length; i += 1) { const p = ring[i], q = ring[(i + 1) % ring.length]; a += p[0] * q[1] - q[0] * p[1]; }
+    return Math.abs(a / 2);
+  }
+  async function loadSurroundings() {
+    let map;
+    try {
+      const response = await fetch('/api/campus-osm');
+      if (!response.ok) return;
+      map = await response.json();
+    } catch (_) { return; }
+    if (!map || !Array.isArray(map.roads)) return;
+    drawBase(map);
+    const center = CAMPUS_POLY.reduce((a, p) => [a[0] + p[0] / CAMPUS_POLY.length, a[1] + p[1] / CAMPUS_POLY.length], [0, 0]);
+    const near = (ring) => { const c = polygonCentroid(ring); return Math.hypot((c[0] - center[0]) * metersPerLon, (c[1] - center[1]) * metersPerLat) < 700; };
+    extraMask = [];
+    let cnrRing = null;
+    for (const item of map.named || []) {
+      const outer = (item.rings || []).filter((ring) => Array.isArray(ring) && ring.length > 3);
+      if (!outer.length || !near(outer[0])) continue;
+      const label = `${item.name} ${item.operator || ''}`;
+      if (/consiglio nazionale delle ricerche|\bcnr\b/i.test(label) && item.building) {
+        const best = outer.reduce((a, b) => (ringArea(b) > ringArea(a) ? b : a));
+        if (!cnrRing || ringArea(best) > ringArea(cnrRing)) cnrRing = best;
+      }
+      const verano = /piazzale del verano/i.test(item.name) && (item.highway || item.place);
+      const mensa = /lollis/i.test(label) && (item.building || item.amenity);
+      if (verano || mensa) outer.forEach((ring) => extraMask.push(ring));
+    }
+    if (cnrRing) {
+      const levels = Number(String((map.named.find((n) => n.rings?.includes(cnrRing)) || {}).levels || '').replace(',', '.'));
+      addGuestBuilding(cnrRing, Number.isFinite(levels) && levels > 0 ? levels * 3.6 : CNR.height);
+      CNR.osm = true;
+    }
+    compositeOrtho();
   }
   function makeShape(rings) {
     const outer = closeRing(rings[0]);
@@ -584,10 +806,12 @@
     return shape;
   }
   function applyRoofUVs(geometry) {
+    // I tetti campionano l'ortofoto ad alta risoluzione (stesso texel del suolo).
     const positions = geometry.attributes.position;
     const uvs = geometry.attributes.uv;
+    const sw = project([ORTHO_BOUNDS.west, ORTHO_BOUNDS.south]), ne = project([ORTHO_BOUNDS.east, ORTHO_BOUNDS.north]);
     for (let i = 0; i < positions.count; i += 1) {
-      uvs.setXY(i, positions.getX(i) / mapWidth + 0.5, 0.5 - positions.getZ(i) / mapDepth);
+      uvs.setXY(i, (positions.getX(i) - sw.x) / (ne.x - sw.x), (-positions.getZ(i) - sw.n) / (ne.n - sw.n));
     }
     uvs.needsUpdate = true;
   }
@@ -629,16 +853,18 @@
       activeCodeOutlines.get(code).push(outline);
     }
   }
-  function buildScene(context, texture) {
+  function buildScene(context) {
+    const texture = createOrthoTexture();
     photoTexture = texture;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe9e4df);
     camera = new THREE.PerspectiveCamera(48, 1, 1, 8000);
     camera.position.set(0, 850, 1050);
-    createGround(texture);
+    createGround(context);
     createMaterials(texture);
     buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
+    addGuestBuilding(CNR.ring, CNR.height);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x82776c, 0.72));
     scene.add(new THREE.AmbientLight(0xffffff, 0.18));
     const sun = new THREE.DirectionalLight(0xfff4e8, 0.95);
@@ -683,7 +909,7 @@
     controls.update();
     if (pendingCamera) {
       const command = pendingCamera; pendingCamera = null;
-      if (command.action === 'fit') flyTo({ x: 0, n: 0 }, 1300, 0);
+      if (command.action === 'fit') flyTo(campusCenter(), 1300, 0);
       else if (command.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(command.factor) || 1)));
     }
     const raycaster = new THREE.Raycaster();
@@ -701,6 +927,8 @@
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickables, false)[0];
+      if (hit?.object.userData.guest) { showGuest(true); return; }
+      showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);
     });
     renderer.domElement.addEventListener('webglcontextlost', (event) => {
@@ -716,6 +944,8 @@
     document.addEventListener('visibilitychange', handleVisibility);
     handleVisibility();
     if (latestParentContext?.plan?.features) buildPlanLayer(latestParentContext.plan);
+    loadHighResOrtho();
+    loadSurroundings();
   }
   function updateSelectionMaterials() {
     for (const [code, meshes] of activeCodeMeshes) {
@@ -783,7 +1013,8 @@
     $('aerialToggle').addEventListener('click', () => setAerial(!showAerial));
     $('buildingsToggle').addEventListener('click', () => setBuildingVisibility(!showBuildings));
     document.querySelector('.drawer-close').addEventListener('click', closeDetails);
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeDetails(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeDetails(); showGuest(false); } });
+    $('guestClose')?.addEventListener('click', () => showGuest(false));
     $('planLayerToggle')?.addEventListener('click', () => {
       planVisible = !planVisible;
       if (planImagePlane) planImagePlane.visible = planVisible;
@@ -839,12 +1070,8 @@
       await loadDependency('vendor/OrbitControls.js', () => typeof window.THREE?.OrbitControls === 'function');
       const queryCode = new URLSearchParams(location.hash.split('?')[1] || '').get('code') || new URLSearchParams(location.search).get('code');
       if (queryCode) selectBuilding(queryCode, { animate: false, notify: false });
-      const photo = new THREE.TextureLoader().load('campus-agea-2020.png', () => {}, undefined, () => fallbackToPhoto('L’ortofoto AGEA non è disponibile; le impronte cliccabili restano attive.'));
-      photo.encoding = THREE.sRGBEncoding;
-      photo.wrapS = THREE.ClampToEdgeWrapping;
-      photo.wrapT = THREE.ClampToEdgeWrapping;
       if (latestParentContext?.plan?.features) officialPlanCodes = new Set(latestParentContext.plan.features.map((feature) => String(feature.code || '').toUpperCase()));
-      buildScene(context, photo);
+      buildScene(context);
       setView('3d');
       tourButton.disabled = reducedMotion;
       if (selectedCode) {

@@ -527,6 +527,10 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .mp-s.on{fill:color-mix(in srgb,var(--mpS) 70%,transparent);stroke:#1f1f1f;stroke-width:3;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 @media(prefers-reduced-motion:no-preference){.mp-s.lez:not(.on){animation:mpPulse 2.6s ease-in-out infinite}}
 @keyframes mpPulse{50%{stroke:color-mix(in srgb,var(--mpL) 25%,transparent)}}
+.mp-poi-m{cursor:pointer}.mp-poi-m circle{stroke:#fff;stroke-width:1.2;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35))}.mp-poi-m text{pointer-events:none}.mp-poi.hide-bar .c-bar,.mp-poi.hide-water .c-water,.mp-poi.hide-food .c-food,.mp-poi.hide-serv .c-serv{display:none}
+.mp-poi-key{position:absolute;left:12px;top:12px;z-index:4;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:.76rem;display:grid;gap:3px;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:default}.mp-poi-key b{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#822433}.mp-poi-key label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}.mp-poi-key input{width:auto;min-height:0;margin:0}.mp-poi-key .dot{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:10px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.mp-map.has-3d .mp-poi-key{display:none}
+@media(max-width:699px){.mp-poi-key{font-size:.68rem;padding:5px 7px;top:8px;left:8px}}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -2749,6 +2753,78 @@ let mpSel=null, mpRoom='', mpV={s:1,tx:0,ty:0}, mpReady=false;
     `<button type="button" class="mp-b${LEZ_BLD.includes(c)?' lez':''}" data-gb="${c}"><span class="cd">${c}${CAMPUS_X[c]&&CAMPUS_X[c].al?' · '+CAMPUS_X[c].al:''}</span><span class="nm">${esc(bTitle(c))}${BLD_LIBS[c]?' 📖':''}</span></button>`).join('');
 })();
 
+/* --- servizi della Città Universitaria: bar, fontanelle e altri servizi sulla planimetria --- */
+const MP_POI_CAT = {
+  bar:   {label:'Bar Sapienza', icon:'☕', color:'#822433'},
+  water: {label:'Fontanelle', icon:'💧', color:'#006778'},
+  food:  {label:'Mense e ristoro', icon:'🍽️', color:'#C54C00'},
+  serv:  {label:'Altri servizi', icon:'ℹ️', color:'#4f6b5d'}
+};
+const MP_POI_TYPES = {
+  drinking_water:['water','Fontanella (acqua potabile)'], cafe:['food','Caffetteria'], bar:['food','Bar'], canteen:['food','Mensa'], restaurant:['food','Ristorante'], fast_food:['food','Ristoro'], vending_machine:['food','Distributori automatici'],
+  toilets:['serv','Servizi igienici'], atm:['serv','Bancomat'], bank:['serv','Banca'], library:['serv','Biblioteca'], post_office:['serv','Ufficio postale'], post_box:['serv','Cassetta postale'], pharmacy:['serv','Farmacia'],
+  defibrillator:['serv','Defibrillatore (DAE)'], first_aid:['serv','Primo soccorso'], clinic:['serv','Ambulatorio'], doctors:['serv','Ambulatorio'], printing:['serv','Stampa'], shop_copyshop:['serv','Copisteria'], shop_books:['serv','Libreria'], shop_stationery:['serv','Cartoleria'],
+  bicycle_parking:['serv','Parcheggio bici'], place_of_worship:['serv','Luogo di culto'], police:['serv','Polizia'], kindergarten:['serv','Asilo nido']
+};
+const MP_POI_ICON = {drinking_water:'💧', toilets:'🚻', atm:'🏧', bank:'🏦', library:'📚', post_office:'✉️', post_box:'✉️', pharmacy:'💊', defibrillator:'❤️', first_aid:'➕', clinic:'➕', doctors:'➕', printing:'🖨️', shop_copyshop:'🖨️', shop_books:'📖', shop_stationery:'✏️', bicycle_parking:'🚲', place_of_worship:'⛪', police:'👮', kindergarten:'🧸', canteen:'🍽️', restaurant:'🍽️', fast_food:'🥪', vending_machine:'🥤', cafe:'☕', bar:'☕'};
+/* servizi già indicati dalla legenda della planimetria ufficiale */
+const MP_POI_PLAN = [
+  {code:'CU030', cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Edificio CU030'},
+  {code:'CU017', cat:'bar', icon:'☕', name:'Bar Sapienza · Centro Teatro Ateneo', note:'Edificio CU017'},
+  {code:'CU029', cat:'serv', icon:'🏛️', name:'Servizi generali', note:'Uffici, segreterie, posta, banca · CU029'},
+  {code:'CU001', cat:'serv', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
+  {code:'CU011', cat:'serv', icon:'🧸', name:'Asilo nido', note:'CU011'},
+  {code:'CU012', cat:'serv', icon:'⛪', name:'Chiesa Divina Sapienza', note:'CU012'},
+  {code:'CU007', cat:'serv', icon:'👮', name:'Commissariato P.S.', note:'CU007'}
+];
+const mpPoiOn = {bar:true, water:true, food:true, serv:true};
+(function(){
+  const NS='http://www.w3.org/2000/svg', svg=$('mpSvg'), g=document.createElementNS(NS,'g');
+  g.setAttribute('class','mp-poi'); svg.append(g);
+  const placed=[];
+  function add(x,y,p){
+    const m=document.createElementNS(NS,'g'); m.setAttribute('class','mp-poi-m c-'+p.cat); m.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    m.setAttribute('role','img'); m.setAttribute('aria-label',p.name); m.dataset.name=p.name; m.dataset.note=p.note||'';
+    const c=document.createElementNS(NS,'circle'); c.setAttribute('r', p.cat==='bar'?8.5:6.2); c.setAttribute('fill',MP_POI_CAT[p.cat].color);
+    const t=document.createElementNS(NS,'text'); t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','central'); t.setAttribute('font-size', p.cat==='bar'?9:6.8); t.textContent=p.icon;
+    const ti=document.createElementNS(NS,'title'); ti.textContent=p.name+(p.note?' · '+p.note:'');
+    m.append(c,t,ti); g.append(m); placed.push({x,y,cat:p.cat});
+  }
+  function shapeCenter(code){ const p=svg.querySelector(`[data-b="${code}"]`); if(!p) return null; const b=p.getBBox(); return [b.x+b.width/2,b.y+b.height/2]; }
+  function drawPlan(){ MP_POI_PLAN.forEach(p=>{ const c=shapeCenter(p.code); if(c) add(c[0],c[1],p); }); }
+  /* lon/lat → coordinate della planimetria: inversa della calibrazione affine usata dalla vista 3D */
+  function geoToPdf(al, lon, lat){
+    const mLat=111132, mLon=111320*Math.cos(41.902*Math.PI/180);
+    const ex=(lon-al.anchorLonLat[0])*mLon, zs=-(lat-al.anchorLonLat[1])*mLat;
+    const [a,b,c]=al.affine.x, [d,e,f]=al.affine.zSouth, det=a*e-b*d;
+    const u=ex-c, v=zs-f; return [(e*u-b*v)/det, (a*v-d*u)/det];
+  }
+  const inside=(x,y)=>x>=MP_VB.x&&x<=MP_VB.x+MP_VB.w&&y>=MP_VB.y&&y<=MP_VB.y+MP_VB.h;
+  function drawOsm(al, data){
+    for(const p of data.pois||[]){
+      const def=MP_POI_TYPES[p.type]; if(!def) continue;
+      const [x,y]=geoToPdf(al,p.lon,p.lat); if(!inside(x,y)) continue;
+      // i due bar della planimetria hanno già il loro segnaposto
+      if(def[0]==='food' && /^(cafe|bar)$/.test(p.type) && placed.some(q=>q.cat==='bar'&&Math.hypot(q.x-x,q.y-y)<14)) continue;
+      if(placed.some(q=>q.cat===def[0]&&Math.hypot(q.x-x,q.y-y)<2.5)) continue;
+      add(x,y,{cat:def[0], icon:MP_POI_ICON[p.type]||'•', name:p.name||def[1], note:p.name?def[1]:''});
+    }
+    const n=g.querySelectorAll('.c-water').length; const k=$('mpPoiKey'); if(k) k.querySelector('[data-cat="water"] .n').textContent=n?` (${n})`:'';
+  }
+  function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
+  const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
+  key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="background:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
+  key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
+  $('mpMap').append(key);
+  requestAnimationFrame(drawPlan);
+  Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
+    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); }).catch(()=>{});
+  /* tocco su un segnaposto: etichetta */
+  $('mpMap').addEventListener('click',e=>{ const m=e.target.closest('.mp-poi-m'), t=$('mpTip'); if(!m) return;
+    e.stopPropagation(); const r=$('mpMap').getBoundingClientRect(), b=m.getBoundingClientRect();
+    t.innerHTML=`<b>${esc(m.dataset.name)}</b>${m.dataset.note?' '+esc(m.dataset.note):''}`; t.style.left=(b.left+b.width/2-r.left)+'px'; t.style.top=(b.top-r.top)+'px'; t.hidden=false; });
+})();
+
 /* --- zoom e spostamento --- */
 const mpEl=$('mpMap'), mpSt=$('mpStage');
 function mpApply(anim){ mpSt.classList.toggle('anim',!!anim); mpSt.style.transform=`translate(${mpV.tx}px,${mpV.ty}px) scale(${mpV.s})`; }
@@ -2763,7 +2839,7 @@ function mpInit(){ if(!mpEl.offsetWidth) return; if(!mpReady){ mpReady=true; mpF
 window.addEventListener('resize',()=>{ if(mpReady && mpEl.offsetWidth){ mpClamp(); mpApply(); } });
 const mpP=new Map(); let mpG=null;
 mpEl.addEventListener('pointerdown',e=>{
-  if(e.target.closest('.mp-zoom,.mp-legend')) return;
+  if(e.target.closest('.mp-zoom,.mp-legend,.mp-poi-key,.mp-poi-m')) return;
   mpEl.setPointerCapture(e.pointerId); mpP.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(mpP.size===1) mpG={t:'pan',x:e.clientX,y:e.clientY,tx:mpV.tx,ty:mpV.ty,moved:false,hit:e.target.closest('.mp-s')};
   else if(mpP.size===2){ const [a,b]=[...mpP.values()], r=mpEl.getBoundingClientRect();
@@ -2789,6 +2865,7 @@ mpEl.addEventListener('dblclick',e=>{ const r=mpEl.getBoundingClientRect(); mpZo
 const mpCenterZoom=f=>{ if(window.campusOverlay?.active){window.campusOverlay.camera({action:'zoom',factor:f});return;} const r=mpEl.getBoundingClientRect(); mpZoomAt(f,r.width/2,r.height/2,true); };
 $('mpIn').onclick=()=>mpCenterZoom(1.5); $('mpOut').onclick=()=>mpCenterZoom(1/1.5); $('mpFit').onclick=()=>mpFit(true);
 function mpHover(e){ const p=e.target.closest('.mp-s'), t=$('mpTip');
+  const pm=e.target.closest('.mp-poi-m'); if(pm){ const r=mpEl.getBoundingClientRect(); t.innerHTML=`<b>${esc(pm.dataset.name)}</b>${pm.dataset.note?' '+esc(pm.dataset.note):''}`; t.style.left=(e.clientX-r.left)+'px'; t.style.top=(e.clientY-r.top)+'px'; t.hidden=false; return; }
   document.querySelectorAll('.mp-s.hov').forEach(x=>x!==p&&x.classList.remove('hov'));
   if(!p){ t.hidden=true; return; } p.classList.add('hov'); const r=mpEl.getBoundingClientRect(), c=p.dataset.b;
   t.innerHTML=`<b>${c}</b>${esc(bTitle(c))}`; t.style.left=(e.clientX-r.left)+'px'; t.style.top=(e.clientY-r.top)+'px'; t.hidden=false; }
