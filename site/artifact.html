@@ -2846,7 +2846,7 @@ const mpEl=$('mpMap'), mpSt=$('mpStage');
 function mpApply(anim){ mpSt.classList.toggle('anim',!!anim); mpSt.style.transform=`translate(${mpV.tx}px,${mpV.ty}px) scale(${mpV.s})`; }
 function mpFitScale(){ const r=mpEl.getBoundingClientRect(); return Math.min(r.width/(MP_VB.w*MP_K), r.height/(MP_VB.h*MP_K)); }
 function mpClamp(){ const r=mpEl.getBoundingClientRect(), f=mpFitScale();
-  mpV.s=Math.max(f*.9,Math.min(f*7,mpV.s)); const sw=MP_VB.w*MP_K*mpV.s, sh=MP_VB.h*MP_K*mpV.s, m=Math.max(60,.45*Math.min(r.width,r.height));
+  mpV.s=Math.max(f*.9,Math.min(f*20,mpV.s)); const sw=MP_VB.w*MP_K*mpV.s, sh=MP_VB.h*MP_K*mpV.s, m=Math.max(60,.45*Math.min(r.width,r.height));
   mpV.tx = sw<=r.width ? (r.width-sw)/2 : Math.min(m,Math.max(r.width-sw-m,mpV.tx));
   mpV.ty = sh<=r.height ? (r.height-sh)/2 : Math.min(m,Math.max(r.height-sh-m,mpV.ty)); }
 function mpFit(anim){ if(window.campusOverlay?.active){window.campusOverlay.camera({action:'fit'});return;} mpV.s=mpFitScale(); mpClamp(); mpApply(anim); }

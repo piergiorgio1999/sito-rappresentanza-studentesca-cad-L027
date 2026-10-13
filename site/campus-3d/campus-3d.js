@@ -1223,7 +1223,7 @@
     photoTexture = texture;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe9e4df);
-    camera = new THREE.PerspectiveCamera(48, 1, 1, 8000);
+    camera = new THREE.PerspectiveCamera(48, 1, 0.3, 8000);
     camera.position.set(0, 850, 1050);
     createGround(context);
     createMaterials(roofTexture);
@@ -1265,7 +1265,7 @@
     controls.target.set(0, 0, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.065;
-    controls.minDistance = 95;
+    controls.minDistance = 4;
     controls.maxDistance = 3000;
     controls.minPolarAngle = 0.08;
     controls.maxPolarAngle = Math.PI / 2.04;
