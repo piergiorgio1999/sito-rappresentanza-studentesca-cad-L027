@@ -991,6 +991,9 @@
       holder.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       holder.userData.minerva = true;
       extrasGroup.add(holder);
+      // cliccabile: ogni parte della statua avvia il rimbalzo
+      holder.traverse((o) => { if (o.isMesh) { o.userData.minervaPart = true; pickables.push(o); } });
+      MINERVA.holder = holder; MINERVA.baseY = holder.position.y; MINERVA.scale = 1;
     };
     const fail = () => { minervaLoaded = false; };
     if (/\.json$/i.test(config.file)) {
@@ -1290,6 +1293,7 @@
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickables, false)[0];
+      if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
       if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
       showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);
@@ -1318,8 +1322,33 @@
     for (const [code, outlines] of activeCodeOutlines) for (const outline of outlines) outline.visible = code === selectedCode;
     updatePlanSelection();
   }
+  /* Minerva: un clic la fa crescere con un rimbalzo elastico, un altro clic la riporta com'era */
+  const MINERVA_BIG = 1.8;
+  let minervaAnim = null;
+  function bounceMinerva() {
+    if (!MINERVA.holder) return;
+    const to = MINERVA.scale > 1.01 ? 1 : MINERVA_BIG;
+    if (reducedMotion) { MINERVA.scale = to; MINERVA.holder.scale.setScalar(to); return; }
+    minervaAnim = { start: performance.now(), from: MINERVA.scale, to, grow: to > MINERVA.scale };
+  }
+  function updateMinerva(now) {
+    if (!minervaAnim || !MINERVA.holder) return;
+    const duration = 1400;
+    const t = Math.min(1, (now - minervaAnim.start) / duration);
+    // elastico in uscita: supera la misura finale e ci torna oscillando
+    const elastic = t === 1 ? 1 : 1 - Math.pow(2, -9 * t) * Math.cos(t * Math.PI * 4.5);
+    const s = minervaAnim.from + (minervaAnim.to - minervaAnim.from) * elastic;
+    // schiacciamento e allungamento, come un cartone animato
+    const wobble = Math.sin(t * Math.PI * 7) * Math.exp(-4.5 * t) * 0.22;
+    MINERVA.holder.scale.set(s * (1 + wobble * 0.6), s * (1 - wobble), s * (1 + wobble * 0.6));
+    // saltello: due rimbalzi sempre più bassi, solo mentre cresce
+    const hop = minervaAnim.grow ? Math.abs(Math.sin(t * Math.PI * 2.5)) * Math.exp(-3 * t) * 2.5 : 0;
+    MINERVA.holder.position.y = MINERVA.baseY + hop;
+    if (t === 1) { MINERVA.scale = minervaAnim.to; MINERVA.holder.scale.setScalar(MINERVA.scale); MINERVA.holder.position.y = MINERVA.baseY; minervaAnim = null; }
+  }
   function renderFrame() {
     if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
+    updateMinerva(performance.now());
     controls.update();
     renderer.render(scene, camera);
   }
@@ -1455,6 +1484,6 @@
     }
   }
   // accesso per verifiche automatiche e diagnosi (sola lettura della camera)
-  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; } };
+  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; }, bounceMinerva: () => bounceMinerva() };
   init();
 })();
