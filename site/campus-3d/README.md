@@ -26,6 +26,12 @@ La base e le coperture usano l’ortofoto AGEA; pareti, altezze e geometrie non 
 
 La scena usa coordinate destrorse: +X verso est, +Y verso l’alto e +Z verso sud, quindi il nord geografico corrisponde a −Z.
 
+## Planimetria vettoriale incorporata
+
+Quando il sito principale apre questa pagina con `?embedded=1`, l’iframe riceve via `postMessage` same-origin la planimetria originale: immagine, viewBox, percorsi SVG assoluti e codici CU. L’immagine ufficiale viene proiettata come piano della scena e i percorsi originali vengono estrusi schematicamente; il livello si può attenuare o nascondere. In vista ortofoto resta disponibile la stessa planimetria con selezione dei codici. La sidebar e i dettagli restano di proprietà della pagina principale. Il protocollo accetta solo messaggi inviati dalla finestra parent sullo stesso origin.
+
+La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra planimetria Sapienza e centroidi OSM, con residuo RMS 10,61 m, mediana 3,17 m e massimo 37,09 m (CU023; CU035 32,37 m). I percorsi vettoriali non vengono deformati edificio per edificio e non vanno interpretati come un rilievo geodetico. I dati e i coefficienti usati sono in `vector-alignment.json`; l’ortofoto AGEA e i dati OSM mantengono le attribuzioni sopra indicate.
+
 ## Collegamenti
 
 - Vista autonoma: torna a `../index.html#mappa/CU...` sullo stesso hosting.

@@ -211,3 +211,17 @@ CU continua a sincronizzarsi fra le due viste e i messaggi iframe restano
 same-origin. L'ortofoto con sagome vettoriali resta il ripiego quando WebGL non è
 disponibile. L'ortofoto AGEA è attribuita secondo CC BY 4.0; i dati OSM secondo
 ODbL 1.0. I volumi sono indicativi e non costituiscono rilievi o fotogrammetria.
+
+## 2026-10-13 — 3D sovrapposto alla mappa vettoriale esistente
+
+La mappa integra un livello 3D nello stesso riquadro della planimetria 2D.
+I volumi interattivi riprendono le sagome vettoriali ufficiali già presenti,
+con gli stessi codici CU, nomi, colori, aule e lezioni; la vista autonoma resta
+disponibile. Il piano della planimetria e i suoi volumi condividono la stessa
+trasformazione affine, senza deformazioni diverse per edificio. L'allineamento
+all'ortofoto è indicativo: la calibrazione su 38 centroidi OSM ha scarto RMS
+di circa 10,6 m e massimo di circa 37,1 m. Le geometrie OSM contestuali non
+duplicano i volumi dei codici CU presenti nella planimetria. Ricerca e pannello
+aule restano nella pagina principale; messaggi iframe limitati alla stessa
+origine sincronizzano selezione, colori e controlli della vista. Se WebGL non
+è disponibile, resta utilizzabile la mappa vettoriale 2D originale.

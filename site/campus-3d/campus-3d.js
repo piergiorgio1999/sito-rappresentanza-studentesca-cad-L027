@@ -8,6 +8,7 @@
   const listNode = $('buildingList');
   const statusNode = $('status');
   const photoStage = $('photoStage');
+  const planStage = $('planStage');
   const mapHost = $('map3dHost');
   const drawer = $('detailDrawer');
   const tourButton = $('tourButton');
@@ -17,6 +18,8 @@
   const metersPerLat = 111132;
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
+  const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+  document.body.classList.toggle('embedded', embedded);
   let buildings = [];
   let selectedCode = '';
   let chemistryOnly = false;
@@ -40,6 +43,28 @@
   let pickables = [];
   let activeCodeMeshes = new Map();
   let activeCodeOutlines = new Map();
+  let baseBuildings = [];
+  let contextFeatures = [];
+  let alignment = null;
+  let officialPlan = null;
+  let officialPlanCodes = new Set();
+  let planLayerGroup = null;
+  let planBuildingsGroup = null;
+  let planImagePlane = null;
+  let planImageMaterial = null;
+  let planTexture = null;
+  let planMeshesByCode = new Map();
+  let planOutlinesByCode = new Map();
+  let planPointsByCode = new Map();
+  let planVisible = true;
+  let planOpacity = 0.8;
+  let planColors = { lesson: '#f2b400', selected: '#2f8fd0' };
+  let parentActive = true;
+  let pendingSelectedCode = '';
+  let pendingCamera = null;
+  let parentUnavailableSent = false;
+  let latestParentContext = null;
+  let occlusion = { right: 0, bottom: 0 };
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const setStatus = (html, error = false) => {
@@ -187,14 +212,17 @@
   function selectBuilding(code, options = {}) {
     const b = buildings.find((feature) => feature.code === code);
     if (!b) return;
+    const changed = selectedCode !== code;
     stopTour();
     selectedCode = code;
     renderList();
     drawFootprints();
     updateSelectionMaterials();
-    openDetails(b);
-    if (renderer && options.animate !== false) flyTo(project([b.centroid.lon, b.centroid.lat]), 500, 850);
-    else if (renderer && options.animate === false) flyTo(project([b.centroid.lon, b.centroid.lat]), 500, 0);
+    if (!embedded) openDetails(b);
+    const planPoint = planPointsByCode.get(code);
+    const point = planPoint || (b.centroid ? project([b.centroid.lon, b.centroid.lat]) : null);
+    if (renderer && point && changed && options.animate !== false) flyTo(point, 500, 850);
+    else if (renderer && point && changed && options.animate === false) flyTo(point, 500, 0);
     if (options.notify !== false && window.parent && window.parent !== window) {
       try { window.parent.postMessage({ type: 'campus-select', code: b.code }, location.origin); } catch (_) { /* stesso-origin solo */ }
     }
@@ -218,7 +246,9 @@
   function setView(view) {
     currentView = view;
     const is3d = view === '3d' && Boolean(renderer);
-    photoStage.hidden = is3d;
+    const showPlan = !is3d && embedded && officialPlan && planVisible;
+    planStage.hidden = !showPlan;
+    photoStage.hidden = is3d || showPlan;
     mapHost.classList.toggle('active', is3d);
     modeButton.textContent = is3d ? 'Vista ortofoto' : 'Vista 3D';
     modeButton.setAttribute('aria-pressed', String(is3d));
@@ -250,6 +280,10 @@
     }
     if (ground) ground.material.map = visible ? photoTexture : null;
     if (ground) ground.material.needsUpdate = true;
+    for (const mesh of planMeshesByCode.values()) {
+      mesh.material[0].map = visible ? photoTexture : null;
+      mesh.material[0].needsUpdate = true;
+    }
     $('aerialToggle').setAttribute('aria-pressed', String(visible));
   }
   function setBuildingVisibility(visible) {
@@ -257,6 +291,227 @@
     if (buildingGroup) buildingGroup.visible = visible;
     $('buildingsToggle').setAttribute('aria-pressed', String(visible));
     $('footprints').hidden = !visible;
+    const planFallback = planStage.querySelector('.plan-fallback-paths');
+    if (planFallback) planFallback.hidden = !visible;
+    if (planBuildingsGroup) planBuildingsGroup.visible = visible;
+    $('planBuildingsToggle')?.setAttribute('aria-pressed', String(visible));
+  }
+
+  function pdfToWorld(pdfX, pdfY) {
+    const [ax, ay, ac] = alignment.affine.x;
+    const [az, bz, cz] = alignment.affine.zSouth;
+    const anchor = project(alignment.anchorLonLat);
+    return { x: ax * pdfX + ay * pdfY + ac + anchor.x, z: az * pdfX + bz * pdfY + cz - anchor.n };
+  }
+  function parsePlanRings(pathText) {
+    const rings = [];
+    let ring = null;
+    const tokens = String(pathText || '').match(/[MLZ]|[-+]?(?:\d*\.)?\d+(?:[eE][-+]?\d+)?/g) || [];
+    let i = 0;
+    let command = '';
+    while (i < tokens.length) {
+      if (/^[MLZ]$/i.test(tokens[i])) command = tokens[i++];
+      if (command.toUpperCase() === 'Z') { if (ring?.length >= 3) rings.push(ring); ring = null; command = ''; continue; }
+      if (!command || i + 1 >= tokens.length) { i += 1; continue; }
+      const x = Number(tokens[i++]), y = Number(tokens[i++]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      if (command.toUpperCase() === 'M') { if (ring?.length >= 3) rings.push(ring); ring = []; command = command === 'm' ? 'l' : 'L'; }
+      ring ||= [];
+      ring.push([x, y]);
+    }
+    if (ring?.length >= 3) rings.push(ring);
+    return rings;
+  }
+  function planShape(pathText) {
+    const rings = parsePlanRings(pathText);
+    if (!rings.length) return null;
+    const shapePath = new THREE.ShapePath();
+    for (const ring of rings) {
+      const first = pdfToWorld(ring[0][0], ring[0][1]);
+      shapePath.moveTo(first.x, -first.z);
+      for (const [x, y] of ring.slice(1)) {
+        const point = pdfToWorld(x, y);
+        shapePath.lineTo(point.x, -point.z);
+      }
+      shapePath.currentPath.closePath();
+    }
+    const shapes = shapePath.toShapes(false);
+    return { shapes, rings };
+  }
+  function buildPlanLayer(plan) {
+    if (!plan || !alignment || !renderer) return;
+    if (plan.colors) {
+      if (typeof plan.colors.lesson === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.lesson)) planColors.lesson = plan.colors.lesson;
+      if (typeof plan.colors.selected === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.selected)) planColors.selected = plan.colors.selected;
+    }
+    if (planLayerGroup) {
+      scene.remove(planLayerGroup);
+      planLayerGroup.traverse((object) => {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
+      });
+      pickables = pickables.filter((mesh) => !mesh.userData.planFeature);
+      planTexture?.dispose();
+    }
+    officialPlan = plan;
+    officialPlanCodes = new Set(plan.features.map((feature) => String(feature.code || '').toUpperCase()));
+    planLayerGroup = new THREE.Group();
+    planBuildingsGroup = new THREE.Group();
+    planLayerGroup.add(planBuildingsGroup);
+    scene.add(planLayerGroup);
+    planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear();
+    for (const feature of plan.features) {
+      const code = String(feature.code || '').toUpperCase();
+      if (!code) continue;
+      const parsed = planShape(feature.path);
+      if (!parsed?.shapes?.length) continue;
+      const osmBuilding = baseBuildings.find((building) => building.code.toUpperCase() === code);
+      const osmFeature = contextFeatures.find((item) => {
+        const props = item.properties || {};
+        return String(props['addr:housenumber'] || props.ref || '').toUpperCase() === code;
+      });
+      const props = osmFeature?.properties || {};
+      const height = heightInfo({ height: osmBuilding?.height || props.height, levels: osmBuilding?.levels || props['building:levels'] }).value;
+      const geometry = new THREE.ExtrudeGeometry(parsed.shapes, { depth: height, bevelEnabled: false, curveSegments: 1 });
+      geometry.rotateX(-Math.PI / 2);
+      geometry.translate(0, 0.16, 0);
+      applyRoofUVs(geometry);
+      const roof = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? photoTexture : null, roughness: 0.96, metalness: 0 });
+      const walls = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xb6a99e, roughness: 0.94, metalness: 0 });
+      const mesh = new THREE.Mesh(geometry, [roof, walls]);
+      mesh.userData.code = code;
+      mesh.userData.planFeature = feature;
+      mesh.userData.height = height;
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      planBuildingsGroup.add(mesh); pickables.push(mesh);
+      planMeshesByCode.set(code, mesh);
+      const pts = parsed.rings.flat().map(([x, y]) => pdfToWorld(x, y));
+      const centroid = pts.reduce((a, p) => ({ x: a.x + p.x / pts.length, z: a.z + p.z / pts.length }), { x: 0, z: 0 });
+      planPointsByCode.set(code, { x: centroid.x, n: -centroid.z });
+      const linePoints = [];
+      for (const ring of parsed.rings) for (let i = 0; i < ring.length; i += 1) {
+        const a = pdfToWorld(...ring[i]), b = pdfToWorld(...ring[(i + 1) % ring.length]);
+        linePoints.push(a.x, 0.18, a.z, b.x, 0.18, b.z);
+      }
+      const outlineGeo = new THREE.BufferGeometry();
+      outlineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePoints, 3));
+      const outline = new THREE.LineSegments(outlineGeo, new THREE.LineBasicMaterial({ color: planColors.lesson, transparent: true, opacity: 0.95 }));
+      outline.userData.code = code; planBuildingsGroup.add(outline); planOutlinesByCode.set(code, outline);
+    }
+    if (plan.image) {
+      planTexture = new THREE.TextureLoader().load(plan.image, (texture) => {
+        texture.encoding = THREE.sRGBEncoding; texture.needsUpdate = true;
+        if (officialPlan === plan) notifyParent('campus-overlay-ready');
+      }, undefined, () => { if (officialPlan === plan) fallbackToPhoto('La planimetria non può essere caricata.'); });
+      planTexture.encoding = THREE.sRGBEncoding;
+      const box = plan.viewBox;
+      const corners = [[box.x, box.y], [box.x + box.w, box.y], [box.x + box.w, box.y + box.h], [box.x, box.y + box.h]].map(([x, y]) => pdfToWorld(x, y));
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(corners.flatMap((p) => [p.x, 0.12, p.z]), 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
+      geometry.setIndex([0, 2, 1, 0, 3, 2]);
+      planImageMaterial = new THREE.MeshBasicMaterial({ map: planTexture, transparent: true, opacity: planOpacity, side: THREE.DoubleSide, depthWrite: false });
+      planImagePlane = new THREE.Mesh(geometry, planImageMaterial); planLayerGroup.add(planImagePlane);
+    }
+    planLayerGroup.visible = true;
+    if (planImagePlane) planImagePlane.visible = planVisible;
+    planBuildingsGroup.visible = showBuildings;
+    if (embedded) setupPlanFallback(plan);
+    document.body.classList.toggle('has-plan-layer', true);
+    updatePlanSelection();
+    mergeOfficialBuildings(plan.features);
+    renderList(); drawFootprints();
+    if (planImageMaterial) planImageMaterial.opacity = planOpacity;
+    for (const child of [...buildingGroup.children]) {
+      if (child.userData.code && officialPlanCodes.has(child.userData.code)) {
+        buildingGroup.remove(child); pickables = pickables.filter((mesh) => mesh !== child);
+        child.geometry?.dispose();
+        if (child.material && !Array.isArray(child.material)) child.material.dispose();
+      }
+    }
+    for (const code of officialPlanCodes) { activeCodeMeshes.delete(code); activeCodeOutlines.delete(code); }
+  }
+  function setupPlanFallback(plan) {
+    const image = document.createElement('img'); image.src = plan.image; image.alt = 'Planimetria vettoriale originale Sapienza';
+    planStage.replaceChildren(image);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const vb = plan.viewBox; svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); svg.classList.add('plan-fallback-paths');
+    for (const feature of plan.features) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', feature.path); path.setAttribute('data-code', feature.code); path.setAttribute('fill-rule', 'evenodd');
+      path.classList.add('plan-fallback-path'); if (feature.lesson) path.classList.add('lesson');
+      path.addEventListener('click', () => selectBuilding(feature.code, { animate: false })); svg.append(path);
+    }
+    planStage.append(svg);
+  }
+  function mergeOfficialBuildings(features) {
+    const byCode = new Map(baseBuildings.map((b) => [b.code.toUpperCase(), b]));
+    for (const feature of features) {
+      const code = String(feature.code || '').toUpperCase();
+      if (!code) continue;
+      const existing = byCode.get(code);
+      if (existing) { existing.officialName = feature.name || existing.name; existing.name = existing.officialName; }
+      else {
+        const point = planPointsByCode.get(code) || { x: 0, n: 0 };
+        const worldX = point.x, worldN = point.n;
+        const lon = bounds.west + (worldX + mapWidth / 2) / metersPerLon;
+        const lat = bounds.south + (worldN + mapDepth / 2) / metersPerLat;
+        byCode.set(code, { code, name: feature.name || code, officialName: feature.name || code, building: 'Planimetria ufficiale', rings: [], centroid: { lon, lat }, osm_elements: [] });
+      }
+    }
+    buildings = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code, 'it', { numeric: true }));
+    if (pendingSelectedCode && buildings.some((building) => building.code === pendingSelectedCode)) {
+      const code = pendingSelectedCode; pendingSelectedCode = '';
+      selectBuilding(code, { notify: false, animate: false });
+    }
+  }
+  function updatePlanSelection() {
+    for (const [code, mesh] of planMeshesByCode) {
+      const feature = mesh.userData.planFeature || {};
+      mesh.material[0].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xffffff);
+      mesh.material[1].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xb6a99e);
+    }
+    for (const [code, outline] of planOutlinesByCode) {
+      outline.material.color.set(code === selectedCode ? planColors.selected : planFeaturesLesson(code) ? planColors.lesson : 0x822433);
+      outline.visible = planVisible;
+    }
+    planStage.querySelectorAll('.plan-fallback-path').forEach((path) => path.classList.toggle('selected', path.dataset.code === selectedCode));
+  }
+  function planFeaturesLesson(code) { return Boolean(officialPlan?.features.find((feature) => String(feature.code).toUpperCase() === code)?.lesson); }
+  function applyParentContext(context) {
+    latestParentContext = context;
+    if (context?.plan?.features) officialPlanCodes = new Set(context.plan.features.map((feature) => String(feature.code || '').toUpperCase()));
+    if (renderer && context?.plan?.features) buildPlanLayer(context.plan);
+    if (context?.selectedCode) {
+      pendingSelectedCode = context.selectedCode;
+      if (buildings.some((building) => building.code === pendingSelectedCode)) selectBuilding(pendingSelectedCode, { notify: false, animate: false });
+    }
+  }
+  function notifyParent(type, payload = {}) {
+    if (window.parent === window) return;
+    window.parent.postMessage({ type, ...payload }, location.origin);
+  }
+  function handleParentMessage(event) {
+    if (event.origin !== location.origin || event.source !== window.parent) return;
+    const message = event.data || {};
+    if (message.type === 'campus-context' && message.plan) applyParentContext(message);
+    else if (message.type === 'campus-colors') {
+      if (typeof message.lesson === 'string' && /^#[\da-f]{6}$/i.test(message.lesson)) planColors.lesson = message.lesson;
+      if (typeof message.selected === 'string' && /^#[\da-f]{6}$/i.test(message.selected)) planColors.selected = message.selected;
+      updatePlanSelection();
+    } else if (message.type === 'campus-select' && typeof message.code === 'string') {
+      pendingSelectedCode = message.code;
+      if (buildings.some((building) => building.code === message.code)) selectBuilding(message.code, { notify: false });
+    }
+    else if (message.type === 'campus-clear') { stopCameraFlight(); selectedCode = ''; updateSelectionMaterials(); updatePlanSelection(); renderList(); drawFootprints(); }
+    else if (message.type === 'campus-camera') {
+      if (!controls) pendingCamera = message;
+      else if (message.action === 'fit') flyTo({ x: 0, n: 0 }, 1300, 700);
+      else if (message.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(message.factor) || 1)));
+    } else if (message.type === 'campus-viewport') {
+      occlusion = { right: Math.max(0, Number(message.right) || 0), bottom: Math.max(0, Number(message.bottom) || 0) };
+      resizeRenderer();
+    } else if (message.type === 'campus-active') { parentActive = Boolean(message.active); handleVisibility(); }
   }
 
   function polygonCentroid(ring) {
@@ -308,6 +563,7 @@
     if (outer.length < 4) return null;
     const first = project(outer[0]);
     const shape = new THREE.Shape();
+    // Shape Y is northing; rotateX(-PI/2) maps it to right-handed world Z south.
     shape.moveTo(first.x, first.n);
     for (let i = 1; i < outer.length - 1; i += 1) {
       const p = project(outer[i]);
@@ -342,6 +598,7 @@
     if (!shape) return;
     const props = feature.properties || {};
     const code = String(props['addr:housenumber'] || props.ref || '').trim().toUpperCase();
+    if (code && officialPlanCodes.has(code)) return;
     const b = lookup.get(code);
     const rawHeight = b?.height || props.height;
     const rawLevels = b?.levels || props['building:levels'];
@@ -421,6 +678,11 @@
     controls.screenSpacePanning = true;
     controls.addEventListener('start', stopTour);
     controls.update();
+    if (pendingCamera) {
+      const command = pendingCamera; pendingCamera = null;
+      if (command.action === 'fit') flyTo({ x: 0, n: 0 }, 1300, 0);
+      else if (command.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(command.factor) || 1)));
+    }
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     let down = null;
@@ -450,6 +712,7 @@
     else window.addEventListener('resize', resizeRenderer);
     document.addEventListener('visibilitychange', handleVisibility);
     handleVisibility();
+    if (latestParentContext?.plan?.features) buildPlanLayer(latestParentContext.plan);
   }
   function updateSelectionMaterials() {
     for (const [code, meshes] of activeCodeMeshes) {
@@ -457,9 +720,10 @@
       for (const mesh of meshes) mesh.material = selected ? [selectedRoof, selectedSide] : [normalRoof, normalSide];
     }
     for (const [code, outlines] of activeCodeOutlines) for (const outline of outlines) outline.visible = code === selectedCode;
+    updatePlanSelection();
   }
   function renderFrame() {
-    if (!renderer || !scene || !camera || document.hidden || currentView !== '3d') return;
+    if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
     controls.update();
     renderer.render(scene, camera);
   }
@@ -469,11 +733,14 @@
     const height = Math.max(1, mapHost.clientHeight);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
+    if (embedded && (occlusion.right || occlusion.bottom)) {
+      camera.setViewOffset(width, height, Math.min(occlusion.right, Math.max(0, width - 160)) / 2, Math.min(occlusion.bottom, Math.max(0, height - 140)) / 2, width, height);
+    } else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
   function handleVisibility() {
     if (!renderer) return;
-    if (document.hidden) {
+    if (document.hidden || !parentActive) {
       stopTour();
       stopCameraFlight();
       renderer.setAnimationLoop(null);
@@ -484,13 +751,16 @@
     if (renderer) renderer.setAnimationLoop(null);
     currentView = 'ortho';
     photoStage.hidden = false;
+    planStage.hidden = true;
     mapHost.classList.remove('active');
     modeButton.disabled = true;
     modeButton.textContent = 'Vista 3D non disponibile';
     tourButton.disabled = true;
     setStatus(`<b>Vista 3D non disponibile.</b> ${esc(message)}`, true);
+    if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(message || '') }); }
   }
   function bindUI() {
+    window.addEventListener('message', handleParentMessage);
     $('chemistryFilter').addEventListener('click', () => {
       chemistryOnly = !chemistryOnly;
       $('chemistryFilter').setAttribute('aria-pressed', String(chemistryOnly));
@@ -511,10 +781,16 @@
     $('buildingsToggle').addEventListener('click', () => setBuildingVisibility(!showBuildings));
     document.querySelector('.drawer-close').addEventListener('click', closeDetails);
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeDetails(); });
-    window.addEventListener('message', (event) => {
-      if (event.origin !== location.origin || event.source !== window.parent) return;
-      const message = event.data;
-      if (message?.type === 'campus-select' && typeof message.code === 'string') selectBuilding(message.code, { notify: false });
+    $('planLayerToggle')?.addEventListener('click', () => {
+      planVisible = !planVisible;
+      if (planImagePlane) planImagePlane.visible = planVisible;
+      updatePlanSelection();
+      $('planLayerToggle').setAttribute('aria-pressed', String(planVisible));
+      if (embedded && currentView !== '3d') setView('ortho');
+    });
+    $('planOpacity')?.addEventListener('input', (event) => {
+      planOpacity = Number(event.target.value) / 100;
+      if (planImageMaterial) planImageMaterial.opacity = planOpacity;
     });
   }
   async function init() {
@@ -526,8 +802,14 @@
     try {
       const [buildingResponse, contextResponse] = await Promise.all([fetch(SOURCE), fetch(CONTEXT_SOURCE)]);
       if (!buildingResponse.ok || !contextResponse.ok) throw new Error('I dati locali del campus non sono disponibili.');
-      const [data, context] = await Promise.all([buildingResponse.json(), contextResponse.json()]);
+      const [data, context, alignmentData] = await Promise.all([buildingResponse.json(), contextResponse.json(), fetch('vector-alignment.json').then((response) => {
+        if (!response.ok) throw new Error('I parametri locali di allineamento non sono disponibili.');
+        return response.json();
+      })]);
+      alignment = alignmentData;
       buildings = Array.isArray(data.features) ? data.features : [];
+      baseBuildings = buildings.map((building) => ({ ...building }));
+      contextFeatures = Array.isArray(context.features) ? context.features : [];
       renderList();
       drawFootprints();
       if (!buildings.length || !Array.isArray(context.features)) throw new Error('Il dataset non contiene geometrie valide.');
@@ -538,18 +820,24 @@
       photo.encoding = THREE.sRGBEncoding;
       photo.wrapS = THREE.ClampToEdgeWrapping;
       photo.wrapT = THREE.ClampToEdgeWrapping;
+      if (latestParentContext?.plan?.features) officialPlanCodes = new Set(latestParentContext.plan.features.map((feature) => String(feature.code || '').toUpperCase()));
       buildScene(context, photo);
       setView('3d');
       tourButton.disabled = reducedMotion;
       if (selectedCode) {
         const selected = buildings.find((b) => b.code === selectedCode);
-        if (selected) flyTo(project([selected.centroid.lon, selected.centroid.lat]), 500, 0);
+      if (selected) flyTo(planPointsByCode.get(selectedCode) || (selected.centroid ? project([selected.centroid.lon, selected.centroid.lat]) : null), 500, 0);
       }
+    notifyParent('campus-ready');
     } catch (error) {
+      if (renderer) renderer.setAnimationLoop(null);
+      mapHost.classList.remove('active');
       setStatus(`<b>Non riesco a preparare la mappa 3D.</b> ${esc(error.message || 'Puoi continuare con la planimetria.')}`, true);
       modeButton.disabled = true;
       tourButton.disabled = true;
       photoStage.hidden = false;
+      planStage.hidden = true;
+      if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(error.message || '') }); }
     }
   }
   init();
