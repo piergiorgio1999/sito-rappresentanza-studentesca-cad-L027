@@ -3283,10 +3283,13 @@ function renderSettings(){
 }
 function renderNudge(){
   let n=$('stNudge'); if(!n){ n=document.createElement('div'); n.id='stNudge'; n.className='st-nudge'; document.querySelector('section.custom').after(n);
-    n.addEventListener('click',e=>{ if(e.target.closest('#nuSave')){ saveDevice(); } else if(e.target.closest('#nuSet')){ showTab('impostazioni',true); window.scrollTo({top:0}); } else if(e.target.closest('#nuX')){ try{ sessionStorage.setItem('nuHide','1'); }catch(x){} n.hidden=true; } }); }
+    n.addEventListener('click',e=>{ if(e.target.closest('#nuSave')){ saveDevice(); const b=$('nuSave'); if(b){ b.textContent='✅ Salvato'; setTimeout(renderNudge,1500); } } else if(e.target.closest('#nuSet')){ showTab('impostazioni',true); window.scrollTo({top:0}); } else if(e.target.closest('#nuX')){ try{ sessionStorage.setItem('nuHide','1'); }catch(x){} renderNudge(); } }); }
   let hide=false; try{ hide=sessionStorage.getItem('nuHide')==='1'; }catch(x){}
-  n.hidden=REMEMBER||hide;
-  n.innerHTML=`<span>💾 Vuoi salvare le tue modifiche e selezioni ritrovandole così al tuo prossimo accesso al sito? <small style="display:block;color:var(--muted)">(salva solo sul tuo Web-Browser: ci teniamo a non trattare nessun dato personale)</small></span><button type="button" class="btn" id="nuSave">Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button><button type="button" class="linkbtn" id="nuX">Non ora</button>`;
+  /* il pulsante per salvare resta sempre visibile: dopo il salvataggio mostra lo stato, chiudendo l'avviso resta un pulsante compatto */
+  n.hidden=false;
+  if(REMEMBER) n.innerHTML=`<span>✅ Salvato su questo dispositivo: le modifiche vengono ricordate da sole.</span><button type="button" class="btn" id="nuSave">💾 Salva di nuovo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
+  else if(hide) n.innerHTML=`<button type="button" class="btn" id="nuSave">💾 Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
+  else n.innerHTML=`<span>💾 Vuoi salvare le tue modifiche e selezioni ritrovandole così al tuo prossimo accesso al sito? <small style="display:block;color:var(--muted)">(salva solo sul tuo Web-Browser: ci teniamo a non trattare nessun dato personale)</small></span><button type="button" class="btn" id="nuSave">Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button><button type="button" class="linkbtn" id="nuX" aria-label="Riduci l'avviso">Riduci</button>`;
 }
 function saveDevice(){ REMEMBER=true; try{ localStorage.setItem(REM_KEY,'1'); }catch(e){} save(); renderSettings(); }
 $('stYear').addEventListener('click',e=>{ const b=e.target.closest('[data-sy]'); if(!b) return; state.year=+b.dataset.sy; save(); renderSelectors(); render(); renderSettings(); });
