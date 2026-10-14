@@ -1,8 +1,8 @@
 {
   "file": "minerva.glb",
-  "height": 6,
-  "rotationDeg": -90,
+  "height": 9,
+  "rotationDeg": -115,
   "pedestal": 3,
-  "pedestalSize": 2.4,
-  "note": "Minerva di Arturo Martini, bronzo, circa 6 m (Artribune, 2024). Modello generato con Tripo3D e alleggerito; basamento stimato. height = altezza della statua in metri, pedestal = altezza del basamento, rotationDeg = correzione dell'orientamento del modello."
+  "pedestalSize": 3.2,
+  "note": "Minerva di Arturo Martini (bronzo, circa 6 m; qui ingrandita del 50% per renderla visibile sulla mappa). Modello generato con Tripo3D e alleggerito; basamento stimato. height = altezza della statua in metri, pedestal = altezza del basamento, rotationDeg = correzione dell'orientamento del modello (−115: viso rivolto verso l'ingresso)."
 }

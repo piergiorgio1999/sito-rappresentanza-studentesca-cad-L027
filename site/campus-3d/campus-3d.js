@@ -779,7 +779,8 @@
     baseTexture = new THREE.CanvasTexture(baseCanvas);
     baseTexture.encoding = THREE.sRGBEncoding;
     baseTexture.anisotropy = 8;
-    ground = planeMesh(bounds, new THREE.MeshBasicMaterial({ map: baseTexture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false }), -0.12);
+    ground = planeMesh(bounds, new THREE.MeshBasicMaterial({ map: baseTexture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }), -0.12);
+    ground.renderOrder = -2; // i livelli piatti non scrivono la profondità: niente sfarfallio tra cartina, ortofoto e tasselli
     scene.add(ground);
     orthoMesh = planeMesh(ORTHO_BOUNDS, new THREE.MeshBasicMaterial({ map: photoTexture, transparent: true, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }), -0.06);
     orthoMesh.renderOrder = 1;
@@ -1257,7 +1258,7 @@
     photoTexture = texture;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe9e4df);
-    camera = new THREE.PerspectiveCamera(48, 1, 0.3, 8000);
+    camera = new THREE.PerspectiveCamera(48, 1, 0.5, 6000);
     camera.position.set(0, 850, 1050);
     createGround(context);
     createMaterials(roofTexture);
@@ -1286,7 +1287,7 @@
       if (geometry.type === 'Polygon') addPolygon(feature, geometry.coordinates, lookup);
       else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) addPolygon(feature, polygon, lookup);
     }
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance', logarithmicDepthBuffer: true });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.85;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
