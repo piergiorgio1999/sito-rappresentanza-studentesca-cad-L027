@@ -1451,6 +1451,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
       <p class="note" id="edColorHint"></p>
     </div>
     <div id="edLineWrap">
+      <label class="ck" style="margin-bottom:8px"><input type="checkbox" id="edDash"> Tratteggio su questo slot</label>
       <div class="lbl2">Colore del tratteggio</div>
       <div class="swatches" id="edLines"></div>
     </div>
@@ -1733,7 +1734,7 @@ const OPT = {
 
 /* ---------- Stato ---------- */
 const KEY = 'orariChimica2627';
-let state = {year:1, ch:{1:1,2:1,3:1}, extras:{1:[],2:[],3:[]}, edits:{}, colors:{}, lines:{}, fade:{}, nid:1, fmt:'sq', pdfFmt:'a4p', dlType:'png', csvFmt:'gcal', closures:null, term:null};
+let state = {year:1, ch:{1:1,2:1,3:1}, extras:{1:[],2:[],3:[]}, edits:{}, colors:{}, lines:{}, fade:{}, nodash:{}, nid:1, fmt:'sq', pdfFmt:'a4p', dlType:'png', csvFmt:'gcal', closures:null, term:null};
 try{
   const s = JSON.parse(localStorage.getItem(KEY)||'null');
   if(s && s.extras && s.ch && SCH[s.year]) state = Object.assign(state, s);
@@ -1742,6 +1743,7 @@ try{
   if(!state.icons) state.icons = {};
   if(!state.lines) state.lines = {};
   if(!state.fade) state.fade = {};
+  if(!state.nodash) state.nodash = {};
   const CF3_FIX = {'A-L':'A-I', 'M-Z':'J-Z'};
   Object.values(state.extras||{}).forEach(list=>(list||[]).forEach(x=>{
     if(x.c==='CF3' && CF3_FIX[x.ch]){ x.ch = CF3_FIX[x.ch]; x.sub = 'Canale '+x.ch; }
@@ -1896,7 +1898,7 @@ function fitLines(ctx,b,w,h,multi){
 function drawBlock(ctx,b,x,y,w,h){
   const c = colorOf(b), multi = b.lanes>1, pad = multi?14:18;
   rr(ctx,x,y,w,h,12); ctx.fillStyle=c.bg; ctx.fill();
-  if(b.kind!=='base'){
+  if(b.kind!=='base' && !(state.nodash&&state.nodash[slotKey(b)])){
     ctx.save(); ctx.setLineDash([13,8]); ctx.lineWidth=3.5; ctx.strokeStyle=(state.lines&&state.lines[colorKey(b)])||(c.dark?'#ffffff':DS.maroon);
     rr(ctx,x+3,y+3,w-6,h-6,10); ctx.stroke(); ctx.restore();
   }
@@ -2394,6 +2396,7 @@ function openEdit(b){
   renderSwatches();
   pendingLine = state.lines[colorKey(b)] || null;
   renderLineSwatches();
+  $('edDash').checked = !state.nodash[slotKey(b)];
   const fv = Math.round((state.fade[slotKey(b)]||1)*100); $('edFade').value = fv; $('edFadeV').textContent = fv+'%';
   $('edRestore').hidden = !(b.ref.t==='base' && b.mod);
   $('edErr').textContent='';
@@ -2425,6 +2428,7 @@ $('edSave').addEventListener('click', ()=>{
   if(pendingColor) state.colors[key] = pendingColor; else delete state.colors[key];
   if(pendingLine) state.lines[key] = pendingLine; else delete state.lines[key];
   const fv = +$('edFade').value/100, sk = slotKey(b); if(fv<1) state.fade[sk]=fv; else delete state.fade[sk];
+  if(b.kind!=='base'){ if($('edDash').checked) delete state.nodash[sk]; else state.nodash[sk]=1; }
   if(eq(patch, b)){ save(); renderExtrasList(); render(); $('dlgEdit').close(); return; }
   if(b.ref.t==='base' && eq(patch, baseBlocks(state.year, state.ch[state.year])[b.ref.idx])) applyEdit(null);
   else applyEdit(patch);
