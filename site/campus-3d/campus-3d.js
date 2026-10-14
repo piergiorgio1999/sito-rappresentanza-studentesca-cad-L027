@@ -986,6 +986,7 @@
       flyTo({ x: statue.x, n: -statue.z }, 115, 0);
     }
     loadMinervaModel();
+    loadFountains();
   }
   /* statua: si carica solo se esiste models/minerva.json (es. {"file":"minerva.glb","height":9,"rotationDeg":0}) */
   let minervaLoaded = false;
@@ -1035,6 +1036,41 @@
       // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
       fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
+        new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
+      }).catch(fail);
+    } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
+  }
+
+  /* fontanelle («nasoni»): models/fontanelle.json → {"file":"fontanella.glb","height":2.4,"points":[[x,y],…]} in punti PDF */
+  let fountainsLoaded = false;
+  async function loadFountains() {
+    if (fountainsLoaded) return;
+    let config;
+    try { const response = await fetch('models/fontanelle.json', { cache: 'no-cache' }); if (!response.ok) return; config = await response.json(); } catch (_) { return; }
+    if (!config?.file || !/^[\w.-]+\.(glb|json)$/i.test(config.file) || !Array.isArray(config.points)) return;
+    fountainsLoaded = true;
+    try { await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function'); } catch (_) { fountainsLoaded = false; return; }
+    const onModel = (gltf) => {
+      const model = gltf.scene;
+      const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+      model.scale.setScalar((Number(config.height) || 2.4) / Math.max(0.001, size.y));
+      const box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
+      model.position.set(-c.x, -box.min.y, -c.z);
+      model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material) { o.material.metalness = Math.min(o.material.metalness ?? 0.5, 0.5); o.material.needsUpdate = true; } } });
+      config.points.forEach(([x, y], i) => {
+        const w = pdfToWorld(x, y), holder = new THREE.Group();
+        holder.add(i ? model.clone(true) : model);
+        holder.position.set(w.x, 0, w.z);
+        holder.rotation.y = (Number(config.rotationDeg) || 0) * Math.PI / 180 + i * 1.3;
+        holder.userData.fountain = true;
+        holder.traverse((o) => { if (o.isMesh) { o.userData.fountainPart = true; pickables.push(o); } });
+        extrasGroup.add(holder);
+      });
+    };
+    const fail = () => { fountainsLoaded = false; };
+    if (/\.json$/i.test(config.file)) {
+      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+        const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
     } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
@@ -1329,6 +1365,7 @@
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickables, false)[0];
       if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
+      if (hit?.object.userData.fountainPart) { showGuest(false); if (embedded) notifyParent('campus-fountain', {}); return; }
       if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
       showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);

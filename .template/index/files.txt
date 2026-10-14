@@ -161,6 +161,8 @@
 ./site/campus-3d/campus-buildings.json
 ./site/campus-3d/campus-context.geojson
 ./site/campus-3d/index.html
+./site/campus-3d/models/fontanella.glb
+./site/campus-3d/models/fontanelle.json
 ./site/campus-3d/models/minerva.glb
 ./site/campus-3d/models/minerva.json
 ./site/campus-3d/vector-alignment.json
