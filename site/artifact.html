@@ -3281,7 +3281,7 @@ function renderSettings(){
     ['➕','Corsi arretrati, opzionali e tutoraggi',nEx||'nessuno'],['🎨','Colori personalizzati',nCol||'nessuno'],['⬇️','Formato di download preferito','sì']]
     .map(([i,t,v])=>`<li><span>${i}</span>${t}<b>${v}</b></li>`).join('');
   const s=$('stStatus'); s.className='st-status '+(REMEMBER?'on':'off');
-  s.textContent=REMEMBER?'✅ Salvato su questo dispositivo. Dopo ogni modifica premi di nuovo Salva per ricordarla.':'Non ancora salvato: chiudendo la pagina si torna all’orario ufficiale.';
+  s.textContent=REMEMBER?'✅ Salvato solo su questo dispositivo e solo nel browser che stai usando per navigare sul sito. Dopo ogni modifica premi di nuovo Salva per ricordarla.':'Non ancora salvato: chiudendo la pagina si torna all’orario ufficiale.';
   $('stSave').textContent=REMEMBER&&!isDirty()?'✅ Salvato':'💾 Salva su questo dispositivo'; $('stSave').classList.toggle('nu-ok',REMEMBER&&!isDirty());
   $('stForget').hidden=!REMEMBER;
   renderNudge();
@@ -3292,8 +3292,8 @@ function renderNudge(){
   let hide=false; try{ hide=sessionStorage.getItem('nuHide')==='1'; }catch(x){}
   /* il pulsante per salvare resta sempre visibile: dopo il salvataggio mostra lo stato, chiudendo l'avviso resta un pulsante compatto */
   n.hidden=false;
-  if(REMEMBER && !isDirty()) n.innerHTML=`<button type="button" class="btn nu-ok" id="nuSave" aria-label="Salvato su questo dispositivo">✅ Salvato</button><span style="color:var(--muted)">Le tue modifiche sono salvate su questo dispositivo.</span><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
-  else if(REMEMBER) n.innerHTML=`<button type="button" class="btn" id="nuSave">💾 Salva</button><span>Hai modifiche non ancora salvate su questo dispositivo.</span><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
+  if(REMEMBER && !isDirty()) n.innerHTML=`<button type="button" class="btn nu-ok" id="nuSave" aria-label="Salvato su questo dispositivo">✅ Salvato</button><span style="color:var(--muted)">Le tue modifiche sono salvate solo su questo dispositivo e solo nel browser che stai usando per navigare sul sito.</span><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
+  else if(REMEMBER) n.innerHTML=`<button type="button" class="btn" id="nuSave">💾 Salva</button><span>Hai modifiche non ancora salvate. Il salvataggio vale solo su questo dispositivo e solo nel browser che stai usando per navigare sul sito.</span><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
   else if(hide) n.innerHTML=`<button type="button" class="btn" id="nuSave">💾 Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
   else n.innerHTML=`<span>💾 Vuoi salvare le tue modifiche e selezioni ritrovandole così al tuo prossimo accesso al sito? <small style="display:block;color:var(--muted)">(salva solo sul tuo Web-Browser: ci teniamo a non trattare nessun dato personale)</small></span><button type="button" class="btn" id="nuSave">Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button><button type="button" class="linkbtn" id="nuX" aria-label="Riduci l'avviso">Riduci</button>`;
 }
