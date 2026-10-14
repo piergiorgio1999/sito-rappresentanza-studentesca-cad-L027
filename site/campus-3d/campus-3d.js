@@ -1005,7 +1005,7 @@
   }
   /* facciata del Rettorato: foto raddrizzata (rettorato-facciata.jpg) sul fronte del portico,
      con i quattro pilastri e l'attico «STUDIUM VRBIS» in rilievo */
-  const FACADE = { left: 285, right: 299.2, front: 505.6, base: 2.1, atticV: 55 / 600, rise: 3,
+  const FACADE = { left: 285, right: 299.2, front: 505.9, base: 2.1, atticV: 55 / 600, rise: 3,
     pillars: [[0, 50], [128, 178], [336, 386], [460, 512]].map(([a, b]) => [a / 512, b / 512]) };
   function buildRettoratoFacade(sideMat) {
     const building = planMeshesByCode.get('CU001');
