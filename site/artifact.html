@@ -654,6 +654,7 @@ dialog.lz{width:min(560px,calc(100% - 20px));padding:0;overflow:hidden auto}
 .st-nudge{margin-top:12px!important;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--rose);border:1px solid #e6cdd4;border-radius:12px;padding:9px 12px;margin:0 0 14px;font-size:.88rem}
 .st-nudge .btn{min-height:38px;padding:7px 12px;font-size:.85rem}
 .st-nudge .linkbtn{padding:0}
+.st-nudge .btn.nu-ok{background:#2f7a3b;color:#fff}.st-nudge .btn.nu-ok:hover{background:#276531}
 /* ===== stile uniforme: come le immagini orario dei gruppi WhatsApp ===== */
 :root{--card-sh:0 10px 30px rgba(75,19,36,.10);--rad:6px}
 .ph h2{font-size:clamp(1.7rem,4vw,2.3rem);letter-spacing:-.01em;line-height:1.05;color:var(--sap)}
@@ -3283,11 +3284,11 @@ function renderSettings(){
 }
 function renderNudge(){
   let n=$('stNudge'); if(!n){ n=document.createElement('div'); n.id='stNudge'; n.className='st-nudge'; document.querySelector('section.custom').after(n);
-    n.addEventListener('click',e=>{ if(e.target.closest('#nuSave')){ saveDevice(); const b=$('nuSave'); if(b){ b.textContent='✅ Salvato'; setTimeout(renderNudge,1500); } } else if(e.target.closest('#nuSet')){ showTab('impostazioni',true); window.scrollTo({top:0}); } else if(e.target.closest('#nuX')){ try{ sessionStorage.setItem('nuHide','1'); }catch(x){} renderNudge(); } }); }
+    n.addEventListener('click',e=>{ if(e.target.closest('#nuSave')){ saveDevice(); } else if(e.target.closest('#nuSet')){ showTab('impostazioni',true); window.scrollTo({top:0}); } else if(e.target.closest('#nuX')){ try{ sessionStorage.setItem('nuHide','1'); }catch(x){} renderNudge(); } }); }
   let hide=false; try{ hide=sessionStorage.getItem('nuHide')==='1'; }catch(x){}
   /* il pulsante per salvare resta sempre visibile: dopo il salvataggio mostra lo stato, chiudendo l'avviso resta un pulsante compatto */
   n.hidden=false;
-  if(REMEMBER) n.innerHTML=`<span>✅ Salvato su questo dispositivo: le modifiche vengono ricordate da sole.</span><button type="button" class="btn" id="nuSave">💾 Salva di nuovo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
+  if(REMEMBER) n.innerHTML=`<button type="button" class="btn nu-ok" id="nuSave" aria-label="Salvato su questo dispositivo">✅ Salvato</button><span style="color:var(--muted)">Le modifiche vengono ricordate da sole su questo dispositivo.</span><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
   else if(hide) n.innerHTML=`<button type="button" class="btn" id="nuSave">💾 Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button>`;
   else n.innerHTML=`<span>💾 Vuoi salvare le tue modifiche e selezioni ritrovandole così al tuo prossimo accesso al sito? <small style="display:block;color:var(--muted)">(salva solo sul tuo Web-Browser: ci teniamo a non trattare nessun dato personale)</small></span><button type="button" class="btn" id="nuSave">Salva su questo dispositivo</button><button type="button" class="linkbtn" id="nuSet">Impostazioni</button><button type="button" class="linkbtn" id="nuX" aria-label="Riduci l'avviso">Riduci</button>`;
 }
