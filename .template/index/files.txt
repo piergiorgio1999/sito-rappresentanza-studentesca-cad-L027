@@ -161,8 +161,14 @@
 ./site/campus-3d/campus-buildings.json
 ./site/campus-3d/campus-context.geojson
 ./site/campus-3d/index.html
+./site/campus-3d/models/fontanella.glb
+./site/campus-3d/models/fontanelle.json
+./site/campus-3d/models/minerva.glb
+./site/campus-3d/models/minerva.json
+./site/campus-3d/rettorato-facciata.jpg
 ./site/campus-3d/vector-alignment.json
 ./site/campus-3d/vendor/LICENSE.three
+./site/campus-3d/vendor/GLTFLoader.js
 ./site/campus-3d/vendor/OrbitControls.js
 ./site/campus-3d/vendor/PROVENANCE.txt
 ./site/campus-3d/vendor/three.min.js
@@ -252,6 +258,7 @@
 ./site/functions/api/avvisi.js
 ./site/functions/api/campus-ortho.js
 ./site/functions/api/campus-osm.js
+./site/functions/api/fontanelle.js
 ./site/icon-192.png
 ./site/icon-512.png
 ./site/icon-maskable-512.png

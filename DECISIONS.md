@@ -247,3 +247,20 @@ Sapienza ma omaggiato per simpatia». La planimetria 2D segna i due bar Sapienza
 (CU030, CU017), le fontanelle e gli altri servizi: quelli della legenda ufficiale
 sono posizionati sulle sagome, gli altri da OpenStreetMap (`/api/campus-osm`) con
 la calibrazione affine esistente, quindi con posizione indicativa.
+
+## 2026-10-13 — Una sola mappa campus con interruttori 2D/3D e carta/satellite
+
+La vista a schermo intero non è più una pagina separata: è la stessa mappa del
+sito in modalità schermo intero, con la stessa legenda modificabile e lo stesso
+pannello laterale degli edifici (anche quando si clicca un volume 3D). I comandi
+sono due interruttori, 2D/3D e carta/satellite, più «Rotazione»: il satellite
+nasconde la planimetria vettoriale e viceversa. La carta 2D resta la planimetria
+originale; 3D e satellite usano la scena WebGL. La rotazione gira attorno al
+baricentro del confine CU e lo inquadra per intero. L'ortofoto si carica a
+tasselli di 64 m vicino alla camera; se esiste `campus-3d/tiles/manifest.json`
+i tasselli vengono da lì (per esempio ingranditi offline), altrimenti dal WMS
+AGEA. Davanti al Rettorato la scena ricostruisce la vasca della Minerva
+leggermente rialzata, la scalinata con i gradini che girano agli angoli e le due
+arcate sottratte al volume di CU001, in coordinate della planimetria (quindi con
+la stessa calibrazione indicativa dei volumi). La statua si carica solo se esiste
+`campus-3d/models/minerva.json`.

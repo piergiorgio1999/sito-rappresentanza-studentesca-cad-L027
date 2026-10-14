@@ -15,3 +15,7 @@ LICENSE.three
 URL: https://cdn.jsdelivr.net/npm/three@0.128.0/LICENSE
 SHA-256: 7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f
 License: MIT. Preserve this notice with redistributed copies.
+
+GLTFLoader.js
+URL: https://github.com/mrdoob/three.js/blob/r128/examples/js/loaders/GLTFLoader.js (tag r128)
+SHA-256: 5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6

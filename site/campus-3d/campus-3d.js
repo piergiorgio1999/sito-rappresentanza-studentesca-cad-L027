@@ -4,14 +4,16 @@
   const CONTEXT_SOURCE = 'campus-context.geojson';
   const CHEMISTRY = new Set(['CU014', 'CU032', 'CU035']);
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
-  const bounds = { west: 12.5035, south: 41.8965, east: 12.5235, north: 41.9075 };
+  const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
+  // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
+  const FADE = { center: [12.514862, 41.902740], inner: 470, outer: 860 };
   // Ritaglio AGEA locale (ripiego e vista ortofoto 2D).
   const PHOTO_BOUNDS = { west: 12.505, south: 41.898, east: 12.519, north: 41.906 };
   // Confine della CU in 3D fotografico: lato esterno delle strade che la circondano
   // (strade incluse), più piazzale Aldo Moro con il CNR e piazzale del Verano.
   const CAMPUS_POLY = [[12.520515, 41.901737], [12.515571, 41.905544], [12.510446, 41.904041], [12.512053, 41.901077], [12.512066, 41.900238], [12.512032, 41.900211], [12.512301, 41.899673], [12.518137, 41.901863], [12.519517, 41.90102]];
   // Area dell'ortofoto ad alta risoluzione: contiene il confine con un piccolo margine.
-  const ORTHO_BOUNDS = { west: 12.5098, south: 41.8992, east: 12.5214, north: 41.9062 };
+  const ORTHO_BOUNDS = { west: 12.5098, south: 41.8992, east: 12.5232, north: 41.9062 };
   // CNR: ospite d'onore. Sagoma di ripiego disegnata sull'ortofoto; se OSM la fornisce, si usa quella.
   const CNR = { code: 'CNR', name: 'Consiglio Nazionale delle Ricerche', note: '(non Sapienza ma omaggiato per simpatia)', height: 24,
     ring: [[12.512315, 41.900665], [12.512735, 41.900782], [12.513108, 41.900507], [12.513473, 41.900297], [12.513473, 41.900254], [12.512554, 41.899911], [12.512467, 41.899868], [12.51235, 41.899889]] };
@@ -30,6 +32,11 @@
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
   const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+  if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
+    const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
+    location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
+    return;
+  }
   document.body.classList.toggle('embedded', embedded);
   let buildings = [];
   let selectedCode = '';
@@ -69,7 +76,7 @@
   let planPointsByCode = new Map();
   let planVisible = true;
   let planOpacity = 0.8;
-  let planColors = { lesson: '#f2b400', selected: '#2f8fd0' };
+  let planColors = { lesson: '#f2b400', selected: '#2f8fd0', custom: {} };
   let parentActive = true;
   let pendingSelectedCode = '';
   let pendingCamera = null;
@@ -84,6 +91,9 @@
   let cnrMesh = null;
   let cnrOutline = null;
   let extraMask = [];
+  let planMask = [];
+  let maskCanvas = null;
+  let roofTexture = null;
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const setStatus = (html, error = false) => {
@@ -178,8 +188,8 @@
       ['Centroide', `${b.centroid.lat.toFixed(6)}, ${b.centroid.lon.toFixed(6)}`],
       ['Fonte', 'OpenStreetMap contributors']
     ];
-    $('detailGrid').innerHTML = items.map(([label, value]) => `<div><span class="detail-label">${esc(label)}</span><span class="detail-value">${esc(value)}</span></div>`).join('');
-    $('osmLinks').innerHTML = (b.osm_elements || [{ id: b.osm_id, type: b.osm_type || 'way' }]).map((entry) => {
+    if ($('detailGrid')) $('detailGrid').innerHTML = items.map(([label, value]) => `<div><span class="detail-label">${esc(label)}</span><span class="detail-value">${esc(value)}</span></div>`).join('');
+    if ($('osmLinks')) $('osmLinks').innerHTML = (b.osm_elements || [{ id: b.osm_id, type: b.osm_type || 'way' }]).map((entry) => {
       const type = ['way', 'node', 'relation'].includes(entry.type) ? entry.type : 'way';
       const id = String(entry.id || '').replace(/[^0-9]/g, '');
       return id ? `<a href="https://www.openstreetmap.org/${type}/${encodeURIComponent(id)}" target="_blank" rel="noopener">OSM ${esc(id)} ↗</a>` : '';
@@ -198,9 +208,19 @@
   function stopTour() {
     if (tourTimer) window.clearTimeout(tourTimer);
     tourTimer = 0;
+    const wasOn = Boolean(controls?.autoRotate);
     if (controls) controls.autoRotate = false;
-    tourButton.textContent = 'Tour manuale';
+    tourButton.textContent = 'Rotazione';
     tourButton.setAttribute('aria-pressed', 'false');
+    if (wasOn) notifyParent('campus-rotation', { on: false });
+  }
+  /* baricentro (area) del confine CU e distanza che lo inquadra tutto */
+  function campusCentroid() { return project(polygonCentroid(CAMPUS_POLY)); }
+  function campusFitDistance() {
+    const c = polygonCentroid(CAMPUS_POLY);
+    const radius = Math.max(...CAMPUS_POLY.map((p) => Math.hypot((p[0] - c[0]) * metersPerLon, (p[1] - c[1]) * metersPerLat)));
+    const aspect = Math.max(0.6, Math.min(1.6, camera?.aspect || 1));
+    return radius * (aspect < 1 ? 1.9 / aspect : 1.55);
   }
   function stopCameraFlight() {
     if (cameraTweenId) cancelAnimationFrame(cameraTweenId);
@@ -284,31 +304,32 @@
     resizeRenderer();
   }
   function startTour() {
-    if (!controls || reducedMotion || !buildings.length || currentView !== '3d') return;
+    if (!controls || reducedMotion || currentView !== '3d' || viewDim === '2d') return;
     stopTour();
-    flyTo(campusCenter(), 1450, 1100);
-    tourButton.textContent = 'Ferma tour';
+    flyTo(campusCentroid(), campusFitDistance(), 1100);
+    tourButton.textContent = 'Ferma rotazione';
     tourButton.setAttribute('aria-pressed', 'true');
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.75;
-    tourTimer = window.setTimeout(stopTour, 12000);
+    controls.autoRotateSpeed = 0.6;
+    notifyParent('campus-rotation', { on: true });
   }
   function setAerial(visible) {
     showAerial = visible;
     $('aerialImage').hidden = !visible;
     if (photoTexture) {
-      normalRoof.map = visible ? photoTexture : null;
-      selectedRoof.map = visible ? photoTexture : null;
+      normalRoof.map = visible ? roofTexture : null;
+      selectedRoof.map = visible ? roofTexture : null;
       normalRoof.needsUpdate = true;
       selectedRoof.needsUpdate = true;
     }
     if (orthoMesh) orthoMesh.visible = visible;
-    if (cnrMesh) { cnrMesh.material[0].map = visible ? photoTexture : null; cnrMesh.material[0].needsUpdate = true; }
+    if (cnrMesh) { cnrMesh.material[0].map = visible ? roofTexture : null; cnrMesh.material[0].needsUpdate = true; }
+    extrasGroup?.traverse((o) => { if (o.userData.texturedTop) { o.material[0].map = visible ? roofTexture : null; o.material[0].needsUpdate = true; } });
     for (const mesh of planMeshesByCode.values()) {
-      mesh.material[0].map = visible ? photoTexture : null;
+      mesh.material[0].map = visible ? roofTexture : null;
       mesh.material[0].needsUpdate = true;
     }
-    $('aerialToggle').setAttribute('aria-pressed', String(visible));
+    $('aerialToggle')?.setAttribute('aria-pressed', String(visible));
   }
   function setBuildingVisibility(visible) {
     showBuildings = visible;
@@ -367,6 +388,7 @@
     if (plan.colors) {
       if (typeof plan.colors.lesson === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.lesson)) planColors.lesson = plan.colors.lesson;
       if (typeof plan.colors.selected === 'string' && /^#[\da-f]{6}$/i.test(plan.colors.selected)) planColors.selected = plan.colors.selected;
+      planColors.custom = sanitizeCustom(plan.colors.custom);
     }
     if (planLayerGroup) {
       scene.remove(planLayerGroup);
@@ -383,7 +405,7 @@
     planBuildingsGroup = new THREE.Group();
     planLayerGroup.add(planBuildingsGroup);
     scene.add(planLayerGroup);
-    planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear();
+    planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear(); planMask = [];
     for (const feature of plan.features) {
       const code = String(feature.code || '').toUpperCase();
       if (!code) continue;
@@ -400,7 +422,7 @@
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0.16, 0);
       applyRoofUVs(geometry);
-      const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false });
+      const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false });
       const walls = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xb6a99e, roughness: 0.94, metalness: 0 });
       const mesh = new THREE.Mesh(geometry, [roof, walls]);
       mesh.userData.code = code;
@@ -409,6 +431,8 @@
       mesh.castShadow = true; mesh.receiveShadow = true;
       planBuildingsGroup.add(mesh); pickables.push(mesh);
       planMeshesByCode.set(code, mesh);
+      if (code === MINERVA.arches.code) cutArches(mesh, parsed.rings);
+      for (const ring of parsed.rings) planMask.push(ring.map(([x, y]) => worldToLonLat(pdfToWorld(x, y))));
       const pts = parsed.rings.flat().map(([x, y]) => pdfToWorld(x, y));
       const centroid = pts.reduce((a, p) => ({ x: a.x + p.x / pts.length, z: a.z + p.z / pts.length }), { x: 0, z: 0 });
       planPointsByCode.set(code, { x: centroid.x, n: -centroid.z });
@@ -423,11 +447,33 @@
       outline.userData.code = code; planBuildingsGroup.add(outline); planOutlinesByCode.set(code, outline);
     }
     if (plan.image) {
-      planTexture = new THREE.TextureLoader().load(plan.image, (texture) => {
-        texture.encoding = THREE.sRGBEncoding; texture.needsUpdate = true;
-        if (officialPlan === plan) notifyParent('campus-overlay-ready');
-      }, undefined, () => { if (officialPlan === plan) fallbackToPhoto('La planimetria non può essere caricata.'); });
+      // la carta bianca della planimetria diventa trasparente e i bordi sfumano: sotto si vede la cartina muta
+      const planCanvas = document.createElement('canvas');
+      planTexture = new THREE.CanvasTexture(planCanvas);
       planTexture.encoding = THREE.sRGBEncoding;
+      planTexture.anisotropy = 8;
+      const planImg = new Image();
+      planImg.onload = () => {
+        planCanvas.width = planImg.naturalWidth; planCanvas.height = planImg.naturalHeight;
+        const pctx = planCanvas.getContext('2d', { willReadFrequently: true });
+        pctx.drawImage(planImg, 0, 0);
+        const data = pctx.getImageData(0, 0, planCanvas.width, planCanvas.height);
+        const px = data.data, w = planCanvas.width, h = planCanvas.height;
+        for (let y = 0; y < h; y += 1) for (let x = 0; x < w; x += 1) {
+          const i = (y * w + x) * 4;
+          const light = Math.min(px[i], px[i + 1], px[i + 2]);
+          let a = light > 246 ? 0 : light > 226 ? (246 - light) / 20 : 1;
+          const ex = (x / w - 0.5) * 2, ey = (y / h - 0.5) * 2;
+          const r = Math.sqrt(ex * ex + ey * ey);
+          a *= r < 0.82 ? 1 : Math.max(0, 1 - (r - 0.82) / 0.3);
+          px[i + 3] = Math.round(px[i + 3] * a);
+        }
+        pctx.putImageData(data, 0, 0);
+        planTexture.needsUpdate = true;
+        if (officialPlan === plan) notifyParent('campus-overlay-ready');
+      };
+      planImg.onerror = () => { if (officialPlan === plan) fallbackToPhoto('La planimetria non può essere caricata.'); };
+      planImg.src = plan.image;
       const box = plan.viewBox;
       const corners = [[box.x, box.y], [box.x + box.w, box.y], [box.x + box.w, box.y + box.h], [box.x, box.y + box.h]].map(([x, y]) => pdfToWorld(x, y));
       const geometry = new THREE.BufferGeometry();
@@ -454,6 +500,12 @@
       }
     }
     for (const code of officialPlanCodes) { activeCodeMeshes.delete(code); activeCodeOutlines.delete(code); }
+    buildMinervaArea();
+    compositeOrtho();
+    applyViewMode();
+  }
+  function worldToLonLat(w) {
+    return [bounds.west + (w.x + mapWidth / 2) / metersPerLon, bounds.south + (-w.z + mapDepth / 2) / metersPerLat];
   }
   function setupPlanFallback(plan) {
     const image = document.createElement('img'); image.src = plan.image; image.alt = 'Planimetria vettoriale originale Sapienza';
@@ -489,14 +541,23 @@
       selectBuilding(code, { notify: false, animate: false });
     }
   }
+  function sanitizeCustom(value) {
+    const out = {};
+    if (value && typeof value === 'object') for (const [code, color] of Object.entries(value)) {
+      if (/^CU\d{3}$/i.test(code) && typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)) out[code.toUpperCase()] = color;
+    }
+    return out;
+  }
   function updatePlanSelection() {
     for (const [code, mesh] of planMeshesByCode) {
       const feature = mesh.userData.planFeature || {};
-      mesh.material[0].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xffffff);
-      mesh.material[1].color.set(code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xb6a99e);
+      const custom = planColors.custom[code];
+      // il colore scelto dall'utente vale anche quando l'edificio è selezionato; la selezione resta nel contorno
+      mesh.material[0].color.set(custom || (code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xffffff));
+      mesh.material[1].color.set(custom || (code === selectedCode ? planColors.selected : feature.lesson ? planColors.lesson : 0xb6a99e));
     }
     for (const [code, outline] of planOutlinesByCode) {
-      outline.material.color.set(code === selectedCode ? planColors.selected : planFeaturesLesson(code) ? planColors.lesson : 0x822433);
+      outline.material.color.set(code === selectedCode ? (planColors.custom[code] ? 0x1f1f1f : planColors.selected) : planColors.custom[code] || (planFeaturesLesson(code) ? planColors.lesson : 0x822433));
       outline.visible = planVisible;
     }
     planStage.querySelectorAll('.plan-fallback-path').forEach((path) => path.classList.toggle('selected', path.dataset.code === selectedCode));
@@ -522,6 +583,7 @@
     else if (message.type === 'campus-colors') {
       if (typeof message.lesson === 'string' && /^#[\da-f]{6}$/i.test(message.lesson)) planColors.lesson = message.lesson;
       if (typeof message.selected === 'string' && /^#[\da-f]{6}$/i.test(message.selected)) planColors.selected = message.selected;
+      planColors.custom = sanitizeCustom(message.custom);
       updatePlanSelection();
     } else if (message.type === 'campus-select' && typeof message.code === 'string') {
       pendingSelectedCode = message.code;
@@ -530,12 +592,17 @@
     else if (message.type === 'campus-clear') { stopCameraFlight(); selectedCode = ''; updateSelectionMaterials(); updatePlanSelection(); renderList(); drawFootprints(); }
     else if (message.type === 'campus-camera') {
       if (!controls) pendingCamera = message;
-      else if (message.action === 'fit') flyTo(campusCenter(), 1300, 700);
+      else if (message.action === 'fit') flyTo(campusCentroid(), campusFitDistance(), 700);
       else if (message.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(message.factor) || 1)));
     } else if (message.type === 'campus-viewport') {
       occlusion = { right: Math.max(0, Number(message.right) || 0), bottom: Math.max(0, Number(message.bottom) || 0) };
       resizeRenderer();
     } else if (message.type === 'campus-active') { parentActive = Boolean(message.active); handleVisibility(); }
+    else if (message.type === 'campus-view') {
+      if (message.dim === '2d' || message.dim === '3d') viewDim = message.dim;
+      if (message.base === 'satellite' || message.base === 'carta') viewBase = message.base;
+      applyViewMode(); scheduleTiles(50);
+    } else if (message.type === 'campus-rotate') { if (message.on) startTour(); else stopTour(); }
   }
 
   function polygonCentroid(ring) {
@@ -563,7 +630,7 @@
   }
   /* ---------- suolo: cartina muta dei dintorni + ortofoto ritagliata sul confine CU ---------- */
   const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) < 700;
-  const BASE_COLORS = { bg: '#eeeae5', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
+  const BASE_COLORS = { bg: '#e9e4df', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
   function canvasMapper(area, width, height) {
     return ([lon, lat]) => [((lon - area.west) / (area.east - area.west)) * width, ((area.north - lat) / (area.north - area.south)) * height];
   }
@@ -595,6 +662,9 @@
     orthoCanvas.width = width; orthoCanvas.height = height;
     orthoSource = document.createElement('canvas');
     orthoSource.width = width; orthoSource.height = height;
+    roofTexture = new THREE.CanvasTexture(orthoSource);
+    roofTexture.encoding = THREE.sRGBEncoding;
+    roofTexture.anisotropy = 8;
     const texture = new THREE.CanvasTexture(orthoCanvas);
     texture.encoding = THREE.sRGBEncoding;
     texture.anisotropy = 8;
@@ -620,19 +690,26 @@
     const ctx = orthoCanvas.getContext('2d');
     const { width, height } = orthoCanvas;
     const toPx = canvasMapper(ORTHO_BOUNDS, width, height);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx); ctx.fill();
+    if (!maskCanvas) { maskCanvas = document.createElement('canvas'); maskCanvas.width = width; maskCanvas.height = height; }
+    const mask = maskCanvas.getContext('2d', { willReadFrequently: true });
+    mask.clearRect(0, 0, width, height);
+    mask.fillStyle = '#000'; mask.strokeStyle = '#000'; mask.lineJoin = 'round'; mask.lineCap = 'round';
+    mask.beginPath(); tracePath(mask, CAMPUS_POLY, toPx); mask.fill();
     const px = metersToPx(ORTHO_BOUNDS, width);
     for (const ring of extraMask) {
-      ctx.beginPath(); tracePath(ctx, ring, toPx); ctx.fill();
-      ctx.lineJoin = 'round'; ctx.lineWidth = 24 * px; ctx.strokeStyle = '#000'; ctx.stroke();
+      mask.beginPath(); tracePath(mask, ring, toPx); mask.fill();
+      mask.lineWidth = 24 * px; mask.stroke();
     }
+    // ogni edificio CU resta dentro il confine, con qualche metro di margine
+    for (const ring of planMask) { mask.beginPath(); tracePath(mask, ring, toPx); mask.fill(); mask.lineWidth = 12 * px; mask.stroke(); }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(maskCanvas, 0, 0);
     ctx.globalCompositeOperation = 'source-in';
     ctx.drawImage(orthoSource, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     if (photoTexture) photoTexture.needsUpdate = true;
+    if (roofTexture) roofTexture.needsUpdate = true;
   }
   function loadHighResOrtho() {
     const { width, height } = orthoCanvas;
@@ -685,9 +762,12 @@
     for (const line of map.rail || []) { ctx.beginPath(); tracePath(ctx, line, toPx, false); ctx.strokeStyle = BASE_COLORS.rail; ctx.lineWidth = Math.max(1, 1.2 * px); ctx.stroke(); }
     ctx.setLineDash([]);
     for (const rings of map.buildings || []) fillRings(rings, BASE_COLORS.building, BASE_COLORS.buildingLine);
-    // filo del confine sotto il bordo dell'ortofoto
-    ctx.beginPath(); tracePath(ctx, CAMPUS_POLY, toPx);
-    ctx.strokeStyle = 'rgba(130,36,51,.55)'; ctx.lineWidth = Math.max(2, 2.5 * px); ctx.stroke();
+    // bordo circolare: la cartina si dissolve nel colore dello sfondo, niente rettangolo
+    const [cx, cy] = toPx(FADE.center);
+    const fade = ctx.createRadialGradient(cx, cy, FADE.inner * px, cx, cy, FADE.outer * px);
+    fade.addColorStop(0, 'rgba(233,228,223,0)');
+    fade.addColorStop(1, 'rgba(233,228,223,1)');
+    ctx.fillStyle = fade; ctx.fillRect(0, 0, width, height);
     if (baseTexture) baseTexture.needsUpdate = true;
   }
   function createGround(context) {
@@ -699,7 +779,8 @@
     baseTexture = new THREE.CanvasTexture(baseCanvas);
     baseTexture.encoding = THREE.sRGBEncoding;
     baseTexture.anisotropy = 8;
-    ground = planeMesh(bounds, new THREE.MeshBasicMaterial({ map: baseTexture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false }), -0.12);
+    ground = planeMesh(bounds, new THREE.MeshBasicMaterial({ map: baseTexture, color: 0xffffff, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }), -0.12);
+    ground.renderOrder = -2; // i livelli piatti non scrivono la profondità: niente sfarfallio tra cartina, ortofoto e tasselli
     scene.add(ground);
     orthoMesh = planeMesh(ORTHO_BOUNDS, new THREE.MeshBasicMaterial({ map: photoTexture, transparent: true, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }), -0.06);
     orthoMesh.renderOrder = 1;
@@ -726,7 +807,7 @@
     geometry.translate(0, 0.04, 0);
     applyRoofUVs(geometry);
     geometry.computeVertexNormals();
-    cnrMesh = new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? photoTexture : null, toneMapped: false }), new THREE.MeshStandardMaterial({ color: 0xcfc8bf, roughness: 0.9, metalness: 0 })]);
+    cnrMesh = new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), new THREE.MeshStandardMaterial({ color: 0xcfc8bf, roughness: 0.9, metalness: 0 })]);
     cnrMesh.castShadow = true; cnrMesh.receiveShadow = true;
     cnrMesh.userData.guest = true;
     buildingGroup.add(cnrMesh);
@@ -742,6 +823,15 @@
     if (cnrOutline) cnrOutline.visible = on;
     if (cnrMesh) cnrMesh.material[1].color.set(on ? 0x1f5f8b : 0xcfc8bf);
     if (on && CNR.centroid) flyTo(project(CNR.centroid), 520, reducedMotion ? 0 : 850);
+  }
+  function convexHull(points) {
+    const pts = [...new Map(points.map((p) => [`${p[0]},${p[1]}`, p])).values()].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (pts.length < 3) return pts;
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lower = [], upper = [];
+    for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); }
+    for (const p of pts.slice().reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
   }
   function ringArea(ring) {
     let a = 0;
@@ -773,12 +863,473 @@
       const mensa = /lollis/i.test(label) && (item.building || item.amenity);
       if (verano || mensa) outer.forEach((ring) => extraMask.push(ring));
     }
+    const veranoPts = (map.named || []).filter((item) => /piazzale del verano/i.test(item.name || '')).flatMap((item) => (item.rings || []).filter(Array.isArray).flat());
+    if (veranoPts.length >= 3) extraMask.push(convexHull(veranoPts));
     if (cnrRing) {
       const levels = Number(String((map.named.find((n) => n.rings?.includes(cnrRing)) || {}).levels || '').replace(',', '.'));
       addGuestBuilding(cnrRing, Number.isFinite(levels) && levels > 0 ? levels * 3.6 : CNR.height);
       CNR.osm = true;
     }
     compositeOrtho();
+  }
+  /* ---------- piazzale della Minerva: vasca, scalinata del Rettorato, arcate, statua ---------- */
+  // Coordinate in punti della planimetria ufficiale (stessa calibrazione dei volumi CU).
+  const MINERVA = {
+    // aiuole a U attorno alla statua, rialzate; dentro la U una vasca ribassata con acqua
+    basin: [[270.8, 535.8], [315, 535.8], [315, 555], [305.8, 555], [305.8, 540], [280, 540], [280, 555], [270.8, 555]],
+    basinHeight: 0.95,
+    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.4,
+    statue: [292.5, 536.6],
+    // scalinata: bordo inferiore, lati verso le arcate, pianerottolo davanti al corpo centrale
+    stairs: { front: 518.3, left: 271.7, right: 313.3, facade: 497.5, landingLeft: 285, landingRight: 299.2, landingFront: 505.8, steps: 14, riser: 0.15 },
+    // arcate del Rettorato (CU001): rettangoli sottratti al volume fino a una quota
+    arches: { code: 'CU001', rects: [[266.0, 489.5, 272.5, 499.0], [312.3, 489.5, 318.8, 499.0]], heightRatio: 0.62, maxHeight: 12 }
+  };
+  let extrasGroup = null;
+  function pdfShape(points) {
+    const shape = new THREE.Shape();
+    points.forEach(([x, y], i) => { const w = pdfToWorld(x, y); if (i) shape.lineTo(w.x, -w.z); else shape.moveTo(w.x, -w.z); });
+    return shape;
+  }
+  function extrudeShape(shapes, depth, base) {
+    const geometry = new THREE.ExtrudeGeometry(shapes, { depth, bevelEnabled: false, curveSegments: 1 });
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, base, 0);
+    return geometry;
+  }
+  /* differenza poligono − rettangolo allineato agli assi (coordinate planimetria):
+     il piano fuori dal rettangolo è diviso in quattro regioni convesse e il poligono
+     viene ritagliato su ciascuna (Sutherland–Hodgman). */
+  function clipConvex(poly, inside, intersect) {
+    let out = poly;
+    const result = [];
+    for (let i = 0; i < out.length; i += 1) {
+      const a = out[i], b = out[(i + 1) % out.length];
+      const ia = inside(a), ib = inside(b);
+      if (ia) result.push(a);
+      if (ia !== ib) result.push(intersect(a, b));
+    }
+    return result.length >= 3 ? result : null;
+  }
+  function clipHalf(poly, axis, value, keepLess) {
+    const inside = (p) => (keepLess ? p[axis] <= value : p[axis] >= value);
+    const intersect = (a, b) => { const t = (value - a[axis]) / (b[axis] - a[axis]); return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]; };
+    return clipConvex(poly, inside, intersect);
+  }
+  function subtractRect(poly, [x0, y0, x1, y1]) {
+    const pieces = [];
+    const left = clipHalf(poly, 0, x0, true); if (left) pieces.push(left);
+    const right = clipHalf(poly, 0, x1, false); if (right) pieces.push(right);
+    let mid = clipHalf(poly, 0, x0, false); mid = mid && clipHalf(mid, 0, x1, true);
+    if (mid) {
+      const top = clipHalf(mid, 1, y0, true); if (top) pieces.push(top);
+      const bottom = clipHalf(mid, 1, y1, false); if (bottom) pieces.push(bottom);
+    }
+    return pieces;
+  }
+  function polyArea(poly) { let a = 0; for (let i = 0; i < poly.length; i += 1) { const p = poly[i], q = poly[(i + 1) % poly.length]; a += p[0] * q[1] - q[0] * p[1]; } return Math.abs(a / 2); }
+  function cutArches(mesh, rings) {
+    const cfg = MINERVA.arches;
+    const height = mesh.userData.height || 15;
+    const archTop = Math.min(cfg.maxHeight, height * cfg.heightRatio);
+    let pieces = rings.map((ring) => ring.slice());
+    for (const rect of cfg.rects) pieces = pieces.flatMap((piece) => subtractRect(piece, rect));
+    pieces = pieces.filter((piece) => polyArea(piece) > 0.5);
+    if (!pieces.length) return;
+    // parte superiore: sagoma intera sopra le arcate
+    const upperShapes = rings.map((ring) => pdfShape(ring));
+    const upper = extrudeShape(upperShapes, height - archTop, 0.16 + archTop);
+    applyRoofUVs(upper);
+    mesh.geometry.dispose();
+    mesh.geometry = upper;
+    // parte inferiore: sagoma meno le arcate
+    const lower = extrudeShape(pieces.map((piece) => pdfShape(piece)), archTop, 0.16);
+    applyRoofUVs(lower);
+    const base = new THREE.Mesh(lower, mesh.material);
+    base.userData = { ...mesh.userData, part: 'arcades' };
+    base.castShadow = true; base.receiveShadow = true;
+    mesh.parent.add(base);
+    pickables.push(base);
+  }
+  /* acqua 3D leggera: griglia di ~1000 vertici, onde calcolate nella GPU (somma di sinusoidi),
+     riflesso del sole e trasparenza ai bordi; nessuna texture né file da scaricare */
+  function waterGrid([x0, y0, x1, y1], level, nx, ny) {
+    const pos = new Float32Array((nx + 1) * (ny + 1) * 3), idx = [];
+    for (let j = 0; j <= ny; j += 1) for (let i = 0; i <= nx; i += 1) {
+      const w = pdfToWorld(x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny), k = (j * (nx + 1) + i) * 3;
+      pos[k] = w.x; pos[k + 1] = level; pos[k + 2] = w.z;
+    }
+    for (let j = 0; j < ny; j += 1) for (let i = 0; i < nx; i += 1) {
+      const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx);
+    return g;
+  }
+  function waterMaterial() {
+    return new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        #include <common>
+        #include <logdepthbuf_pars_vertex>
+        uniform float uTime; varying vec3 vWorld; varying vec3 vNormal;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          float x = wp.x, z = wp.z, t = uTime;
+          float h = 0.035 * sin(x * 1.1 + t * 1.5) + 0.028 * sin(z * 1.6 - t * 1.2) + 0.018 * sin((x + z) * 2.7 + t * 2.1);
+          float dx = 0.0385 * cos(x * 1.1 + t * 1.5) + 0.0486 * cos((x + z) * 2.7 + t * 2.1);
+          float dz = 0.0448 * cos(z * 1.6 - t * 1.2) + 0.0486 * cos((x + z) * 2.7 + t * 2.1);
+          wp.y += h; vWorld = wp.xyz; vNormal = normalize(vec3(-dx, 1.0, -dz));
+          gl_Position = projectionMatrix * viewMatrix * wp;
+          #include <logdepthbuf_vertex>
+        }`,
+      fragmentShader: `
+        #include <logdepthbuf_pars_fragment>
+        uniform float uTime; varying vec3 vWorld; varying vec3 vNormal;
+        void main() {
+          #include <logdepthbuf_fragment>
+          vec3 n = normalize(vNormal), v = normalize(cameraPosition - vWorld), l = normalize(vec3(0.4, 0.8, 0.3));
+          float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+          float spec = pow(max(dot(reflect(-l, n), v), 0.0), 60.0);
+          float caus = pow(0.5 + 0.5 * sin(vWorld.x * 3.1 + uTime * 1.3) * sin(vWorld.z * 2.7 - uTime * 1.1), 6.0);
+          vec3 col = mix(vec3(0.33, 0.70, 0.85), vec3(0.72, 0.90, 0.97), fres) + caus * 0.12 + spec * 0.9;
+          gl_FragColor = vec4(col, 0.62 + fres * 0.3 + spec * 0.3);
+        }`
+    });
+  }
+  function updateWater(now) {
+    const mat = MINERVA.water; if (!mat || reducedMotion) return;
+    mat.uniforms.uTime.value = now / 1000;
+  }
+  /* facciata del Rettorato: foto raddrizzata (rettorato-facciata.jpg) sul fronte del portico,
+     con i quattro pilastri e l'attico «STUDIUM VRBIS» in rilievo */
+  const FACADE = { left: 285, right: 299.2, front: 505.9, base: 2.1, atticV: 55 / 600, rise: 3,
+    pillars: [[0, 50], [128, 178], [336, 386], [460, 512]].map(([a, b]) => [a / 512, b / 512]) };
+  function buildRettoratoFacade(sideMat) {
+    const building = planMeshesByCode.get('CU001');
+    const top = 0.16 + (building?.userData.height || 20) + FACADE.rise;
+    const A = pdfToWorld(FACADE.left, FACADE.front), B = pdfToWorld(FACADE.right, FACADE.front);
+    const C = pdfToWorld((FACADE.left + FACADE.right) / 2, FACADE.front + 1);
+    const right = new THREE.Vector3(B.x - A.x, 0, B.z - A.z), width = right.length(); right.normalize();
+    const mid = new THREE.Vector3((A.x + B.x) / 2, 0, (A.z + B.z) / 2);
+    const normal = new THREE.Vector3(C.x - mid.x, 0, C.z - mid.z).normalize();
+    const up = new THREE.Vector3(0, 1, 0), height = top - FACADE.base;
+    const basis = new THREE.Matrix4().makeBasis(right, up, normal);
+    const group = extrasGroup;
+    new THREE.TextureLoader().load('rettorato-facciata.jpg', (texture) => {
+    texture.encoding = THREE.sRGBEncoding; texture.anisotropy = 4;
+    const part = (u0, u1, v0, v1) => { const t = texture.clone(); t.needsUpdate = true; t.repeat.set(u1 - u0, v1 - v0); t.offset.set(u0, 1 - v1); return new THREE.MeshBasicMaterial({ map: t, toneMapped: false }); };
+    const place = (mesh, u, vTop, vBottom, out) => {
+      // u = centro orizzontale (0..1), v = dall'alto (0..1), out = sporgenza del centro rispetto al fronte
+      const cy = top - (vTop + vBottom) / 2 * height;
+      const pos = mid.clone().addScaledVector(right, (u - 0.5) * width).addScaledVector(normal, out); pos.y = cy;
+      mesh.quaternion.setFromRotationMatrix(basis); mesh.position.copy(pos);
+      mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
+    };
+    // fondo del portico: foto intera, leggermente arretrata
+    place(new THREE.Mesh(new THREE.PlaneGeometry(width, height), part(0, 1, 0, 1)), 0.5, 0, 1, 0.05);
+    const side = new THREE.MeshStandardMaterial({ color: 0xd8d1c4, roughness: 0.85, metalness: 0 });
+    // pilastri in rilievo, con la loro porzione di foto sul fronte
+    const depth = 1.6, pillarTop = FACADE.atticV;
+    for (const [u0, u1] of FACADE.pillars) {
+      const geo = new THREE.BoxGeometry((u1 - u0) * width, (1 - pillarTop) * height, depth);
+      place(new THREE.Mesh(geo, [side, side, side, side, part(u0, u1, pillarTop, 1), side]), (u0 + u1) / 2, pillarTop, 1, depth / 2 + 0.05);
+    }
+    // attico con la scritta, sporgente come i pilastri e profondo fin dentro l'edificio
+    const atticDepth = depth + 6;
+    const attic = new THREE.BoxGeometry(width + 0.4, pillarTop * height, atticDepth);
+    place(new THREE.Mesh(attic, [side, side, side, side, part(0, 1, 0, pillarTop), side]), 0.5, 0, pillarTop, depth + 0.05 - atticDepth / 2);
+    // corpo del portico che sale sopra le ali (fino all'attico)
+    const tower = new THREE.BoxGeometry(width, FACADE.rise, 12);
+    place(new THREE.Mesh(tower, sideMat), 0.5, 0, FACADE.rise / height, -6);
+    });
+  }
+  function buildMinervaArea() {
+    if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
+    extrasGroup = new THREE.Group();
+    queueMicrotask(() => { if (extrasGroup) extrasGroup.visible = viewDim !== '2d'; });
+    planLayerGroup.add(extrasGroup);
+    const stone = new THREE.MeshStandardMaterial({ color: 0xb9ae9c, roughness: 0.92, metalness: 0 });
+    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xebe4d7, roughness: 0.9, metalness: 0 });
+    const edge = new THREE.LineBasicMaterial({ color: 0x9c9282, transparent: true, opacity: 0.7 });
+    // vasca
+    const basin = extrudeShape([pdfShape(MINERVA.basin)], MINERVA.basinHeight, 0);
+    applyRoofUVs(basin);
+    const basinMesh = new THREE.Mesh(basin, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), stone]);
+    basinMesh.userData.texturedTop = true;
+    basinMesh.castShadow = true; basinMesh.receiveShadow = true;
+    extrasGroup.add(basinMesh);
+    // vasca ribassata dentro la U: pareti in pietra, fondo scuro e acqua in stile videogioco anni '90
+    {
+      const [x0, y0, x1, y1] = MINERVA.pool, d = MINERVA.poolDepth;
+      const ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+      const pit = extrudeShape([pdfShape(ring)], d, -d);
+      const hidden = new THREE.MeshBasicMaterial({ visible: false });
+      const walls = new THREE.MeshStandardMaterial({ color: 0x9e9484, roughness: 0.95, metalness: 0, side: THREE.BackSide });
+      extrasGroup.add(new THREE.Mesh(pit, [hidden, walls]));
+      const floor = extrudeShape([pdfShape(ring)], 0.01, -d);
+      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0x31515a, roughness: 1, metalness: 0 })));
+      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 40, 24), waterMaterial());
+      waterMesh.renderOrder = 2;
+      extrasGroup.add(waterMesh);
+      MINERVA.water = waterMesh.material;
+    }
+    // scalinata: gradini concentrici che girano di 90° agli angoli (diagonali dal bordo al pianerottolo)
+    const s = MINERVA.stairs;
+    for (let i = 0; i < s.steps; i += 1) {
+      const t = i / s.steps;
+      const front = s.front + t * (s.landingFront - s.front);
+      const left = s.left + t * (s.landingLeft - s.left);
+      const right = s.right + t * (s.landingRight - s.right);
+      const step = extrudeShape([pdfShape([[left, s.facade], [right, s.facade], [right, front], [left, front]])], (i + 1) * s.riser, 0);
+      const mesh = new THREE.Mesh(step, [stoneTop, stone]);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      extrasGroup.add(mesh);
+      extrasGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(step, 20), edge));
+    }
+    const statue = pdfToWorld(...MINERVA.statue);
+    MINERVA.world = { x: statue.x, z: statue.z, y: MINERVA.basinHeight };
+    const axisA = pdfToWorld(292.4, 500), axisB = pdfToWorld(292.4, 600);
+    MINERVA.facing = Math.atan2(axisB.x - axisA.x, axisB.z - axisA.z);
+    if (!MINERVA.initialView && !selectedCode && !pendingSelectedCode) {
+      MINERVA.initialView = true;
+      flyTo({ x: statue.x, n: -statue.z }, 115, 0);
+    }
+    buildRettoratoFacade(stone);
+    loadMinervaModel();
+    loadFountains();
+  }
+  /* statua: si carica solo se esiste models/minerva.json (es. {"file":"minerva.glb","height":9,"rotationDeg":0}) */
+  let minervaLoaded = false;
+  async function loadMinervaModel() {
+    if (minervaLoaded || !MINERVA.world) return;
+    let config;
+    try { const response = await fetch('models/minerva.json', { cache: 'no-cache' }); if (!response.ok) return; config = await response.json(); } catch (_) { return; }
+    if (!config?.file || !/^[\w.-]+\.(glb|gltf|json)$/i.test(config.file)) return;
+    minervaLoaded = true;
+    try {
+      await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
+    } catch (_) { minervaLoaded = false; return; }
+    const onModel = (gltf) => {
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = (Number(config.height) || 9) / Math.max(0.001, size.y);
+      model.scale.setScalar(scale);
+      const scaled = new THREE.Box3().setFromObject(model);
+      const center = scaled.getCenter(new THREE.Vector3());
+      const holder = new THREE.Group();
+      model.position.set(-center.x, -scaled.min.y, -center.z);
+      holder.add(model);
+      const pedestal = Math.max(0, Number(config.pedestal) || 0);
+      const baseX = MINERVA.world.x + (Number(config.offset?.[0]) || 0), baseZ = MINERVA.world.z + (Number(config.offset?.[1]) || 0);
+      if (pedestal > 0) {
+        // basamento in pietra sotto la statua (dimensioni indicative)
+        const size = Number(config.pedestalSize) || 2.4;
+        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xe2d9c8, roughness: 0.9, metalness: 0 }));
+        block.position.set(baseX, MINERVA.world.y + pedestal / 2, baseZ);
+        block.rotation.y = MINERVA.facing;
+        block.castShadow = true; block.receiveShadow = true;
+        extrasGroup.add(block);
+      }
+      holder.position.set(baseX, MINERVA.world.y + pedestal, baseZ);
+      holder.rotation.y = MINERVA.facing + ((Number(config.rotationDeg) || 0) * Math.PI / 180);
+      model.traverse((o) => { if (o.isMesh && o.material) { o.material.metalness = Math.min(o.material.metalness ?? 0.35, 0.35); o.material.needsUpdate = true; } });
+      holder.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      holder.userData.minerva = true;
+      extrasGroup.add(holder);
+      // cliccabile: ogni parte della statua avvia il rimbalzo
+      holder.traverse((o) => { if (o.isMesh) { o.userData.minervaPart = true; pickables.push(o); } });
+      MINERVA.holder = holder; MINERVA.baseY = holder.position.y; MINERVA.scale = 1;
+    };
+    const fail = () => { minervaLoaded = false; };
+    if (/\.json$/i.test(config.file)) {
+      // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
+      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+        const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
+        new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
+      }).catch(fail);
+    } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
+  }
+
+  /* fontanelle Sapienza (modello esclusivo della Città universitaria): models/fontanelle.json → {"file":"fontanella.glb","height":2.4,"points":[[x,y],…]} in punti PDF */
+  let fountainsLoaded = false;
+  async function loadFountains() {
+    if (fountainsLoaded) return;
+    let config;
+    try { const response = await fetch('models/fontanelle.json', { cache: 'no-cache' }); if (!response.ok) return; config = await response.json(); } catch (_) { return; }
+    if (!config?.file || !/^[\w.-]+\.(glb|json)$/i.test(config.file) || !Array.isArray(config.points)) return;
+    fountainsLoaded = true;
+    try { await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function'); } catch (_) { fountainsLoaded = false; return; }
+    const onModel = (gltf) => {
+      const model = gltf.scene;
+      const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+      model.scale.setScalar((Number(config.height) || 2.4) / Math.max(0.001, size.y));
+      const box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
+      model.position.set(-c.x, -box.min.y, -c.z);
+      model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material) { o.material.metalness = Math.min(o.material.metalness ?? 0.5, 0.5); o.material.needsUpdate = true; } } });
+      config.points.forEach(([x, y], i) => {
+        const w = pdfToWorld(x, y), holder = new THREE.Group();
+        holder.add(i ? model.clone(true) : model);
+        holder.position.set(w.x, 0, w.z);
+        holder.rotation.y = (Number(config.rotationDeg) || 0) * Math.PI / 180 + i * 1.3;
+        holder.userData.fountain = true;
+        holder.traverse((o) => { if (o.isMesh) { o.userData.fountainPart = true; pickables.push(o); } });
+        extrasGroup.add(holder);
+      });
+    };
+    const fail = () => { fountainsLoaded = false; };
+    if (/\.json$/i.test(config.file)) {
+      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+        const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
+        new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
+      }).catch(fail);
+    } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
+  }
+
+  /* ---------- modalità della vista (comandate dalla pagina principale) ---------- */
+  let viewDim = '3d';
+  let viewBase = 'satellite';
+  function setFlat(flat) {
+    const s = flat ? 0.02 : 1;
+    for (const group of [buildingGroup, planBuildingsGroup, extrasGroup]) if (group) group.scale.y = s;
+  }
+  function applyViewMode() {
+    if (!renderer) return;
+    const satellite = viewBase === 'satellite';
+    setAerial(satellite);
+    planVisible = !satellite;
+    planOpacity = 1;
+    if (planImageMaterial) planImageMaterial.opacity = 1;
+    if (planImagePlane) planImagePlane.visible = planVisible;
+    for (const tile of detailTiles.values()) if (tile.mesh) tile.mesh.visible = satellite;
+    updatePlanSelection();
+    const flat = viewDim === '2d';
+    setFlat(flat);
+    // vasca, scalinata, Minerva e fontanelle esistono solo nella vista 3D
+    if (extrasGroup) extrasGroup.visible = !flat;
+    controls.enableRotate = !flat;
+    if (flat) {
+      stopTour();
+      controls.minPolarAngle = 0; controls.maxPolarAngle = 0.0001;
+      const target = controls.target.clone();
+      const height = Math.max(300, camera.position.distanceTo(target));
+      camera.position.set(target.x, height, target.z + 0.001);
+    } else {
+      controls.minPolarAngle = 0.08; controls.maxPolarAngle = Math.PI / 2.04;
+      if (camera.position.y > 0 && Math.abs(camera.position.x - controls.target.x) < 1) flyTo({ x: controls.target.x, n: -controls.target.z }, camera.position.distanceTo(controls.target) * 0.8, reducedMotion ? 0 : 700);
+    }
+    controls.update();
+  }
+
+  /* ---------- tasselli di dettaglio dell'ortofoto (caricati vicino alla camera) ---------- */
+  const TILE_M = 64;
+  const TILE_PX = smallScreen ? 384 : 512;
+  const detailTiles = new Map();
+  let tileManifest = null;
+  let tileTimer = 0;
+  let tileLoads = 0;
+  async function loadTileManifest() {
+    try { const response = await fetch('tiles/manifest.json', { cache: 'no-cache' }); if (response.ok) tileManifest = await response.json(); } catch (_) { tileManifest = null; }
+  }
+  function tileGrid() {
+    const dLon = TILE_M / metersPerLon, dLat = TILE_M / metersPerLat;
+    return { dLon, dLat, cols: Math.ceil((ORTHO_BOUNDS.east - ORTHO_BOUNDS.west) / dLon), rows: Math.ceil((ORTHO_BOUNDS.north - ORTHO_BOUNDS.south) / dLat) };
+  }
+  function tileBounds(c, r, grid) {
+    const west = ORTHO_BOUNDS.west + c * grid.dLon, north = ORTHO_BOUNDS.north - r * grid.dLat;
+    return { west, east: west + grid.dLon, north, south: north - grid.dLat };
+  }
+  function tileInsideMask(b) {
+    if (!maskCanvas) return false;
+    const ctx = maskCanvas.getContext('2d', { willReadFrequently: true });
+    const toPx = canvasMapper(ORTHO_BOUNDS, maskCanvas.width, maskCanvas.height);
+    const [x0, y0] = toPx([b.west, b.north]), [x1, y1] = toPx([b.east, b.south]);
+    const w = Math.max(1, Math.round(x1 - x0)), h = Math.max(1, Math.round(y1 - y0));
+    const data = ctx.getImageData(Math.max(0, Math.round(x0)), Math.max(0, Math.round(y0)), w, h).data;
+    for (let i = 3; i < data.length; i += 16) if (data[i] > 0) return true;
+    return false;
+  }
+  function tileSource(c, r, b) {
+    const key = `${c}_${r}`;
+    if (tileManifest?.tiles?.includes(key) && typeof tileManifest.path === 'string') return tileManifest.path.replace('{c}', c).replace('{r}', r);
+    return `/api/campus-ortho?bbox=${[b.west, b.south, b.east, b.north].map((v) => v.toFixed(6)).join(',')}&w=${TILE_PX}&h=${Math.round(TILE_PX * (metersPerLat * (b.north - b.south)) / (metersPerLon * (b.east - b.west)))}`;
+  }
+  function loadTile(c, r, b) {
+    const key = `${c}_${r}`;
+    const entry = { state: 'loading', mesh: null, used: performance.now() };
+    detailTiles.set(key, entry);
+    tileLoads += 1;
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      tileLoads -= 1;
+      if (!detailTiles.has(key)) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0);
+      // stesso confine del suolo
+      const toPx = canvasMapper(ORTHO_BOUNDS, maskCanvas.width, maskCanvas.height);
+      const [x0, y0] = toPx([b.west, b.north]), [x1, y1] = toPx([b.east, b.south]);
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(maskCanvas, x0, y0, x1 - x0, y1 - y0, 0, 0, canvas.width, canvas.height);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 8;
+      texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+      const mesh = planeMesh(b, new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false }), -0.03);
+      mesh.renderOrder = 2;
+      mesh.visible = viewBase === 'satellite';
+      scene.add(mesh);
+      entry.mesh = mesh; entry.state = 'ready';
+    };
+    image.onerror = () => { tileLoads -= 1; entry.state = 'failed'; };
+    image.src = tileSource(c, r, b);
+  }
+  function disposeTile(key) {
+    const entry = detailTiles.get(key);
+    if (entry?.mesh) { scene.remove(entry.mesh); entry.mesh.geometry.dispose(); entry.mesh.material.map?.dispose(); entry.mesh.material.dispose(); }
+    detailTiles.delete(key);
+  }
+  function updateDetailTiles() {
+    tileTimer = 0;
+    if (!camera || !maskCanvas || viewBase !== 'satellite') return;
+    const grid = tileGrid();
+    const frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const near = [];
+    for (let r = 0; r < grid.rows; r += 1) for (let c = 0; c < grid.cols; c += 1) {
+      const b = tileBounds(c, r, grid);
+      const sw = project([b.west, b.south]), ne = project([b.east, b.north]);
+      const box = new THREE.Box3(new THREE.Vector3(sw.x, -1, -ne.n), new THREE.Vector3(ne.x, 30, -sw.n));
+      if (!frustum.intersectsBox(box)) continue;
+      const center = new THREE.Vector3((sw.x + ne.x) / 2, 0, -(sw.n + ne.n) / 2);
+      const distance = camera.position.distanceTo(center);
+      if (distance < 330) near.push({ c, r, b, distance });
+    }
+    near.sort((a, b) => a.distance - b.distance);
+    const wanted = new Set();
+    for (const tile of near.slice(0, 36)) {
+      const key = `${tile.c}_${tile.r}`;
+      wanted.add(key);
+      const entry = detailTiles.get(key);
+      if (entry) { entry.used = performance.now(); continue; }
+      if (tileLoads >= 4) continue;
+      if (!tileInsideMask(tile.b)) { detailTiles.set(key, { state: 'empty', mesh: null, used: performance.now() }); continue; }
+      loadTile(tile.c, tile.r, tile.b);
+    }
+    // tieni al massimo 48 tasselli: scarta quelli lontani usati meno di recente
+    if (detailTiles.size > 48) {
+      const old = [...detailTiles.entries()].filter(([key]) => !wanted.has(key)).sort((a, b) => a[1].used - b[1].used);
+      for (const [key] of old.slice(0, detailTiles.size - 48)) disposeTile(key);
+    }
+    if (near.length && tileLoads) scheduleTiles(400);
+  }
+  function scheduleTiles(delay = 250) {
+    if (!tileTimer) tileTimer = window.setTimeout(updateDetailTiles, delay);
   }
   function makeShape(rings) {
     const outer = closeRing(rings[0]);
@@ -858,10 +1409,10 @@
     photoTexture = texture;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe9e4df);
-    camera = new THREE.PerspectiveCamera(48, 1, 1, 8000);
+    camera = new THREE.PerspectiveCamera(48, 1, 0.5, 6000);
     camera.position.set(0, 850, 1050);
     createGround(context);
-    createMaterials(texture);
+    createMaterials(roofTexture);
     buildingGroup = new THREE.Group();
     scene.add(buildingGroup);
     addGuestBuilding(CNR.ring, CNR.height);
@@ -887,7 +1438,7 @@
       if (geometry.type === 'Polygon') addPolygon(feature, geometry.coordinates, lookup);
       else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) addPolygon(feature, polygon, lookup);
     }
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance', logarithmicDepthBuffer: true });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.85;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -900,16 +1451,17 @@
     controls.target.set(0, 0, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.065;
-    controls.minDistance = 95;
+    controls.minDistance = 4;
     controls.maxDistance = 3000;
     controls.minPolarAngle = 0.08;
     controls.maxPolarAngle = Math.PI / 2.04;
     controls.screenSpacePanning = true;
     controls.addEventListener('start', stopTour);
+    controls.addEventListener('change', () => scheduleTiles());
     controls.update();
     if (pendingCamera) {
       const command = pendingCamera; pendingCamera = null;
-      if (command.action === 'fit') flyTo(campusCenter(), 1300, 0);
+      if (command.action === 'fit') flyTo(campusCentroid(), campusFitDistance(), 0);
       else if (command.action === 'zoom') camera.position.lerp(controls.target, 1 - (1 / Math.max(0.2, Number(command.factor) || 1)));
     }
     const raycaster = new THREE.Raycaster();
@@ -926,8 +1478,11 @@
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(pickables, false)[0];
-      if (hit?.object.userData.guest) { showGuest(true); return; }
+      const hit = raycaster.intersectObjects(pickables, false).find((h) => !((h.object.userData.minervaPart || h.object.userData.fountainPart) && extrasGroup && !extrasGroup.visible));
+      if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
+      if (hit?.object.userData.fountainPart) { let h = hit.object; while (h && !h.userData.fountain) h = h.parent; const on = selectFountain(h); showGuest(false); if (embedded) notifyParent('campus-fountain', { on }); return; }
+      if (fountainSel) { selectFountain(null); if (embedded) notifyParent('campus-fountain', { on: false }); }
+      if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
       showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);
     });
@@ -955,8 +1510,62 @@
     for (const [code, outlines] of activeCodeOutlines) for (const outline of outlines) outline.visible = code === selectedCode;
     updatePlanSelection();
   }
+  /* Minerva: un clic la fa crescere con un rimbalzo elastico, un altro clic la riporta com'era */
+  const MINERVA_BIG = 1.8;
+  let minervaAnim = null;
+  function bounceMinerva() {
+    if (!MINERVA.holder) return;
+    const to = MINERVA.scale > 1.01 ? 1 : MINERVA_BIG;
+    if (reducedMotion) { MINERVA.scale = to; MINERVA.holder.scale.setScalar(to); return; }
+    minervaAnim = { start: performance.now(), from: MINERVA.scale, to, grow: to > MINERVA.scale };
+  }
+  function updateMinerva(now) {
+    if (!minervaAnim || !MINERVA.holder) return;
+    const duration = 1400;
+    const t = Math.min(1, (now - minervaAnim.start) / duration);
+    // elastico in uscita: supera la misura finale e ci torna oscillando
+    const elastic = t === 1 ? 1 : 1 - Math.pow(2, -9 * t) * Math.cos(t * Math.PI * 4.5);
+    const s = minervaAnim.from + (minervaAnim.to - minervaAnim.from) * elastic;
+    // schiacciamento e allungamento, come un cartone animato
+    const wobble = Math.sin(t * Math.PI * 7) * Math.exp(-4.5 * t) * 0.22;
+    MINERVA.holder.scale.set(s * (1 + wobble * 0.6), s * (1 - wobble), s * (1 + wobble * 0.6));
+    // saltello: due rimbalzi sempre più bassi, solo mentre cresce
+    const hop = minervaAnim.grow ? Math.abs(Math.sin(t * Math.PI * 2.5)) * Math.exp(-3 * t) * 2.5 : 0;
+    MINERVA.holder.position.y = MINERVA.baseY + hop;
+    if (t === 1) { MINERVA.scale = minervaAnim.to; MINERVA.holder.scale.setScalar(MINERVA.scale); MINERVA.holder.position.y = MINERVA.baseY; minervaAnim = null; }
+  }
+  /* fontanelle: stessa animazione della Minerva; quella selezionata resta grande, le altre tornano normali */
+  const FOUNTAIN_BIG = 1.8;
+  let fountainSel = null;
+  const fountainAnims = new Map();
+  function bounceHolder(holder, to) {
+    const from = holder.userData.s || 1;
+    if (reducedMotion) { holder.userData.s = to; holder.scale.setScalar(to); return; }
+    fountainAnims.set(holder, { start: performance.now(), from, to, grow: to > from });
+  }
+  function selectFountain(holder) {
+    const again = holder && holder === fountainSel;
+    if (fountainSel) bounceHolder(fountainSel, 1);
+    fountainSel = again ? null : holder;
+    if (fountainSel) bounceHolder(fountainSel, FOUNTAIN_BIG);
+    return !!fountainSel;
+  }
+  function updateFountains(now) {
+    for (const [holder, a] of fountainAnims) {
+      const t = Math.min(1, (now - a.start) / 1400);
+      const elastic = t === 1 ? 1 : 1 - Math.pow(2, -9 * t) * Math.cos(t * Math.PI * 4.5);
+      const sc = a.from + (a.to - a.from) * elastic;
+      const wobble = Math.sin(t * Math.PI * 7) * Math.exp(-4.5 * t) * 0.22;
+      holder.scale.set(sc * (1 + wobble * 0.6), sc * (1 - wobble), sc * (1 + wobble * 0.6));
+      holder.position.y = a.grow ? Math.abs(Math.sin(t * Math.PI * 2.5)) * Math.exp(-3 * t) * 0.8 : 0;
+      if (t === 1) { holder.userData.s = a.to; holder.scale.setScalar(a.to); holder.position.y = 0; fountainAnims.delete(holder); }
+    }
+  }
   function renderFrame() {
     if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
+    updateMinerva(performance.now());
+    updateWater(performance.now());
+    updateFountains(performance.now());
     controls.update();
     renderer.render(scene, camera);
   }
@@ -1046,6 +1655,7 @@
     }
   }
   async function init() {
+    loadTileManifest();
     bindUI();
     if (reducedMotion) {
       tourButton.disabled = true;
@@ -1090,5 +1700,7 @@
       if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(error.message || '') }); }
     }
   }
+  // accesso per verifiche automatiche e diagnosi (sola lettura della camera)
+  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; }, bounceMinerva: () => bounceMinerva(), pdfToWorld: (x, y) => pdfToWorld(x, y) };
   init();
 })();
