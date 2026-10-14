@@ -951,25 +951,57 @@
     mesh.parent.add(base);
     pickables.push(base);
   }
-  /* acqua «8 bit»: texture 16×16 disegnata al volo (niente file da scaricare), filtrata a pixel netti */
-  function retroWaterTexture() {
-    const c = document.createElement('canvas'); c.width = c.height = 16;
-    const g = c.getContext('2d');
-    g.fillStyle = 'rgba(110,200,235,0.85)'; g.fillRect(0, 0, 16, 16);
-    g.fillStyle = 'rgba(80,170,220,0.9)';
-    for (const [x, y, w] of [[0, 3, 5], [8, 3, 4], [3, 9, 6], [11, 11, 4], [1, 14, 3]]) g.fillRect(x, y, w, 1);
-    g.fillStyle = 'rgba(225,248,255,0.95)';
-    for (const [x, y, w] of [[2, 1, 3], [10, 6, 3], [5, 12, 2], [13, 15, 2], [0, 7, 2]]) g.fillRect(x, y, w, 1);
-    const t = new THREE.CanvasTexture(c);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
-    return t;
+  /* acqua 3D leggera: griglia di ~1000 vertici, onde calcolate nella GPU (somma di sinusoidi),
+     riflesso del sole e trasparenza ai bordi; nessuna texture né file da scaricare */
+  function waterGrid([x0, y0, x1, y1], level, nx, ny) {
+    const pos = new Float32Array((nx + 1) * (ny + 1) * 3), idx = [];
+    for (let j = 0; j <= ny; j += 1) for (let i = 0; i <= nx; i += 1) {
+      const w = pdfToWorld(x0 + (x1 - x0) * i / nx, y0 + (y1 - y0) * j / ny), k = (j * (nx + 1) + i) * 3;
+      pos[k] = w.x; pos[k + 1] = level; pos[k + 2] = w.z;
+    }
+    for (let j = 0; j < ny; j += 1) for (let i = 0; i < nx; i += 1) {
+      const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx);
+    return g;
   }
-  // animazione a scatti (6 fotogrammi al secondo), come nei vecchi videogiochi
+  function waterMaterial() {
+    return new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        #include <common>
+        #include <logdepthbuf_pars_vertex>
+        uniform float uTime; varying vec3 vWorld; varying vec3 vNormal;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          float x = wp.x, z = wp.z, t = uTime;
+          float h = 0.035 * sin(x * 1.1 + t * 1.5) + 0.028 * sin(z * 1.6 - t * 1.2) + 0.018 * sin((x + z) * 2.7 + t * 2.1);
+          float dx = 0.0385 * cos(x * 1.1 + t * 1.5) + 0.0486 * cos((x + z) * 2.7 + t * 2.1);
+          float dz = 0.0448 * cos(z * 1.6 - t * 1.2) + 0.0486 * cos((x + z) * 2.7 + t * 2.1);
+          wp.y += h; vWorld = wp.xyz; vNormal = normalize(vec3(-dx, 1.0, -dz));
+          gl_Position = projectionMatrix * viewMatrix * wp;
+          #include <logdepthbuf_vertex>
+        }`,
+      fragmentShader: `
+        #include <logdepthbuf_pars_fragment>
+        uniform float uTime; varying vec3 vWorld; varying vec3 vNormal;
+        void main() {
+          #include <logdepthbuf_fragment>
+          vec3 n = normalize(vNormal), v = normalize(cameraPosition - vWorld), l = normalize(vec3(0.4, 0.8, 0.3));
+          float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+          float spec = pow(max(dot(reflect(-l, n), v), 0.0), 60.0);
+          float caus = pow(0.5 + 0.5 * sin(vWorld.x * 3.1 + uTime * 1.3) * sin(vWorld.z * 2.7 - uTime * 1.1), 6.0);
+          vec3 col = mix(vec3(0.33, 0.70, 0.85), vec3(0.72, 0.90, 0.97), fres) + caus * 0.12 + spec * 0.9;
+          gl_FragColor = vec4(col, 0.62 + fres * 0.3 + spec * 0.3);
+        }`
+    });
+  }
   function updateWater(now) {
-    const tex = MINERVA.water; if (!tex || reducedMotion) return;
-    const frame = Math.floor(now / 166);
-    tex.offset.set((frame % 16) / 16, (Math.floor(frame / 3) % 16) / 16);
+    const mat = MINERVA.water; if (!mat || reducedMotion) return;
+    mat.uniforms.uTime.value = now / 1000;
   }
   function buildMinervaArea() {
     if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
@@ -996,16 +1028,10 @@
       extrasGroup.add(new THREE.Mesh(pit, [hidden, walls]));
       const floor = extrudeShape([pdfShape(ring)], 0.01, -d);
       extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0x31515a, roughness: 1, metalness: 0 })));
-      const water = extrudeShape([pdfShape(ring)], 0.001, MINERVA.waterLevel);
-      // UV in metri: una piastrella di texture ogni 4 m (pixel grossi, effetto retrò)
-      const pos = water.attributes.position, uv = new Float32Array(pos.count * 2);
-      for (let i = 0; i < pos.count; i += 1) { uv[i * 2] = pos.getX(i) / 4; uv[i * 2 + 1] = pos.getZ(i) / 4; }
-      water.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-      const tex = retroWaterTexture();
-      const waterMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.78, depthWrite: false, toneMapped: false });
-      const waterMesh = new THREE.Mesh(water, waterMat); waterMesh.renderOrder = 2;
+      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 40, 24), waterMaterial());
+      waterMesh.renderOrder = 2;
       extrasGroup.add(waterMesh);
-      MINERVA.water = tex;
+      MINERVA.water = waterMesh.material;
     }
     // scalinata: gradini concentrici che girano di 90° agli angoli (diagonali dal bordo al pianerottolo)
     const s = MINERVA.stairs;
