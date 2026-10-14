@@ -2901,7 +2901,7 @@ let mpSel=null, mpRoom='', mpV={s:1,tx:0,ty:0}, mpReady=false;
 /* --- servizi della Città Universitaria: bar, fontanelle e altri servizi sulla planimetria --- */
 const MP_POI_CAT = {
   bar:   {label:'Bar Sapienza', icon:'☕', color:'#822433'},
-  water: {label:'Fontanelle', icon:'💧', color:'#006778'},
+  water: {label:'Fontanelle (da completare)', icon:'💧', color:'#006778'},
   food:  {label:'Mense e ristoro', icon:'🍽️', color:'#C54C00'},
   serv:  {label:'Altri servizi', icon:'ℹ️', color:'#4f6b5d'}
 };
@@ -2924,7 +2924,7 @@ const MP_POI_PLAN = [
   {code:'CU012', cat:'serv', icon:'⛪', name:'Chiesa Divina Sapienza', note:'CU012'},
   {code:'CU007', cat:'serv', icon:'👮', name:'Commissariato P.S.', note:'CU007'},
   /* fontanelle segnalate dai rappresentanti (posizioni sulla planimetria ufficiale; elenco non completo) */
-  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[281.9,573.1],[303.7,573.1]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'segnalata dai rappresentanti'}))
+  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[281.9,573.1],[303.7,573.1]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:''}))
 ];
 const mpPoiOn = {bar:true, water:true, food:true, serv:true};
 (function(){
