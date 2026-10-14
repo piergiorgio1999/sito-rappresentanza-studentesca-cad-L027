@@ -2008,7 +2008,7 @@ function mainRoom(blocks){ const ks=new Set(blocks.map(b=>(b.r||'')+'|'+(b.bld||
   if(ks.size!==1) return null; const [r,bld]=[...ks][0].split('|'); return (r||bld) ? {r,bld} : null; }
 
 /* Disegna l'orario su ctx in uno spazio logico W×H. Restituisce le aree toccabili. */
-function draw(ctx, W, H){
+function draw(ctx, W, H, exporting){
   const y=state.year, ch=state.ch[y];
   const blocks = allBlocks(); assignLanes(blocks);
   const hits = [];
@@ -2085,7 +2085,8 @@ function draw(ctx, W, H){
   const hasExtra = state.extras[y].length>0;
   ctx.font=`400 24px ${FONT}`; ctx.textBaseline='alphabetic';
   const foot = wrapText(ctx,'Per variazioni ufficiali vale la documentazione Sapienza. Realizzato dai rappresentanti degli studenti del CAD di Scienze Chimiche. Avvisateci per eventuali modifiche per poterle aggiornare per tutti.', gw);
-  const footH = 30 + foot.length*32 + (hasExtra?40:0) + 16;
+  /* nel file esportato legenda del tratteggio e note spariscono e la griglia prende il loro spazio */
+  const footH = exporting ? 24 : 30 + foot.length*32 + (hasExtra?40:0) + 16;
 
   /* griglia */
   let minH = blocks.length ? Math.floor(Math.min(...blocks.map(b=>b.s))) : 8;
@@ -2129,6 +2130,7 @@ function draw(ctx, W, H){
 
   ctx.textBaseline='alphabetic';
   let fy = gb + 44;
+  if(exporting) return {blocks, hits};
   if(hasExtra){
     ctx.save(); ctx.setLineDash([11,7]); ctx.lineWidth=3; ctx.strokeStyle=DS.maroon; rr(ctx,gx+2,fy-24,44,26,6); ctx.stroke(); ctx.restore();
     ctx.fillStyle='#4a3f43'; ctx.font=`500 26px ${FONT}`; ctx.fillText('Tratteggio: corsi aggiunti personalmente', gx+62, fy);
@@ -2588,7 +2590,7 @@ function renderCanvas(r, scale){
   const {W,H}=fmtSize({r});
   const c=document.createElement('canvas'); c.width=Math.round(W*scale); c.height=Math.round(H*scale);
   const ctx=c.getContext('2d'); ctx.scale(c.width/W, c.height/H);
-  draw(ctx, W, H);
+  draw(ctx, W, H, true);
   return c;
 }
 const canvasBlob = (c,type,q) => new Promise(res=>c.toBlob(res,type,q));
