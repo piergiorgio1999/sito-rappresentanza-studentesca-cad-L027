@@ -2998,6 +2998,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   const VKEY='orariChimicaFontanelleVoti';
   let myV={}; try{ myV=JSON.parse(localStorage.getItem(VKEY)||'{}')||{}; }catch(e){ myV={}; }
   let votes={}, voteM=null;
+  function voterId(){ let id=''; try{ id=localStorage.getItem('orariChimicaVotante')||''; if(!id){ id=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)); localStorage.setItem('orariChimicaVotante',id); } }catch(e){} return id; }
   fetch('/api/fontanelle').then(r=>r.ok?r.json():null).then(d=>{ if(!d) return; votes=d.votes||{};
     (Array.isArray(d)?d:d.list||[]).forEach(f=>{
       const near=[...g.querySelectorAll('.c-water')].find(m=>{ const q=m.transform.baseVal.consolidate(); return q&&Math.hypot(q.matrix.e-f.x,q.matrix.f-f.y)<2; });
@@ -3019,10 +3020,10 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     if(b.classList.contains('mp-fx')||b.dataset.f==='cancel'){ stopPlace(); pop.hidden=true; return; }
     if((b.dataset.f==='yes'||b.dataset.f==='no')&&voteM){ const k=voteM.dataset.k, v=b.dataset.f==='yes'?1:-1, prev=myV[k]; if(prev===v) return;
       const c=votes[k]=votes[k]||{yes:0,no:0}; let ok=false;
-      try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({k,vote:v})}); if(r.ok){ const d=await r.json(); c.yes=d.yes; c.no=d.no; ok=true; } }catch(x){}
+      try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({k,vote:v,voter:voterId()})}); if(r.ok){ const d=await r.json(); c.yes=d.yes; c.no=d.no; ok=true; } }catch(x){}
       if(!ok){ if(prev===1) c.yes--; if(prev===-1) c.no--; if(v===1) c.yes++; else c.no++; }
       myV[k]=v; try{ localStorage.setItem(VKEY,JSON.stringify(myV)); }catch(x){}
-      votePop(voteM); pop.querySelector('.mp-fct').insertAdjacentHTML('beforebegin', ok?`<span class="mp-fok">Grazie! ${v===1?'Conferma registrata.':'I rappresentanti vengono avvisati se più persone dicono che non c\'è.'}</span>`:'<span class="mp-fst">Risposta salvata solo qui: il voto si invia dal sito orari-chimica.pages.dev.</span>'); return; }
+      votePop(voteM); pop.querySelector('.mp-fct').insertAdjacentHTML('beforebegin', ok?`<span class="mp-fok">Grazie! ${v===1?'Conferma registrata.':'Se tante persone dicono che non c\'è, i rappresentanti vengono avvisati e la controllano.'}</span>`:'<span class="mp-fst">Risposta salvata solo qui: il voto si invia dal sito orari-chimica.pages.dev.</span>'); return; }
     if(b.dataset.f==='start'||b.dataset.f==='again'){ if(pend){ pend.remove(); pend=null; } startPlace(); return; }
     if(b.dataset.f==='send'&&pending){ const f={...pending, note:($('mpFNote')||{}).value||''}; b.disabled=true; b.textContent='Invio…';
       let ok=false, id=0; try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(f)}); ok=r.ok; if(ok) id=(await r.json()).id||0; }catch(x){}

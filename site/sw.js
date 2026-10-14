@@ -1,5 +1,5 @@
 /* Versione della cache: cambiala a ogni aggiornamento dell'orario */
-const CACHE = 'orari-chimica-v69';
+const CACHE = 'orari-chimica-v70';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon-cad.svg', './push-client.js'];
 
 self.addEventListener('install', e => {
