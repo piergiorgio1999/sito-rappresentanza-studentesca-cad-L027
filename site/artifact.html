@@ -570,7 +570,8 @@ body.mp-full-open{overflow:hidden}
 .mp-fst,.mp-fct{color:var(--muted);font-size:.8rem}.mp-fok{color:#2e7d32;font-weight:600;font-size:.82rem}.mp-fact .btn.on{outline:3px solid #006778;outline-offset:2px}
 .mp-fnote{display:grid;gap:4px;font-size:.8rem}.mp-fnote input{min-height:36px;padding:6px 9px}
 .mp-map.placing,.mp-map.placing .mp-s{cursor:crosshair}
-.mp-poi-m.mine circle{stroke-dasharray:3 2}.mp-poi-m.new circle{stroke:#d6336c}
+.mp-poi-m.mine circle{stroke-dasharray:3 2}.mp-poi-m.indoor circle:not(.ring){filter:none}
+.mp-subkey{display:flex;align-items:center;gap:6px;margin:-1px 0 1px 26px;font-size:.92em;color:var(--muted);cursor:help}.mp-poi-key .dot.dbl{width:20px;height:20px;font-size:10px;border-width:1.5px;box-shadow:0 0 0 2px #fff,0 0 0 3.5px #006778,0 1px 4px rgba(0,0,0,.3)}.mp-poi-m.new circle{stroke:#d6336c}
 .mp-poi-key label[data-cat="water"]{text-decoration:underline dotted;text-underline-offset:3px}
 @media(max-width:699px){.mp-fpop{top:auto;bottom:70px}}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
@@ -2927,13 +2928,21 @@ const MP_POI_PLAN = [
   {pt:[201.3,315.3], cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Edificio CU030'},
   {pt:[100.1,739.0], cat:'bar', icon:'☕', name:'Bar Sapienza · Centro Teatro Ateneo', note:'Edificio CU017'},
   {pt:[321.9,728.0], cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Piazzale Aldo Moro, accanto a CU016'},
-  {code:'CU029', cat:'serv', icon:'🏛️', name:'Servizi generali', note:'Uffici, segreterie, posta, banca · CU029'},
+  /* servizi nei punti esatti dei quadrati blu della planimetria ufficiale */
+  {pt:[246.7,301.0], cat:'serv', icon:'🏤', type:'post_office', name:'Poste Italiane', note:'Servizi generali · CU029'},
+  {pt:[274.3,292.2], cat:'serv', icon:'🏦', type:'bank', name:'Banca UniCredit', note:'Servizi generali · CU029'},
+  {pt:[304.0,282.7], cat:'serv', icon:'🗂️', type:'office', name:'Economato', note:'Servizi generali · CU029'},
+  {pt:[341.2,296.3], cat:'serv', icon:'📖', type:'shop_books', name:'Libreria', note:'Servizi generali · CU029'},
+  {pt:[311.8,442.0], cat:'serv', icon:'🏧', type:'atm', name:'Bancomat', note:'Accanto al Rettorato (CU001)'},
+  {pt:[96.2,479.8], cat:'serv', icon:'👮', type:'police', name:'Commissariato P.S.', note:'CU007'},
+  {pt:[176.3,729.5], cat:'serv', icon:'🅿️', type:'parking', name:'Parcheggio', note:'Indicato sulla planimetria ufficiale'},
   {code:'CU001', cat:'serv', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
   {code:'CU011', cat:'serv', icon:'🧸', name:'Asilo nido', note:'CU011'},
   {code:'CU012', cat:'serv', icon:'⛪', name:'Chiesa Divina Sapienza', note:'CU012'},
-  {code:'CU007', cat:'serv', icon:'👮', name:'Commissariato P.S.', note:'CU007'},
   /* fontanelle segnalate dai rappresentanti (posizioni sulla planimetria ufficiale; elenco non completo) */
-  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[281.9,573.1],[303.7,573.1]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:''}))
+  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[281.9,573.1],[303.7,573.1]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:''})),
+  /* fontanelle all'interno di un edificio: bordo doppio */
+  {pt:[459.5,543.5], cat:'water', icon:'💧', indoor:true, name:'Fontanelle all’interno dell’edificio', note:'Matematica «G. Castelnuovo» · CU006'}
 ];
 const mpPoiOn = {bar:true, water:true, food:true, serv:true};
 (function(){
@@ -2952,8 +2961,9 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
       cup.innerHTML='<circle class="glow" r="13"/><path class="steam s1" d="M-3.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s2" d="M0.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s3" d="M4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/>'+
         '<path class="body" d="M-6,-2.4 h10.6 v4.6 a5.3,5.3 0 0 1 -10.6,0 z"/><path class="handle" d="M4.4,-1.2 a2.6,2.6 0 1 1 0,4.4"/><path class="saucer" d="M-8,7.6 h14.4"/>';
       m.append(c,cup,ti);
-    } else m.append(c,t,ti);
-    g.append(m); placed.push({x,y,cat:p.cat});
+    } else if(p.indoor){ m.classList.add('indoor'); const o=document.createElementNS(NS,'circle'); o.setAttribute('class','ring'); o.setAttribute('r',14); o.setAttribute('fill','#fff'); o.setAttribute('stroke',MP_POI_CAT[p.cat].color); o.setAttribute('stroke-width',2); m.append(o,c,t,ti); }
+    else m.append(c,t,ti);
+    g.append(m); placed.push({x,y,cat:p.cat,type:p.type||''});
   }
   function shapeCenter(code){ const d=MAPD.shapes[code]; if(!d) return null; const n=(d.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number); if(n.length<4) return null;
     let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; for(let i=0;i+1<n.length;i+=2){ x0=Math.min(x0,n[i]); x1=Math.max(x1,n[i]); y0=Math.min(y0,n[i+1]); y1=Math.max(y1,n[i+1]); } return [(x0+x1)/2,(y0+y1)/2]; }
@@ -2973,6 +2983,8 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
       // i due bar della planimetria hanno già il loro segnaposto
       if(def[0]==='food' && /^(cafe|bar)$/.test(p.type) && placed.some(q=>q.cat==='bar'&&Math.hypot(q.x-x,q.y-y)<14)) continue;
       if(placed.some(q=>q.cat===def[0]&&Math.hypot(q.x-x,q.y-y)<2.5)) continue;
+      // già sul quadrato blu della planimetria: niente doppione da OpenStreetMap
+      if(placed.some(q=>q.type&&q.type===p.type&&Math.hypot(q.x-x,q.y-y)<40)) continue;
       add(x,y,{cat:def[0], icon:MP_POI_ICON[p.type]||'•', name:p.name||def[1], note:p.name?def[1]:''});
     }
     const n=g.querySelectorAll('.c-water').length; const k=$('mpPoiKey'); if(k) k.querySelector('[data-cat="water"] .n').textContent=n?` (${n})`:'';
@@ -2980,6 +2992,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
   const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
   key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
+  key.querySelector('label[data-cat="water"]').insertAdjacentHTML('afterend','<span class="mp-subkey" title="Fontanelle all’interno di un edificio"><span class="dot dbl" style="border-color:#006778">💧</span> dentro un edificio</span>');
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
   /* --- aggiungi una fontanella mancante: tocca «Fontanelle» nella legenda --- */
