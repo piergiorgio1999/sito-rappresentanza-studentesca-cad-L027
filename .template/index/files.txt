@@ -165,6 +165,7 @@
 ./site/campus-3d/models/fontanelle.json
 ./site/campus-3d/models/minerva.glb
 ./site/campus-3d/models/minerva.json
+./site/campus-3d/rettorato-facciata.jpg
 ./site/campus-3d/vector-alignment.json
 ./site/campus-3d/vendor/LICENSE.three
 ./site/campus-3d/vendor/GLTFLoader.js

@@ -1003,6 +1003,49 @@
     const mat = MINERVA.water; if (!mat || reducedMotion) return;
     mat.uniforms.uTime.value = now / 1000;
   }
+  /* facciata del Rettorato: foto raddrizzata (rettorato-facciata.jpg) sul fronte del portico,
+     con i quattro pilastri e l'attico «STUDIUM VRBIS» in rilievo */
+  const FACADE = { left: 285, right: 299.2, front: 505.6, base: 2.1, atticV: 55 / 600, rise: 3,
+    pillars: [[0, 50], [128, 178], [336, 386], [460, 512]].map(([a, b]) => [a / 512, b / 512]) };
+  function buildRettoratoFacade(sideMat) {
+    const building = planMeshesByCode.get('CU001');
+    const top = 0.16 + (building?.userData.height || 20) + FACADE.rise;
+    const A = pdfToWorld(FACADE.left, FACADE.front), B = pdfToWorld(FACADE.right, FACADE.front);
+    const C = pdfToWorld((FACADE.left + FACADE.right) / 2, FACADE.front + 1);
+    const right = new THREE.Vector3(B.x - A.x, 0, B.z - A.z), width = right.length(); right.normalize();
+    const mid = new THREE.Vector3((A.x + B.x) / 2, 0, (A.z + B.z) / 2);
+    const normal = new THREE.Vector3(C.x - mid.x, 0, C.z - mid.z).normalize();
+    const up = new THREE.Vector3(0, 1, 0), height = top - FACADE.base;
+    const basis = new THREE.Matrix4().makeBasis(right, up, normal);
+    const group = extrasGroup;
+    new THREE.TextureLoader().load('rettorato-facciata.jpg', (texture) => {
+    texture.encoding = THREE.sRGBEncoding; texture.anisotropy = 4;
+    const part = (u0, u1, v0, v1) => { const t = texture.clone(); t.needsUpdate = true; t.repeat.set(u1 - u0, v1 - v0); t.offset.set(u0, 1 - v1); return new THREE.MeshBasicMaterial({ map: t, toneMapped: false }); };
+    const place = (mesh, u, vTop, vBottom, out) => {
+      // u = centro orizzontale (0..1), v = dall'alto (0..1), out = sporgenza del centro rispetto al fronte
+      const cy = top - (vTop + vBottom) / 2 * height;
+      const pos = mid.clone().addScaledVector(right, (u - 0.5) * width).addScaledVector(normal, out); pos.y = cy;
+      mesh.quaternion.setFromRotationMatrix(basis); mesh.position.copy(pos);
+      mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
+    };
+    // fondo del portico: foto intera, leggermente arretrata
+    place(new THREE.Mesh(new THREE.PlaneGeometry(width, height), part(0, 1, 0, 1)), 0.5, 0, 1, 0.05);
+    const side = new THREE.MeshStandardMaterial({ color: 0xd8d1c4, roughness: 0.85, metalness: 0 });
+    // pilastri in rilievo, con la loro porzione di foto sul fronte
+    const depth = 1.6, pillarTop = FACADE.atticV;
+    for (const [u0, u1] of FACADE.pillars) {
+      const geo = new THREE.BoxGeometry((u1 - u0) * width, (1 - pillarTop) * height, depth);
+      place(new THREE.Mesh(geo, [side, side, side, side, part(u0, u1, pillarTop, 1), side]), (u0 + u1) / 2, pillarTop, 1, depth / 2 + 0.05);
+    }
+    // attico con la scritta, sporgente come i pilastri e profondo fin dentro l'edificio
+    const atticDepth = depth + 6;
+    const attic = new THREE.BoxGeometry(width + 0.4, pillarTop * height, atticDepth);
+    place(new THREE.Mesh(attic, [side, side, side, side, part(0, 1, 0, pillarTop), side]), 0.5, 0, pillarTop, depth + 0.05 - atticDepth / 2);
+    // corpo del portico che sale sopra le ali (fino all'attico)
+    const tower = new THREE.BoxGeometry(width, FACADE.rise, 12);
+    place(new THREE.Mesh(tower, sideMat), 0.5, 0, FACADE.rise / height, -6);
+    });
+  }
   function buildMinervaArea() {
     if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
     extrasGroup = new THREE.Group();
@@ -1054,6 +1097,7 @@
       MINERVA.initialView = true;
       flyTo({ x: statue.x, n: -statue.z }, 115, 0);
     }
+    buildRettoratoFacade(stone);
     loadMinervaModel();
     loadFountains();
   }
@@ -1628,6 +1672,6 @@
     }
   }
   // accesso per verifiche automatiche e diagnosi (sola lettura della camera)
-  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; }, bounceMinerva: () => bounceMinerva() };
+  window.campus3d = { get camera() { return camera; }, get controls() { return controls; }, get scene() { return scene; }, bounceMinerva: () => bounceMinerva(), pdfToWorld: (x, y) => pdfToWorld(x, y) };
   init();
 })();
