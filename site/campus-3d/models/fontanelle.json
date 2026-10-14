@@ -2,5 +2,5 @@
   "file": "fontanella.glb",
   "height": 2.4,
   "points": [[246.8, 343.7], [323.0, 409.2], [473.6, 415.9], [285.6, 582.0], [300.0, 582.0]],
-  "note": "Fontanelle all'aperto della mappa 2D (punti PDF della planimetria ufficiale). Modello «nasone» generato dall'utente e alleggerito (28k triangoli, texture 1024 px, raddrizzato di 20°); height = altezza in metri, ingrandita circa ×2 per vederla sulla mappa. Quelle dentro gli edifici (es. Matematica) non compaiono in 3D."
+  "note": "Fontanelle all'aperto della mappa 2D (punti PDF della planimetria ufficiale). Modello della fontanella Sapienza (esclusiva della Città universitaria) fornito dall'utente e alleggerito (28k triangoli, texture 1024 px, raddrizzato di 20°); height = altezza in metri, ingrandita circa ×2 per vederla sulla mappa. Quelle dentro gli edifici (es. Matematica) non compaiono in 3D."
 }

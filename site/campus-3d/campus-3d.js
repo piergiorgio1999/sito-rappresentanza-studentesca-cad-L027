@@ -1154,7 +1154,7 @@
     } else new THREE.GLTFLoader().load(`models/${config.file}`, onModel, undefined, fail);
   }
 
-  /* fontanelle («nasoni»): models/fontanelle.json → {"file":"fontanella.glb","height":2.4,"points":[[x,y],…]} in punti PDF */
+  /* fontanelle Sapienza (modello esclusivo della Città universitaria): models/fontanelle.json → {"file":"fontanella.glb","height":2.4,"points":[[x,y],…]} in punti PDF */
   let fountainsLoaded = false;
   async function loadFountains() {
     if (fountainsLoaded) return;
