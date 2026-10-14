@@ -2915,7 +2915,7 @@ let mpSel=null, mpRoom='', mpV={s:1,tx:0,ty:0}, mpReady=false;
 /* --- servizi della Città Universitaria: bar, fontanelle e altri servizi sulla planimetria --- */
 const MP_POI_CAT = {
   bar:   {label:'Bar Sapienza', icon:'☕', color:'#822433'},
-  water: {label:'Fontanelle (da completare)', icon:'💧', color:'#006778'},
+  water: {label:'Fontanelle', icon:'💧', color:'#006778'},
   food:  {label:'Mense e ristoro', icon:'🍽️', color:'#C54C00'},
   serv:  {label:'Altri servizi', icon:'ℹ️', color:'#4f6b5d'}
 };
@@ -2945,8 +2945,13 @@ const MP_POI_PLAN = [
   {code:'CU001', cat:'serv', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
   {code:'CU011', cat:'serv', icon:'🧸', name:'Asilo nido', note:'CU011'},
   {code:'CU012', cat:'serv', icon:'⛪', name:'Chiesa Divina Sapienza', note:'CU012'},
-  /* fontanelle segnalate dai rappresentanti (posizioni sulla planimetria ufficiale; elenco non completo) */
-  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[285.6,582.0],[300.0,582.0]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:''})),
+  /* Fontanelle della planimetria e della fonte Fontanelle.org; i punti inattivi sono indicati chiaramente. */
+  ...[[246.8,343.7],[323.0,409.2],[473.6,415.9],[285.6,582.0],[300.0,582.0]].map(pt=>({pt, cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'Planimetria Sapienza'})),
+  {pt:[351.3,519.2], cat:'water', icon:'💧', name:'Fontanella · Piazza della Minerva (10)', note:'Fonte: Fontanelle.org · segnalazione 22/06/2022', url:'https://www.fontanelle.org/Fontanella-Universita-La-Sapienza-11-Viale-Piero-Gobetti-00185-Roma-RM-Italia-cw_mwWjEGDYxYz.aspx'},
+  {pt:[363.2,519.0], cat:'water', icon:'💧', name:'Fontanella · Piazza della Minerva (9)', note:'Fonte: Fontanelle.org · segnalazione 22/06/2022', url:'https://www.fontanelle.org/Fontanella-Universita-La-Sapienza-11-Viale-Piero-Gobetti-00185-Roma-RM-Italia-cw_mwWjEGDYxYz.aspx'},
+  {pt:[310.8,702.6], cat:'water', icon:'💧', name:'Fontanella · Piazzale Aldo Moro (3)', note:'Fonte: Fontanelle.org · segnalazione 22/06/2022', url:'https://www.fontanelle.org/Fontanella-Universita-La-Sapienza-11-Viale-Piero-Gobetti-00185-Roma-RM-Italia-cw_mwWjEGDYxYz.aspx'},
+  {pt:[268.3,730.7], cat:'water', icon:'💧', name:'Fontanella · Piazzale Aldo Moro (4)', note:'Fonte: Fontanelle.org · segnalazione 22/06/2022', url:'https://www.fontanelle.org/Fontanella-Universita-La-Sapienza-11-Viale-Piero-Gobetti-00185-Roma-RM-Italia-cw_mwWjEGDYxYz.aspx'},
+  {pt:[262.7,408.4], cat:'water', icon:'💧', name:'Fontanella INATTIVA · Viale Regina Elena (6)', note:'Segnalata come inattiva su Fontanelle.org · verificare prima dell’uso', url:'https://www.fontanelle.org/Fontanella-Universita-La-Sapienza-11-Viale-Piero-Gobetti-00185-Roma-RM-Italia-cw_mwWjEGDYxYz.aspx'},
   /* fontanelle all'interno di un edificio: bordo doppio */
   {pt:[459.5,543.5], cat:'water', icon:'💧', indoor:true, name:'Fontanelle all’interno dell’edificio', note:'Matematica «G. Castelnuovo» · CU006'}
 ];
@@ -3009,18 +3014,9 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     more.hidden=!open; btn.setAttribute('aria-expanded',String(open)); btn.title=open?'Nascondi gli altri servizi':'Mostra gli altri servizi'; });
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
-  /* --- aggiungi una fontanella mancante: tocca «Fontanelle» nella legenda --- */
-  const FKEY='orariChimicaFontanelle';
-  let myF=[]; try{ myF=JSON.parse(localStorage.getItem(FKEY)||'[]')||[]; }catch(e){ myF=[]; }
+  /* --- segnalazioni di presenza/assenza sulle fontanelle --- */
   const pop=document.createElement('div'); pop.className='mp-fpop'; pop.hidden=true; $('mpMap').append(pop);
-  let placing=false, pending=null, pend=null, down=null;
   function popMsg(html){ pop.innerHTML=html+'<button type="button" class="mp-fx" aria-label="Chiudi">×</button>'; pop.hidden=false; }
-  function startPlace(){ placing=true; $('mpMap').classList.add('placing'); popMsg('<b>Tocca sulla mappa</b> il punto esatto della fontanella. <button type="button" class="linkbtn" data-f="cancel">Annulla</button>'); }
-  function stopPlace(){ placing=false; $('mpMap').classList.remove('placing'); if(pend){ pend.remove(); pend=null; } pending=null; }
-  function toPdf(e){ const r=$('mpMap').getBoundingClientRect(); return [MP_VB.x+(e.clientX-r.left-mpV.tx)/(MP_K*mpV.s), MP_VB.y+(e.clientY-r.top-mpV.ty)/(MP_K*mpV.s)]; }
-  const UNV='segnalata da uno studente · da verificare';
-  function addMine(f){ add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:UNV, k:f.id?String(f.id):''}); g.lastChild.classList.add('mine'); }
-  myF.forEach(addMine);
   /* voti «c'è / non c'è» per capire se una segnalazione è giusta, sbagliata o in malafede */
   const VKEY='orariChimicaFontanelleVoti';
   let myV={}; try{ myV=JSON.parse(localStorage.getItem(VKEY)||'{}')||{}; }catch(e){ myV={}; }
@@ -3030,39 +3026,24 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     (Array.isArray(d)?d:d.list||[]).forEach(f=>{
       const near=[...g.querySelectorAll('.c-water')].find(m=>{ const q=m.transform.baseVal.consolidate(); return q&&Math.hypot(q.matrix.e-f.x,q.matrix.f-f.y)<2; });
       if(near){ near.dataset.k=String(f.id); if(f.status==='confirmed'){ near.classList.remove('mine'); near.dataset.note=''; near.querySelector('title').textContent=near.dataset.name; } return; }
-      add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:f.status==='confirmed'?'':UNV, k:String(f.id)}); if(f.status!=='confirmed') g.lastChild.classList.add('mine'); }); }).catch(()=>{});
-  window.mpFountainMsg=()=>popMsg('<b>💧 Fontanella (acqua potabile)</b><span>La fontanella Sapienza, il modello esclusivo della Città universitaria: acqua potabile gratuita.</span><span class="mp-fst">Per confermare che c’è o segnalare che manca, passa alla vista 2D e tocca la goccia.</span>');
+      add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'Fontanella confermata', k:String(f.id)}); }); }).catch(()=>{});
+  window.mpFountainMsg=()=>popMsg('<b>💧 Fontanelle della Città universitaria</b><span>La mappa riporta i punti della planimetria Sapienza e le segnalazioni pubblicate su Fontanelle.org. Controlla lo stato indicato sul singolo punto.</span>');
   function votePop(m){ voteM=m; const k=m.dataset.k, c=votes[k]||{yes:0,no:0}, mine=myV[k], unv=m.classList.contains('mine');
     popMsg(`<b>💧 ${esc(m.dataset.name)}</b><span class="mp-fst">${unv?'Segnalata da uno studente, non ancora verificata dai rappresentanti.':'Sulla mappa ufficiale dei rappresentanti.'}</span>`+
       `<span>Ci sei passato di recente? Aiutaci a capire se c'è davvero.</span><div class="mp-fact"><button type="button" class="btn${mine===1?' on':''}" data-f="yes">✅ C'è, funziona</button><button type="button" class="btn ghost${mine===-1?' on':''}" data-f="no">❌ Non c'è</button></div>`+
       `<span class="mp-fct">${c.yes} ${c.yes===1?'conferma':'conferme'} · ${c.no} ${c.no===1?'segnalazione':'segnalazioni'} di assenza${mine?' · hai già risposto, puoi cambiare idea':''}</span>`); }
-  key.addEventListener('click',e=>{ const l=e.target.closest('label[data-cat="water"]'); if(!l||e.target.tagName==='INPUT') return; e.preventDefault();
-    popMsg('<b>Manca una fontanella?</b> Segnala dove si trova: i rappresentanti la controllano e la aggiungono per tutti.<div class="mp-fact"><button type="button" class="btn" data-f="start">💧 Aggiungi fontanella mancante</button></div>'); });
-  $('mpMap').addEventListener('pointerdown',e=>{ if(placing) down={x:e.clientX,y:e.clientY}; },true);
-  $('mpMap').addEventListener('pointerup',e=>{ if(!placing||!down||e.target.closest('.mp-fpop,.mp-zoom,.mp-modes,.mp-poi-key,.mp-legend')) return;
-    if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>6){ down=null; return; } down=null; e.stopPropagation();
-    const [x,y]=toPdf(e); if(pend) pend.remove(); add(x,y,{cat:'water', icon:'💧', name:'Nuova fontanella', note:''}); pend=g.lastChild; pend.classList.add('mine','new'); pending={x:+x.toFixed(1),y:+y.toFixed(1)};
-    popMsg('<b>Fontanella qui?</b><label class="mp-fnote">Nota (facoltativa) <input type="text" id="mpFNote" maxlength="120" placeholder="es. accanto all\'ingresso"></label><div class="mp-fact"><button type="button" class="btn" data-f="send">Invia ai rappresentanti</button><button type="button" class="linkbtn" data-f="again">Sposta</button><button type="button" class="linkbtn" data-f="cancel">Annulla</button></div>'); },true);
-  pop.addEventListener('pointerdown',e=>e.stopPropagation());
   pop.addEventListener('click',async e=>{ const b=e.target.closest('[data-f],.mp-fx'); if(!b) return;
-    if(b.classList.contains('mp-fx')||b.dataset.f==='cancel'){ stopPlace(); pop.hidden=true; return; }
+    if(b.classList.contains('mp-fx')){ pop.hidden=true; return; }
     if((b.dataset.f==='yes'||b.dataset.f==='no')&&voteM){ const k=voteM.dataset.k, v=b.dataset.f==='yes'?1:-1, prev=myV[k]; if(prev===v) return;
       const c=votes[k]=votes[k]||{yes:0,no:0}; let ok=false;
       try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({k,vote:v,voter:voterId()})}); if(r.ok){ const d=await r.json(); c.yes=d.yes; c.no=d.no; ok=true; } }catch(x){}
       if(!ok){ if(prev===1) c.yes--; if(prev===-1) c.no--; if(v===1) c.yes++; else c.no++; }
       myV[k]=v; try{ localStorage.setItem(VKEY,JSON.stringify(myV)); }catch(x){}
       votePop(voteM); pop.querySelector('.mp-fct').insertAdjacentHTML('beforebegin', ok?`<span class="mp-fok">Grazie! ${v===1?'Conferma registrata.':'Se tante persone dicono che non c\'è, i rappresentanti vengono avvisati e la controllano.'}</span>`:'<span class="mp-fst">Risposta salvata solo qui: il voto si invia dal sito orari-chimica.pages.dev.</span>'); return; }
-    if(b.dataset.f==='start'||b.dataset.f==='again'){ if(pend){ pend.remove(); pend=null; } startPlace(); return; }
-    if(b.dataset.f==='send'&&pending){ const f={...pending, note:($('mpFNote')||{}).value||''}; b.disabled=true; b.textContent='Invio…';
-      let ok=false, id=0; try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(f)}); ok=r.ok; if(ok) id=(await r.json()).id||0; }catch(x){}
-      myF.push(id?{x:f.x,y:f.y,id}:{x:f.x,y:f.y}); if(pend&&id) pend.dataset.k=String(id); try{ localStorage.setItem(FKEY,JSON.stringify(myF)); }catch(x){}
-      if(pend){ pend.classList.remove('new'); pend.querySelector('title').textContent='Fontanella (acqua potabile) · '+UNV; pend.dataset.note=UNV; pend.dataset.name='Fontanella (acqua potabile)'; if(!pend.dataset.k||!id) pend.dataset.k='p:'+f.x.toFixed(1)+','+f.y.toFixed(1); pend=null; }
-      placing=false; $('mpMap').classList.remove('placing'); pending=null;
-      popMsg(ok?'✅ <b>Grazie!</b> I rappresentanti la verificano prima di mostrarla a tutti. Intanto la vedi sulla tua mappa.':'La segnalazione non è partita da qui: la fontanella resta sulla tua mappa. Riprova dal sito orari-chimica.pages.dev.'); } });
+    });
   drawPlan();
   Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
-    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); else waterMissing(); }).catch(waterMissing);
-  function waterMissing(){ const l=key.querySelector('[data-cat="water"] .n'); if(l&&!g.querySelector('.c-water')) l.innerHTML=' <i class="soonb">presto</i>'; }
+    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); }).catch(()=>{});
   /* tocco su un segnaposto: etichetta */
   $('mpMap').addEventListener('click',e=>{ const m=e.target.closest('.mp-poi-m'), t=$('mpTip'); if(!m) return;
     e.stopPropagation(); if(m.dataset.url){ window.open(m.dataset.url,'_blank','noopener'); return; } if(m.classList.contains('c-water') && !m.classList.contains('new')){ t.hidden=true; votePop(m); return; } const r=$('mpMap').getBoundingClientRect(), b=m.getBoundingClientRect();

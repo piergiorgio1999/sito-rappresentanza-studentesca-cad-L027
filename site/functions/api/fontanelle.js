@@ -1,13 +1,11 @@
-/* /api/fontanelle — fontanelle segnalate dagli studenti sulla planimetria del campus
-   GET  /api/fontanelle                      → {list:[{id,x,y,status}], votes:{k:{yes,no}}}: confermate e segnalate in attesa
-   POST /api/fontanelle {x, y, note}         → nuova segnalazione: salvata in D1 + email ai rappresentanti
+/* /api/fontanelle — fontanelle e voti di presenza sulla planimetria del campus
+   GET  /api/fontanelle                      → {list:[{id,x,y,status}], votes:{k:{yes,no}}}: fontanelle confermate
    POST /api/fontanelle {k, vote: 1|-1, voter} → «c'è» / «non c'è» su una fontanella (k = id, oppure "p:x,y" per quelle
                                                della planimetria). Si conta un voto per browser (voter = codice casuale
                                                salvato nel browser), modificabile: chi è sulla stessa rete, es. Wi-Fi
                                                Sapienza, vota comunque per conto suo. Il controllo è volutamente
                                                leggero, per questo le soglie sono alte: al 5° «non c'è» parte una mail
-                                               ai rappresentanti; una segnalazione in attesa sparisce dalla mappa
-                                               pubblica con almeno 8 «non c'è» e più del doppio dei «c'è».
+                                               ai rappresentanti.
                                                Limite anti-abuso: 300 voti l'ora per indirizzo IP.
    GET  /api/fontanelle?confirm=ID&t=TOKEN   → conferma (link nella mail, solo admin)
    GET  /api/fontanelle?reject=ID&t=TOKEN    → scarta
@@ -16,9 +14,7 @@
 const SQL = `CREATE TABLE IF NOT EXISTS fontanelle (id INTEGER PRIMARY KEY AUTOINCREMENT, created TEXT, status TEXT DEFAULT 'pending', x REAL, y REAL, note TEXT)`;
 const SQLV = `CREATE TABLE IF NOT EXISTS fontanelle_voti (k TEXT, voter TEXT, vote INTEGER, created TEXT, PRIMARY KEY (k, voter))`;
 const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
-const MAIL_AT = 5, HIDE_AT = 8, IP_PER_HOUR = 300;
-const hidden = (c) => c && c.no >= HIDE_AT && c.no > 2 * c.yes;
-const AREA = { x0: 28, y0: 205, x1: 552, y1: 775 };
+const MAIL_AT = 5, IP_PER_HOUR = 300;
 async function sign(secret, msg) {
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const s = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg));
@@ -39,30 +35,13 @@ export async function onRequestGet({ request, env }) {
   const votes = {};
   const v = await env.DB.prepare('SELECT k, SUM(vote=1) AS yes, SUM(vote=-1) AS no FROM fontanelle_voti GROUP BY k').all();
   for (const r of v.results) votes[r.k] = { yes: r.yes || 0, no: r.no || 0 };
-  const { results } = await env.DB.prepare("SELECT id,x,y,status FROM fontanelle WHERE status IN ('confirmed','pending')").all();
-  const list = results.filter((r) => { const c = votes[String(r.id)]; return r.status === 'confirmed' || !hidden(c); });
+  const { results: list } = await env.DB.prepare("SELECT id,x,y,status FROM fontanelle WHERE status = 'confirmed'").all();
   return json({ list, votes });
 }
 export async function onRequestPost({ request, env }) {
   let r; try { r = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
   if (r && r.vote !== undefined) return vote(request, env, r);
-  const x = Number(r.x), y = Number(r.y), note = String(r.note ?? '').slice(0, 300);
-  if (!Number.isFinite(x) || !Number.isFinite(y) || x < AREA.x0 || x > AREA.x1 || y < AREA.y0 || y > AREA.y1) return json({ error: 'posizione non valida' }, 400);
-  if (!env.DB) return json({ error: 'archivio non configurato' }, 503);
-  await env.DB.prepare(SQL).run();
-  const res = await env.DB.prepare('INSERT INTO fontanelle (created,x,y,note) VALUES (?,?,?,?)').bind(new Date().toISOString(), x, y, note).run();
-  const id = res.meta.last_row_id, base = new URL(request.url).origin + '/api/fontanelle';
-  if (env.AVVISI_MAIL && env.MAIL_FROM && env.ADMIN_SECRET) {
-    const t = await sign(env.ADMIN_SECRET, 'fo' + id);
-    const map = new URL(request.url).origin + `/#mappa`;
-    const text = [`Nuova fontanella segnalata (#${id})`, '', `Posizione sulla planimetria: x ${x.toFixed(1)}, y ${y.toFixed(1)}`, note ? `Nota: ${note}` : '', `Mappa: ${map}`, '',
-      `✅ CONFERMA (la mostra a tutti): ${base}?confirm=${id}&t=${t}`, `❌ SCARTA: ${base}?reject=${id}&t=${t}`].filter((s) => s !== '').join('\r\n');
-    const raw = [`From: Orari Chimica <${env.MAIL_FROM}>`, `To: ${env.AVVISI_MAIL_TO || 'rappresentanzastudentesca26@gmail.com'}`,
-      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent('[Mappa] Fontanella segnalata #' + id)))}?=`, `Message-ID: <fo${id}.${Date.now()}@${env.MAIL_FROM.split('@')[1]}>`,
-      `Date: ${new Date().toUTCString()}`, 'MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: 8bit', '', text].join('\r\n');
-    try { const { EmailMessage } = await import('cloudflare:email'); await env.AVVISI_MAIL.send(new EmailMessage(env.MAIL_FROM, env.AVVISI_MAIL_TO || 'rappresentanzastudentesca26@gmail.com', raw)); } catch (e) { console.log('mail', e); }
-  }
-  return json({ ok: true, id });
+  return json({ error: 'Metodo non consentito' }, 405);
 }
 
 async function mail(env, subject, text) {
