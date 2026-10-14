@@ -875,9 +875,10 @@
   /* ---------- piazzale della Minerva: vasca, scalinata del Rettorato, arcate, statua ---------- */
   // Coordinate in punti della planimetria ufficiale (stessa calibrazione dei volumi CU).
   const MINERVA = {
-    // vasca a U davanti alla statua, leggermente rialzata
+    // aiuole a U attorno alla statua, rialzate; dentro la U una vasca ribassata con acqua
     basin: [[270.8, 535.8], [315, 535.8], [315, 555], [305.8, 555], [305.8, 540], [280, 540], [280, 555], [270.8, 555]],
-    basinHeight: 0.45,
+    basinHeight: 0.95,
+    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.4,
     statue: [292.5, 536.6],
     // scalinata: bordo inferiore, lati verso le arcate, pianerottolo davanti al corpo centrale
     stairs: { front: 518.3, left: 271.7, right: 313.3, facade: 497.5, landingLeft: 285, landingRight: 299.2, landingFront: 505.8, steps: 14, riser: 0.15 },
@@ -950,6 +951,26 @@
     mesh.parent.add(base);
     pickables.push(base);
   }
+  /* acqua «8 bit»: texture 16×16 disegnata al volo (niente file da scaricare), filtrata a pixel netti */
+  function retroWaterTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 16;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(110,200,235,0.85)'; g.fillRect(0, 0, 16, 16);
+    g.fillStyle = 'rgba(80,170,220,0.9)';
+    for (const [x, y, w] of [[0, 3, 5], [8, 3, 4], [3, 9, 6], [11, 11, 4], [1, 14, 3]]) g.fillRect(x, y, w, 1);
+    g.fillStyle = 'rgba(225,248,255,0.95)';
+    for (const [x, y, w] of [[2, 1, 3], [10, 6, 3], [5, 12, 2], [13, 15, 2], [0, 7, 2]]) g.fillRect(x, y, w, 1);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+    return t;
+  }
+  // animazione a scatti (6 fotogrammi al secondo), come nei vecchi videogiochi
+  function updateWater(now) {
+    const tex = MINERVA.water; if (!tex || reducedMotion) return;
+    const frame = Math.floor(now / 166);
+    tex.offset.set((frame % 16) / 16, (Math.floor(frame / 3) % 16) / 16);
+  }
   function buildMinervaArea() {
     if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
     extrasGroup = new THREE.Group();
@@ -965,6 +986,27 @@
     basinMesh.userData.texturedTop = true;
     basinMesh.castShadow = true; basinMesh.receiveShadow = true;
     extrasGroup.add(basinMesh);
+    // vasca ribassata dentro la U: pareti in pietra, fondo scuro e acqua in stile videogioco anni '90
+    {
+      const [x0, y0, x1, y1] = MINERVA.pool, d = MINERVA.poolDepth;
+      const ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+      const pit = extrudeShape([pdfShape(ring)], d, -d);
+      const hidden = new THREE.MeshBasicMaterial({ visible: false });
+      const walls = new THREE.MeshStandardMaterial({ color: 0x9e9484, roughness: 0.95, metalness: 0, side: THREE.BackSide });
+      extrasGroup.add(new THREE.Mesh(pit, [hidden, walls]));
+      const floor = extrudeShape([pdfShape(ring)], 0.01, -d);
+      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0x31515a, roughness: 1, metalness: 0 })));
+      const water = extrudeShape([pdfShape(ring)], 0.001, MINERVA.waterLevel);
+      // UV in metri: una piastrella di texture ogni 4 m (pixel grossi, effetto retrò)
+      const pos = water.attributes.position, uv = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i += 1) { uv[i * 2] = pos.getX(i) / 4; uv[i * 2 + 1] = pos.getZ(i) / 4; }
+      water.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      const tex = retroWaterTexture();
+      const waterMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.78, depthWrite: false, toneMapped: false });
+      const waterMesh = new THREE.Mesh(water, waterMat); waterMesh.renderOrder = 2;
+      extrasGroup.add(waterMesh);
+      MINERVA.water = tex;
+    }
     // scalinata: gradini concentrici che girano di 90° agli angoli (diagonali dal bordo al pianerottolo)
     const s = MINERVA.stairs;
     for (let i = 0; i < s.steps; i += 1) {
@@ -1424,6 +1466,7 @@
   function renderFrame() {
     if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
     updateMinerva(performance.now());
+    updateWater(performance.now());
     controls.update();
     renderer.render(scene, camera);
   }
