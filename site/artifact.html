@@ -564,6 +564,14 @@ body.mp-full-open{overflow:hidden}
 @keyframes mpGlow{0%{opacity:.7;r:9}100%{opacity:0;r:22}}
 @keyframes mpSteam{0%{opacity:0;transform:translateY(3px) scaleY(.7)}25%{opacity:1}100%{opacity:0;transform:translateY(-9px) scaleY(1.25)}}
 @keyframes mpBob{0%,100%{scale:1}50%{scale:1.12}}
+.mp-fpop{position:absolute;z-index:6;left:12px;top:150px;width:min(320px,calc(100% - 24px));background:#fff;border:1px solid var(--line);border-left:4px solid #006778;border-radius:12px;padding:10px 34px 10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:.86rem;display:grid;gap:8px;cursor:default}
+.mp-fpop .mp-fx{position:absolute;top:4px;right:4px;width:28px;height:28px;border:0;background:none;font-size:1.2rem;color:var(--muted);cursor:pointer}
+.mp-fact{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.mp-fact .btn{min-height:38px;padding:7px 12px;font-size:.85rem}
+.mp-fnote{display:grid;gap:4px;font-size:.8rem}.mp-fnote input{min-height:36px;padding:6px 9px}
+.mp-map.placing,.mp-map.placing .mp-s{cursor:crosshair}
+.mp-poi-m.mine circle{stroke-dasharray:3 2}.mp-poi-m.new circle{stroke:#d6336c}
+.mp-poi-key label[data-cat="water"]{text-decoration:underline dotted;text-underline-offset:3px}
+@media(max-width:699px){.mp-fpop{top:auto;bottom:70px}}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -2973,6 +2981,35 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
+  /* --- aggiungi una fontanella mancante: tocca «Fontanelle» nella legenda --- */
+  const FKEY='orariChimicaFontanelle';
+  let myF=[]; try{ myF=JSON.parse(localStorage.getItem(FKEY)||'[]')||[]; }catch(e){ myF=[]; }
+  const pop=document.createElement('div'); pop.className='mp-fpop'; pop.hidden=true; $('mpMap').append(pop);
+  let placing=false, pending=null, pend=null, down=null;
+  function popMsg(html){ pop.innerHTML=html+'<button type="button" class="mp-fx" aria-label="Chiudi">×</button>'; pop.hidden=false; }
+  function startPlace(){ placing=true; $('mpMap').classList.add('placing'); popMsg('<b>Tocca sulla mappa</b> il punto esatto della fontanella. <button type="button" class="linkbtn" data-f="cancel">Annulla</button>'); }
+  function stopPlace(){ placing=false; $('mpMap').classList.remove('placing'); if(pend){ pend.remove(); pend=null; } pending=null; }
+  function toPdf(e){ const r=$('mpMap').getBoundingClientRect(); return [MP_VB.x+(e.clientX-r.left-mpV.tx)/(MP_K*mpV.s), MP_VB.y+(e.clientY-r.top-mpV.ty)/(MP_K*mpV.s)]; }
+  function addMine(f){ add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'in verifica dai rappresentanti'}); g.lastChild.classList.add('mine'); }
+  myF.forEach(addMine);
+  fetch('/api/fontanelle').then(r=>r.ok?r.json():[]).then(list=>(list||[]).forEach(f=>{ if(!placed.some(q=>q.cat==='water'&&Math.hypot(q.x-f.x,q.y-f.y)<2)) add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:''}); })).catch(()=>{});
+  key.addEventListener('click',e=>{ const l=e.target.closest('label[data-cat="water"]'); if(!l||e.target.tagName==='INPUT') return; e.preventDefault();
+    popMsg('<b>Manca una fontanella?</b> Segnala dove si trova: i rappresentanti la controllano e la aggiungono per tutti.<div class="mp-fact"><button type="button" class="btn" data-f="start">💧 Aggiungi fontanella mancante</button></div>'); });
+  $('mpMap').addEventListener('pointerdown',e=>{ if(placing) down={x:e.clientX,y:e.clientY}; },true);
+  $('mpMap').addEventListener('pointerup',e=>{ if(!placing||!down||e.target.closest('.mp-fpop,.mp-zoom,.mp-modes,.mp-poi-key,.mp-legend')) return;
+    if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>6){ down=null; return; } down=null; e.stopPropagation();
+    const [x,y]=toPdf(e); if(pend) pend.remove(); add(x,y,{cat:'water', icon:'💧', name:'Nuova fontanella', note:''}); pend=g.lastChild; pend.classList.add('mine','new'); pending={x:+x.toFixed(1),y:+y.toFixed(1)};
+    popMsg('<b>Fontanella qui?</b><label class="mp-fnote">Nota (facoltativa) <input type="text" id="mpFNote" maxlength="120" placeholder="es. accanto all\'ingresso"></label><div class="mp-fact"><button type="button" class="btn" data-f="send">Invia ai rappresentanti</button><button type="button" class="linkbtn" data-f="again">Sposta</button><button type="button" class="linkbtn" data-f="cancel">Annulla</button></div>'); },true);
+  pop.addEventListener('pointerdown',e=>e.stopPropagation());
+  pop.addEventListener('click',async e=>{ const b=e.target.closest('[data-f],.mp-fx'); if(!b) return;
+    if(b.classList.contains('mp-fx')||b.dataset.f==='cancel'){ stopPlace(); pop.hidden=true; return; }
+    if(b.dataset.f==='start'||b.dataset.f==='again'){ if(pend){ pend.remove(); pend=null; } startPlace(); return; }
+    if(b.dataset.f==='send'&&pending){ const f={...pending, note:($('mpFNote')||{}).value||''}; b.disabled=true; b.textContent='Invio…';
+      let ok=false; try{ const r=await fetch('/api/fontanelle',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(f)}); ok=r.ok; }catch(x){}
+      myF.push({x:f.x,y:f.y}); try{ localStorage.setItem(FKEY,JSON.stringify(myF)); }catch(x){}
+      if(pend){ pend.classList.remove('new'); pend.querySelector('title').textContent='Fontanella (acqua potabile) · in verifica dai rappresentanti'; pend.dataset.note='in verifica dai rappresentanti'; pend=null; }
+      placing=false; $('mpMap').classList.remove('placing'); pending=null;
+      popMsg(ok?'✅ <b>Grazie!</b> I rappresentanti la verificano prima di mostrarla a tutti. Intanto la vedi sulla tua mappa.':'La segnalazione non è partita da qui: la fontanella resta sulla tua mappa. Riprova dal sito orari-chimica.pages.dev.'); } });
   drawPlan();
   Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
     .then(([al,data])=>{ if(al&&data) drawOsm(al,data); else waterMissing(); }).catch(waterMissing);
@@ -2997,7 +3034,7 @@ function mpInit(){ if(!mpEl.offsetWidth) return; if(!mpReady){ mpReady=true; mpF
 window.addEventListener('resize',()=>{ if(mpReady && mpEl.offsetWidth){ mpClamp(); mpApply(); } });
 const mpP=new Map(); let mpG=null;
 mpEl.addEventListener('pointerdown',e=>{
-  if(e.target.closest('.mp-zoom,.mp-legend,.mp-poi-key,.mp-poi-m,.mp-modes')) return;
+  if(e.target.closest('.mp-zoom,.mp-legend,.mp-poi-key,.mp-poi-m,.mp-modes,.mp-fpop')) return;
   mpEl.setPointerCapture(e.pointerId); mpP.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(mpP.size===1) mpG={t:'pan',x:e.clientX,y:e.clientY,tx:mpV.tx,ty:mpV.ty,moved:false,hit:e.target.closest('.mp-s')};
   else if(mpP.size===2){ const [a,b]=[...mpP.values()], r=mpEl.getBoundingClientRect();
