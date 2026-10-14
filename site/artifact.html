@@ -3027,7 +3027,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
       const near=[...g.querySelectorAll('.c-water')].find(m=>{ const q=m.transform.baseVal.consolidate(); return q&&Math.hypot(q.matrix.e-f.x,q.matrix.f-f.y)<2; });
       if(near){ near.dataset.k=String(f.id); if(f.status==='confirmed'){ near.classList.remove('mine'); near.dataset.note=''; near.querySelector('title').textContent=near.dataset.name; } return; }
       add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'Fontanella confermata', k:String(f.id)}); }); }).catch(()=>{});
-  window.mpFountainMsg=()=>popMsg('<b>💧 Fontanelle della Città universitaria</b><span>La mappa riporta i punti della planimetria Sapienza e le segnalazioni pubblicate su Fontanelle.org. Controlla lo stato indicato sul singolo punto.</span>');
+  window.mpFountainMsg=(on)=>{ if(on===false){ pop.hidden=true; return; } popMsg('<b>💧 Fontanelle della Città universitaria</b><span>La mappa riporta i punti della planimetria Sapienza e le segnalazioni pubblicate su Fontanelle.org. Controlla lo stato indicato sul singolo punto.</span>'); };
   function votePop(m){ voteM=m; const k=m.dataset.k, c=votes[k]||{yes:0,no:0}, mine=myV[k], unv=m.classList.contains('mine');
     popMsg(`<b>💧 ${esc(m.dataset.name)}</b><span class="mp-fst">${unv?'Segnalata da uno studente, non ancora verificata dai rappresentanti.':'Sulla mappa ufficiale dei rappresentanti.'}</span>`+
       `<span>Ci sei passato di recente? Aiutaci a capire se c'è davvero.</span><div class="mp-fact"><button type="button" class="btn${mine===1?' on':''}" data-f="yes">✅ C'è, funziona</button><button type="button" class="btn ghost${mine===-1?' on':''}" data-f="no">❌ Non c'è</button></div>`+
@@ -4423,7 +4423,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     if(data?.type==='campus-unavailable'){dim='2d';base='carta';sync();setActive(false,'Il browser non può mostrare il 3D: continua con la mappa vettoriale 2D.');return;}
     if(data?.type==='campus-rotation'){rotate.setAttribute('aria-pressed',String(!!data.on));rotate.textContent=data.on?'Ferma rotazione':'Rotazione';return;}
     if(data?.type==='campus-guest'){mpGuest();return;}
-    if(data?.type==='campus-fountain'){ window.mpFountainMsg?.(); return; }
+    if(data?.type==='campus-fountain'){ window.mpFountainMsg?.(data.on!==false); return; }
     if(!data||data.type!=='campus-select') return;
     const code=typeof data.code==='string'&&Object.hasOwn(MAPD.shapes,data.code)?data.code:'';
     if(code) mpSelect(code,'',true);

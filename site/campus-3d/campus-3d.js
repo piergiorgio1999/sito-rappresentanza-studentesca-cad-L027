@@ -1480,7 +1480,8 @@
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(pickables, false).find((h) => !((h.object.userData.minervaPart || h.object.userData.fountainPart) && extrasGroup && !extrasGroup.visible));
       if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
-      if (hit?.object.userData.fountainPart) { showGuest(false); if (embedded) notifyParent('campus-fountain', {}); return; }
+      if (hit?.object.userData.fountainPart) { let h = hit.object; while (h && !h.userData.fountain) h = h.parent; const on = selectFountain(h); showGuest(false); if (embedded) notifyParent('campus-fountain', { on }); return; }
+      if (fountainSel) { selectFountain(null); if (embedded) notifyParent('campus-fountain', { on: false }); }
       if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
       showGuest(false);
       if (hit?.object.userData.code) selectBuilding(hit.object.userData.code);
@@ -1533,10 +1534,38 @@
     MINERVA.holder.position.y = MINERVA.baseY + hop;
     if (t === 1) { MINERVA.scale = minervaAnim.to; MINERVA.holder.scale.setScalar(MINERVA.scale); MINERVA.holder.position.y = MINERVA.baseY; minervaAnim = null; }
   }
+  /* fontanelle: stessa animazione della Minerva; quella selezionata resta grande, le altre tornano normali */
+  const FOUNTAIN_BIG = 1.8;
+  let fountainSel = null;
+  const fountainAnims = new Map();
+  function bounceHolder(holder, to) {
+    const from = holder.userData.s || 1;
+    if (reducedMotion) { holder.userData.s = to; holder.scale.setScalar(to); return; }
+    fountainAnims.set(holder, { start: performance.now(), from, to, grow: to > from });
+  }
+  function selectFountain(holder) {
+    const again = holder && holder === fountainSel;
+    if (fountainSel) bounceHolder(fountainSel, 1);
+    fountainSel = again ? null : holder;
+    if (fountainSel) bounceHolder(fountainSel, FOUNTAIN_BIG);
+    return !!fountainSel;
+  }
+  function updateFountains(now) {
+    for (const [holder, a] of fountainAnims) {
+      const t = Math.min(1, (now - a.start) / 1400);
+      const elastic = t === 1 ? 1 : 1 - Math.pow(2, -9 * t) * Math.cos(t * Math.PI * 4.5);
+      const sc = a.from + (a.to - a.from) * elastic;
+      const wobble = Math.sin(t * Math.PI * 7) * Math.exp(-4.5 * t) * 0.22;
+      holder.scale.set(sc * (1 + wobble * 0.6), sc * (1 - wobble), sc * (1 + wobble * 0.6));
+      holder.position.y = a.grow ? Math.abs(Math.sin(t * Math.PI * 2.5)) * Math.exp(-3 * t) * 0.8 : 0;
+      if (t === 1) { holder.userData.s = a.to; holder.scale.setScalar(a.to); holder.position.y = 0; fountainAnims.delete(holder); }
+    }
+  }
   function renderFrame() {
     if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
     updateMinerva(performance.now());
     updateWater(performance.now());
+    updateFountains(performance.now());
     controls.update();
     renderer.render(scene, camera);
   }
