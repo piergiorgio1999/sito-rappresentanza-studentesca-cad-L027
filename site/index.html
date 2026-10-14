@@ -559,9 +559,11 @@ body.mp-full-open{overflow:hidden}
 .mp-pick-hex{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600}
 .mp-pick-hex input{min-height:34px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
 .mp-cup .body{fill:#822433}.mp-cup .handle{fill:none;stroke:#822433;stroke-width:1.6}.mp-cup .saucer{stroke:#822433;stroke-width:1.6;stroke-linecap:round}
-.mp-cup .steam{fill:none;stroke:#9a8f8a;stroke-width:1.2;stroke-linecap:round;opacity:.85}
-@media(prefers-reduced-motion:no-preference){.mp-cup .steam{animation:mpSteam 2.4s ease-in-out infinite}.mp-cup .s2{animation-delay:.8s}.mp-cup .s3{animation-delay:1.6s}}
-@keyframes mpSteam{0%{opacity:0;transform:translateY(2px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-4px)}}
+.mp-cup .steam{fill:none;stroke:#7d6f69;stroke-width:1.9;stroke-linecap:round;opacity:.95;filter:drop-shadow(0 0 1.2px #fff)}.mp-cup .glow{fill:none;stroke:#822433;stroke-width:2.4;opacity:0}
+@media(prefers-reduced-motion:no-preference){.mp-cup .steam{animation:mpSteam 1.6s ease-out infinite}.mp-cup .s2{animation-delay:.53s}.mp-cup .s3{animation-delay:1.06s}.mp-cup .glow{animation:mpGlow 2s ease-out infinite}.mp-poi-m.c-bar>circle{animation:mpBob 2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}}
+@keyframes mpGlow{0%{opacity:.7;r:9}100%{opacity:0;r:22}}
+@keyframes mpSteam{0%{opacity:0;transform:translateY(3px) scaleY(.7)}25%{opacity:1}100%{opacity:0;transform:translateY(-9px) scaleY(1.25)}}
+@keyframes mpBob{0%,100%{scale:1}50%{scale:1.12}}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -2912,8 +2914,10 @@ const MP_POI_TYPES = {
 const MP_POI_ICON = {drinking_water:'💧', toilets:'🚻', atm:'🏧', bank:'🏦', library:'📚', post_office:'✉️', post_box:'✉️', pharmacy:'💊', defibrillator:'❤️', first_aid:'➕', clinic:'➕', doctors:'➕', printing:'🖨️', shop_copyshop:'🖨️', shop_books:'📖', shop_stationery:'✏️', bicycle_parking:'🚲', place_of_worship:'⛪', police:'👮', kindergarten:'🧸', canteen:'🍽️', restaurant:'🍽️', fast_food:'🥪', vending_machine:'🥤', cafe:'☕', bar:'☕'};
 /* servizi già indicati dalla legenda della planimetria ufficiale */
 const MP_POI_PLAN = [
-  {code:'CU030', cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Edificio CU030'},
-  {code:'CU017', cat:'bar', icon:'☕', name:'Bar Sapienza · Centro Teatro Ateneo', note:'Edificio CU017'},
+  /* bar: nei punti delle tazzine blu della planimetria ufficiale */
+  {pt:[201.3,315.3], cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Edificio CU030'},
+  {pt:[100.1,739.0], cat:'bar', icon:'☕', name:'Bar Sapienza · Centro Teatro Ateneo', note:'Edificio CU017'},
+  {pt:[321.9,728.0], cat:'bar', icon:'☕', name:'Bar Sapienza', note:'Piazzale Aldo Moro, accanto a CU016'},
   {code:'CU029', cat:'serv', icon:'🏛️', name:'Servizi generali', note:'Uffici, segreterie, posta, banca · CU029'},
   {code:'CU001', cat:'serv', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
   {code:'CU011', cat:'serv', icon:'🧸', name:'Asilo nido', note:'CU011'},
@@ -2930,13 +2934,13 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   function add(x,y,p){
     const m=document.createElementNS(NS,'g'); m.setAttribute('class','mp-poi-m c-'+p.cat); m.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
     m.setAttribute('role','img'); m.setAttribute('aria-label',p.name); m.dataset.name=p.name; m.dataset.note=p.note||'';
-    const c=document.createElementNS(NS,'circle'); c.setAttribute('r', p.cat==='bar'?13:10); c.setAttribute('fill','#fff'); c.setAttribute('stroke',MP_POI_CAT[p.cat].color); c.setAttribute('stroke-width', p.cat==='bar'?3.6:3);
+    const c=document.createElementNS(NS,'circle'); c.setAttribute('r', p.cat==='bar'?15:10); c.setAttribute('fill','#fff'); c.setAttribute('stroke',MP_POI_CAT[p.cat].color); c.setAttribute('stroke-width', p.cat==='bar'?3.6:3);
     const t=document.createElementNS(NS,'text'); t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','central'); t.setAttribute('font-size', p.cat==='bar'?14:11); t.textContent=p.icon;
     const ti=document.createElementNS(NS,'title'); ti.textContent=p.name+(p.note?' · '+p.note:'');
     if(p.cat==='bar'){
       // tazzina disegnata con il vapore che sale
       const cup=document.createElementNS(NS,'g'); cup.setAttribute('class','mp-cup');
-      cup.innerHTML='<path class="steam s1" d="M-3.2,-3.5 q-1.6,-1.8 0,-3.6 q1.6,-1.8 0,-3.6"/><path class="steam s2" d="M0.2,-3.5 q-1.6,-1.8 0,-3.6 q1.6,-1.8 0,-3.6"/><path class="steam s3" d="M3.4,-3.5 q-1.6,-1.8 0,-3.6 q1.6,-1.8 0,-3.6"/>'+
+      cup.innerHTML='<circle class="glow" r="13"/><path class="steam s1" d="M-3.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s2" d="M0.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s3" d="M4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/>'+
         '<path class="body" d="M-6,-2.4 h10.6 v4.6 a5.3,5.3 0 0 1 -10.6,0 z"/><path class="handle" d="M4.4,-1.2 a2.6,2.6 0 1 1 0,4.4"/><path class="saucer" d="M-8,7.6 h14.4"/>';
       m.append(c,cup,ti);
     } else m.append(c,t,ti);
