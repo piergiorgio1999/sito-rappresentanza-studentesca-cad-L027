@@ -574,6 +574,8 @@ body.mp-full-open{overflow:hidden}
 .mp-subkey{display:flex;align-items:center;gap:6px;margin:-1px 0 1px 26px;font-size:.92em;color:var(--muted);cursor:help}.mp-poi-key .dot.dbl{width:20px;height:20px;font-size:10px;border-width:1.5px;box-shadow:0 0 0 2px #fff,0 0 0 3.5px #006778,0 1px 4px rgba(0,0,0,.3)}.mp-poi-m.new circle{stroke:#d6336c}
 .mp-poi-key label[data-cat="water"]{text-decoration:underline dotted;text-underline-offset:3px}
 @media(max-width:699px){.mp-fpop{top:auto;bottom:70px}}
+.mp-krow{display:flex;align-items:center;gap:4px}.mp-krow label{flex:1}.mp-kx{width:26px;height:26px;min-height:0;padding:0;border:1px solid var(--line);border-radius:50%;background:#fff;color:#822433;font-size:1rem;font-weight:700;line-height:1;cursor:pointer;transition:transform .15s}.mp-kx[aria-expanded="true"]{transform:rotate(90deg)}
+.mp-kmore{display:grid;gap:3px;margin-left:12px;padding-left:8px;border-left:2px solid var(--line)}.mp-klist{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:min(300px,40vh);overflow:auto;font-weight:500}.mp-klist li{display:flex;align-items:center;gap:6px}.mp-poi-key .dot.sm{width:18px;height:18px;font-size:10px;border-width:2px}
 .mp-tip{position:absolute;z-index:5;pointer-events:none;background:rgba(31,31,31,.88);color:#fff;font-size:.8rem;font-weight:600;border-radius:8px;padding:5px 9px;white-space:nowrap;transform:translate(-50%,calc(-100% - 12px))}
 .mp-tip b{color:#ffd166;margin-right:6px}
 .mp-zoom{position:absolute;right:12px;bottom:12px;display:grid;gap:6px;z-index:4}
@@ -2991,7 +2993,14 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   }
   function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
   const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
-  key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
+  const keyRow=k=>{ const v=MP_POI_CAT[k]; return `<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`; };
+  key.innerHTML='<b>Servizi</b>'+keyRow('bar')+keyRow('water')+
+    `<div class="mp-krow">${keyRow('serv')}<button type="button" class="mp-kx" aria-expanded="false" aria-controls="mpKeyMore" title="Mostra gli altri servizi">›</button></div>`+
+    `<div class="mp-kmore" id="mpKeyMore" hidden>${keyRow('food')}<ul class="mp-klist"></ul></div>`;
+  key.querySelector('.mp-kx').addEventListener('click',e=>{ const btn=e.currentTarget, more=$('mpKeyMore'), open=more.hidden;
+    if(open){ const seen=new Map(); g.querySelectorAll('.mp-poi-m.c-serv').forEach(m=>{ const n=m.dataset.name, i=m.querySelector('text')?.textContent||'•'; if(n&&!seen.has(n)) seen.set(n,i); });
+      key.querySelector('.mp-klist').innerHTML=[...seen].sort((x,y)=>x[0].localeCompare(y[0],'it')).map(([n,i])=>`<li><span class="dot sm" style="border-color:${MP_POI_CAT.serv.color}">${i}</span>${esc(n)}</li>`).join(''); }
+    more.hidden=!open; btn.setAttribute('aria-expanded',String(open)); btn.title=open?'Nascondi gli altri servizi':'Mostra gli altri servizi'; });
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
   /* --- aggiungi una fontanella mancante: tocca «Fontanelle» nella legenda --- */
