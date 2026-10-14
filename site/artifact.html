@@ -2970,7 +2970,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   drawPlan();
   Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
     .then(([al,data])=>{ if(al&&data) drawOsm(al,data); else waterMissing(); }).catch(waterMissing);
-  function waterMissing(){ const l=key.querySelector('[data-cat="water"] .n'); if(l&&!g.querySelector('.c-water')) l.textContent=' · elenco non raggiungibile qui'; }
+  function waterMissing(){ const l=key.querySelector('[data-cat="water"] .n'); if(l&&!g.querySelector('.c-water')) l.innerHTML=' <i class="soonb">presto</i>'; }
   /* tocco su un segnaposto: etichetta */
   $('mpMap').addEventListener('click',e=>{ const m=e.target.closest('.mp-poi-m'), t=$('mpTip'); if(!m) return;
     e.stopPropagation(); const r=$('mpMap').getBoundingClientRect(), b=m.getBoundingClientRect();
