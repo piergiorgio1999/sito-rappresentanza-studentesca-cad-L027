@@ -953,6 +953,7 @@
   function buildMinervaArea() {
     if (extrasGroup) { planLayerGroup?.remove(extrasGroup); extrasGroup.traverse((o) => { o.geometry?.dispose(); }); }
     extrasGroup = new THREE.Group();
+    queueMicrotask(() => { if (extrasGroup) extrasGroup.visible = viewDim !== '2d'; });
     planLayerGroup.add(extrasGroup);
     const stone = new THREE.MeshStandardMaterial({ color: 0xb9ae9c, roughness: 0.92, metalness: 0 });
     const stoneTop = new THREE.MeshStandardMaterial({ color: 0xebe4d7, roughness: 0.9, metalness: 0 });
@@ -1095,6 +1096,8 @@
     updatePlanSelection();
     const flat = viewDim === '2d';
     setFlat(flat);
+    // vasca, scalinata, Minerva e fontanelle esistono solo nella vista 3D
+    if (extrasGroup) extrasGroup.visible = !flat;
     controls.enableRotate = !flat;
     if (flat) {
       stopTour();
@@ -1363,7 +1366,7 @@
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(pickables, false)[0];
+      const hit = raycaster.intersectObjects(pickables, false).find((h) => !((h.object.userData.minervaPart || h.object.userData.fountainPart) && extrasGroup && !extrasGroup.visible));
       if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
       if (hit?.object.userData.fountainPart) { showGuest(false); if (embedded) notifyParent('campus-fountain', {}); return; }
       if (hit?.object.userData.guest) { showGuest(true); if (embedded) notifyParent('campus-guest', { name: CNR.name, note: CNR.note }); return; }
