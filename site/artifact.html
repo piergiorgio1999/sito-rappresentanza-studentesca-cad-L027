@@ -2961,7 +2961,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
       cup.innerHTML='<circle class="glow" r="13"/><path class="steam s1" d="M-3.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s2" d="M0.4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/><path class="steam s3" d="M4,-3 q-2.4,-2.6 0,-5.2 q2.4,-2.6 0,-5.2 q-2.4,-2.6 0,-5.2"/>'+
         '<path class="body" d="M-6,-2.4 h10.6 v4.6 a5.3,5.3 0 0 1 -10.6,0 z"/><path class="handle" d="M4.4,-1.2 a2.6,2.6 0 1 1 0,4.4"/><path class="saucer" d="M-8,7.6 h14.4"/>';
       m.append(c,cup,ti);
-    } else if(p.indoor){ m.classList.add('indoor'); const o=document.createElementNS(NS,'circle'); o.setAttribute('class','ring'); o.setAttribute('r',14); o.setAttribute('fill','#fff'); o.setAttribute('stroke',MP_POI_CAT[p.cat].color); o.setAttribute('stroke-width',2); m.append(o,c,t,ti); }
+    } else if(p.indoor){ m.classList.add('indoor'); const o=document.createElementNS(NS,'circle'); o.setAttribute('class','ring'); o.setAttribute('r',14); o.setAttribute('fill','#fff'); o.setAttribute('stroke','#8a8a8a'); o.setAttribute('stroke-width',2); c.setAttribute('stroke','#8a8a8a'); m.append(o,c,t,ti); }
     else m.append(c,t,ti);
     g.append(m); placed.push({x,y,cat:p.cat,type:p.type||''});
   }
@@ -2992,7 +2992,6 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
   function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
   const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
   key.innerHTML='<b>Servizi</b>'+Object.entries(MP_POI_CAT).map(([k,v])=>`<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`).join('');
-  key.querySelector('label[data-cat="water"]').insertAdjacentHTML('afterend','<span class="mp-subkey" title="Fontanelle all’interno di un edificio"><span class="dot dbl" style="border-color:#006778">💧</span> dentro un edificio</span>');
   key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
   $('mpMap').append(key);
   /* --- aggiungi una fontanella mancante: tocca «Fontanelle» nella legenda --- */
