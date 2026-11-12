@@ -21,6 +21,7 @@
 ./.github/workflows/ci.yml
 ./.github/workflows/label-sync.yml
 ./.github/workflows/pages-deployment.yml
+./.github/workflows/pages-preview.yml
 ./.github/workflows/project-status-refresh.yml
 ./.github/workflows/rerun-failed-pr-ci.yml
 ./.github/workflows/scope-exception-sync.yml
