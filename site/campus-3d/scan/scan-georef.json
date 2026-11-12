@@ -1,0 +1,16 @@
+{
+  "method": "Correlazione FFT 2D tra muri verticali delle mesh Scaniverse e contorni OSM degli edifici (yaw a passo 0,5\u00b0, cella 0,5 m)",
+  "yawDeg": 339.5,
+  "originLonLat": [
+    12.51343766396124,
+    41.90201815268573
+  ],
+  "originLocal": [
+    -117.01664205733394,
+    -75.77505572961604
+  ],
+  "scanFloorZ": 0.16558528423357824,
+  "note": "Scansione Z-up in metri; mondo = rotazione yaw attorno a Z + traslazione; il punto (0,0) della scansione cade in originLonLat.",
+  "score": 0.09485207045537014,
+  "secondBestRatio": 1.23653155151178
+}
