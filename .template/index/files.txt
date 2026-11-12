@@ -155,6 +155,7 @@
 ./site/_headers
 ./site/apple-touch-icon.png
 ./site/artifact.html
+./site/aule-data.json
 ./site/campus-3d/README.md
 ./site/campus-3d/cammina.js
 ./site/campus-3d/campus-3d.js
@@ -303,6 +304,7 @@
 ./site/copertine/BF7643D1D/9780471530169_2nd_ed.jpg
 ./site/copertine/BFC156FB8/9780801401343_original_work_reprint.jpg
 ./site/favicon-cad.svg
+./site/functions/api/aule.js
 ./site/functions/api/avvisi.js
 ./site/functions/api/campus-ortho.js
 ./site/functions/api/campus-osm.js

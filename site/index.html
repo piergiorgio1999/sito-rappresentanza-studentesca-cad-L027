@@ -776,6 +776,57 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
 .mp-map.has-3d .mp-legend{bottom:48px;max-width:calc(100% - 78px);flex-wrap:wrap}
 .mp-3d-message{font-size:.82rem;color:var(--muted);margin:0 0 10px}
 @media(max-width:699px){.mp-map.has-3d .mp-legend{font-size:.68rem;padding:4px 6px;bottom:56px}}
+/* ===== Aule e docenti ===== */
+.au-ctl{display:grid;gap:10px;margin-bottom:14px}
+.au-ctl input[type=search],.au-ctl select,.au-ctl input[type=time]{font:inherit;min-height:46px;padding:9px 12px;border:1.5px solid var(--tb-edge,#cdbcc2);border-radius:8px;background:#fff;color:var(--ink)}
+.au-ctl input[type=search]{width:100%}
+.au-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.au-line label{font-size:.84rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.au-days{display:flex;gap:6px;align-items:stretch;overflow-x:auto;padding-bottom:2px}
+.au-days button{flex:1 0 auto;min-width:54px;min-height:46px;border:1.5px solid #cfadb6;border-radius:8px;background:#fff;color:var(--sap);font-weight:700;cursor:pointer;padding:4px 8px;line-height:1.15}
+.au-days button small{display:block;font-weight:400;font-size:.72rem;color:var(--muted)}
+.au-days button[aria-pressed="true"]{background:var(--sap);color:#fff;border-color:var(--sap)}
+.au-days button[aria-pressed="true"] small{color:#fff}
+.au-days button:disabled{opacity:.4;cursor:default}
+.au-days .au-nav{flex:0 0 auto;min-width:44px;font-size:1.2rem}
+.au-note{font-size:.82rem;color:var(--muted);margin:6px 0 0}
+.au-res{margin:0 0 16px}
+.au-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.au-list li{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:9px 11px;border:1px solid var(--line);border-left:4px solid var(--sap);border-radius:6px;background:#fff}
+.au-list li.other{border-left-color:#3f7a83}
+.au-list .au-t{font-variant-numeric:tabular-nums;color:var(--sap2)}
+.au-list .au-m{display:grid;gap:2px;min-width:0}
+.au-list .au-m span{font-size:.86rem;color:var(--muted)}
+.au-tags i{font-style:normal;font-size:.74rem;font-weight:700;color:var(--sap);background:var(--rose);border-radius:4px;padding:1px 6px;margin-right:4px;white-space:nowrap}
+.au-day-h{font-weight:700;color:var(--sap2);margin:12px 0 6px}
+.au-b{margin-bottom:14px;padding:14px}
+.au-bh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.au-bh .h3{margin:0}
+.au-free{margin:10px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.86rem}
+.au-free b{margin-right:2px}
+.au-chip{border:1.5px solid #2f7a3b;color:#1f5a29;background:#f1f8f2;border-radius:999px;padding:3px 10px;font-weight:700;white-space:nowrap}
+.au-chip small{font-weight:400}
+.au-tl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#fff;-webkit-overflow-scrolling:touch}
+.au-in{position:relative}
+.au-row{display:flex;border-top:1px solid var(--line)}
+.au-row.au-head{border-top:0;background:var(--tb-alt,#faf5f6)}
+.au-lab{position:sticky;left:0;z-index:3;flex:0 0 132px;width:132px;background:#fff;border-right:1px solid var(--line);padding:6px 8px;font-size:.84rem;font-weight:700;display:flex;flex-direction:column;justify-content:center;line-height:1.2;overflow-wrap:anywhere}
+.au-head .au-lab{background:var(--tb-alt,#faf5f6);color:var(--muted);font-weight:400}
+.au-lab small{font-weight:700;font-size:.72rem}
+.au-lab small.f{color:#1f5a29}.au-lab small.o{color:var(--sap)}
+.au-trk{position:relative;flex:0 0 auto;height:60px;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px)}
+.au-head .au-trk{height:26px;background-image:none}
+.au-hr{position:absolute;top:5px;font-size:.74rem;color:var(--muted);transform:translateX(-50%);font-variant-numeric:tabular-nums}
+.au-ev{position:absolute;top:4px;bottom:4px;border-radius:5px;padding:3px 6px;overflow:hidden;font-size:.74rem;line-height:1.2;background:#d6d6d6;color:#1d5560;border:1px solid rgba(0,0,0,.12)}
+.au-ev.sc{background:var(--sap);color:#fff}
+.au-ev.once{background:#ecdde1;color:#822433}
+.au-ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.au-ev span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.au-ev.dim{opacity:.28}
+.au-ev.hit{outline:3px solid #1d5560;outline-offset:-1px}
+.au-now{position:absolute;top:0;bottom:0;width:2px;background:#1d5560;z-index:2;pointer-events:none}
+.au-now::before{content:attr(data-t);position:absolute;top:2px;left:4px;font-size:.7rem;font-weight:700;color:#fff;background:#1d5560;border-radius:4px;padding:0 4px;white-space:nowrap}
+@media (max-width:560px){.au-list li{grid-template-columns:1fr}.au-lab{flex-basis:104px;width:104px}}
 </style>
 </head>
 <body>
@@ -792,6 +843,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     <button role="tab" id="t-orari" data-tab="orari" aria-controls="tab-orari" aria-selected="true" tabindex="0"><span aria-hidden="true">🗓️</span>Orari</button>
     <button role="tab" id="t-esami" data-tab="esami" aria-controls="tab-esami" aria-selected="false" tabindex="-1"><span aria-hidden="true">⏳</span>Esami<i class="beta">beta</i></button>
     <button role="tab" id="t-testi" data-tab="testi" aria-controls="tab-testi" aria-selected="false" tabindex="-1"><span aria-hidden="true">📚</span><em class="two">Testi e pagine dei corsi</em><i class="beta">beta</i></button>
+    <button role="tab" id="t-aule" data-tab="aule" aria-controls="tab-aule" aria-selected="false" tabindex="-1"><span aria-hidden="true">🚪</span><em class="two">Aule e docenti</em></button>
     <button role="tab" id="t-mappa" data-tab="mappa" aria-controls="tab-mappa" aria-selected="false" tabindex="-1"><span aria-hidden="true">🗺️</span><em class="two">Mappa del campus</em></button>
     <button role="tab" id="t-eduroam" data-tab="eduroam" aria-controls="tab-eduroam" aria-selected="false" tabindex="-1"><span aria-hidden="true">📶</span><em class="two">Wi-Fi Eduroam</em></button>
     <button role="tab" id="t-segnala" data-tab="segnala" aria-controls="tab-segnala" aria-selected="false" tabindex="-1"><span aria-hidden="true">💬</span><em class="two">Contattaci e FAQ</em></button>
@@ -952,6 +1004,26 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
       <article class="card"><h3 class="h3" style="margin-top:0">Qualità e garanzie</h3><p>Il Presidio della Qualità supporta e monitora i processi di assicurazione della qualità di didattica, ricerca e terza missione. Il Nucleo di Valutazione svolge verifiche indipendenti. Le Commissioni paritetiche docenti-studenti analizzano l’offerta formativa e i servizi dei corsi.</p><p>Per il corso: <a href="https://corsidilaurea.uniroma1.it/it/course/33605/organization" target="_blank" rel="noopener">organizzazione e contatti del CAD</a>.</p></article>
     </div>
     <h3 class="h3">Fonti ufficiali</h3><ul><li><a href="https://www.uniroma1.it/it/pagina/governo" target="_blank" rel="noopener">Governo di Ateneo</a></li><li><a href="https://www.uniroma1.it/it/pagina/direttrice-generale" target="_blank" rel="noopener">Direttrice generale</a></li><li><a href="https://smfn.web.uniroma1.it/it/preside" target="_blank" rel="noopener">Preside SMFN</a></li><li><a href="https://chimica.web.uniroma1.it/it/node/6" target="_blank" rel="noopener">Governo Dipartimento di Chimica</a></li><li><a href="https://chimica.web.uniroma1.it/it/erasmus" target="_blank" rel="noopener">Erasmus Dipartimento di Chimica</a></li><li><a href="https://www.uniroma1.it/it/node/539034" target="_blank" rel="noopener">Elezioni Rettore/Rettrice 2026–2032</a></li><li><a href="https://corsidilaurea.uniroma1.it/it/course/33605/organization" target="_blank" rel="noopener">Organizzazione del Corso di Scienze Chimiche</a></li></ul>
+  </section>
+
+  <!-- ===== Aule e docenti ===== -->
+  <section class="panel" id="tab-aule" role="tabpanel" aria-labelledby="t-aule" hidden>
+    <div class="ph"><h2>Aule e docenti</h2><p>Cerca dove fa lezione un docente, un anno o un canale, e guarda quali aule sono libere negli edifici di Chimica.</p></div>
+    <div class="au-ctl">
+      <input type="search" id="auQ" list="auDl" placeholder="Cerca docente, insegnamento o aula" aria-label="Cerca docente, insegnamento o aula" autocomplete="off">
+      <datalist id="auDl"></datalist>
+      <div class="au-line">
+        <div class="seg small" role="group" aria-label="Periodo della ricerca" style="flex:1 1 220px;max-width:320px"><button type="button" id="auMDay" aria-pressed="true">Giorno</button><button type="button" id="auMWeek" aria-pressed="false">Settimana</button></div>
+        <label>Anno <select id="auY"><option value="">Tutti</option><option value="1">I anno</option><option value="2">II anno</option><option value="3">III anno</option></select></label>
+        <label>Canale <select id="auC"><option value="">Tutti</option><option>1</option><option>2</option><option>3</option><option>4</option><option>Unico</option></select></label>
+        <label>Ora <input type="time" id="auT" step="900"></label>
+        <button type="button" class="btn alt" id="auNow">Adesso</button>
+      </div>
+      <div class="au-days" id="auDays" role="group" aria-label="Giorno"></div>
+    </div>
+    <div class="au-res" id="auRes" aria-live="polite"></div>
+    <div id="auBld"></div>
+    <p class="au-note" id="auSrc"></p>
   </section>
 
   <!-- ===== Timeline esami ===== -->
@@ -2821,7 +2893,7 @@ render();
 /* =================== SCHEDE =================== */
 /* Interruttori delle funzioni: quando backend e database su Cloudflare sono pronti, mettere a true */
 const FEATURES = { accounts:false, market:false };
-const TABS = ['orari','esami','testi','market','food','pellicano','safezone','inclusione','organigramma','mappa','eduroam','segnala','news','impostazioni','account'];
+const TABS = ['orari','aule','esami','testi','market','food','pellicano','safezone','inclusione','organigramma','mappa','eduroam','segnala','news','impostazioni','account'];
 function showTab(t, push){
   let sub=[]; if(t && t.includes('/')){ [t,...sub]=t.split('/'); }
   if(t==='libri') t='testi';
@@ -2844,6 +2916,7 @@ function showTab(t, push){
   if(t==='segnala'){ renderFaq(); renderProfs(); }
   if(t==='news') renderNews();
   if(t==='orari') render();
+  if(t==='aule' && window.renderAule) window.renderAule();
   if(t==='impostazioni') renderSettings();
   if(t==='mappa'){ if(sub[0]) openMap(sub[0].toUpperCase(), decodeURIComponent(sub[1]||'')); else renderMap(); }
   else { try{ if(mpSel) mpClose(); }catch(e){} }
@@ -4479,4 +4552,188 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
 })();
 </script>
 
+<script>
+/* ===== Aule e docenti: ricerca lezioni e aule libere (dati GOMP: /api/aule, copia statica aule-data.json) ===== */
+(function(){
+  const el = id => document.getElementById(id);
+  const H0 = 8, H1 = 20, PXH = 92, DOW = ['Lun','Mar','Mer','Gio','Ven'], DOWL = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì'];
+  const st = {q:'', mode:'day', date:'', time:0, live:true, year:'', ch:''};
+  let D = null, EV = [], loading = null, lastTick = 0, scrolls = {};
+
+  const h = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const mins = t => +t.slice(0,2) * 60 + +t.slice(3,5);
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2,'0') + ':' + String(m % 60).padStart(2,'0');
+  const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+  const dow = iso => (new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7;
+  const monday = iso => addDays(iso, -dow(iso));
+  const dayLabel = iso => `${DOWL[dow(iso)] || ''} ${+iso.slice(8)}/${+iso.slice(5,7)}`;
+  function romeNow(){
+    const p = {}; new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/Rome', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false}).formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+    return {date:`${p.year}-${p.month}-${p.day}`, time:(+p.hour % 24) * 60 + +p.minute};
+  }
+  const SMALL = new Set(['e','ed','di','del','della','dei','delle','con','per','in','a','la','il','le','lo','and','of','the','for','to']);
+  const tc = s => String(s || '').toLowerCase().split(/\s+/).map((w, i) => /^(i{1,3}|iv|v|vi{1,3}|ix|x)$/.test(w) ? w.toUpperCase() : (i && SMALL.has(w)) ? w : w.replace(/(^|[-'’(])([a-zà-ý])/g, (m, a, b) => a + b.toUpperCase())).join(' ');
+  const sameName = (a, b) => { const x = norm(a).split(' ').sort().join(' '), y = norm(b).split(' ').sort().join(' '); return !!x && x === y; };
+
+  /* anno e canale: GOMP non li riporta, si ricavano da PROF_COURSES (insegnamento + docente) */
+  function enrich(){
+    const PC = typeof PROF_COURSES !== 'undefined' ? PROF_COURSES : [], PR = typeof PROFS !== 'undefined' ? PROFS : {};
+    D.lessons.forEach(l => {
+      l.sc = /scienze chimiche/i.test(l.g) && /L-27/i.test(l.g);
+      l.deg = l.g.replace(/\s+R$/, '');
+      l.name = tc(l.n); l.prof = tc(l.t); l.year = 0; l.chs = [];
+      if(l.sc){
+        const rows = PC.filter(r => norm(r[2]) === norm(l.n));
+        if(rows.length){
+          l.name = rows[0][2]; l.year = rows[0][0];
+          l.chs = rows.filter(r => r[4].some(id => PR[id] && sameName(PR[id][0], l.t))).map(r => r[3]);
+        }
+      }
+      if(!l.c && /una tantum/i.test(l.n)) { l.name = 'Evento una tantum'; l.once = true; }
+    });
+    EV = [];
+    D.buildings.forEach(b => b.rooms.forEach(r => {
+      r.key = b.code + '|' + r.name;
+      r.ev.forEach(e => { const l = D.lessons[e[0]]; EV.push({l, b, r, date:e[1], s:mins(e[2]), e:mins(e[3]), hay:norm([l.name, l.n, l.t, l.g, r.name, b.code, b.name].join(' '))}); });
+    }));
+    EV.sort((a, b) => a.date.localeCompare(b.date) || a.s - b.s || a.r.name.localeCompare(b.r.name));
+    const names = new Set(); D.lessons.forEach(l => { if(l.prof) names.add(l.prof); if(l.sc) names.add(l.name); });
+    el('auDl').innerHTML = [...names].sort((a, b) => a.localeCompare(b, 'it')).map(n => `<option value="${h(n)}">`).join('');
+  }
+
+  async function load(){
+    for(const url of ['/api/aule', 'aule-data.json']){
+      try{
+        const res = await fetch(url, {headers:{accept:'application/json'}});
+        if(!res.ok) continue;
+        const d = await res.json();
+        if(d && Array.isArray(d.buildings) && Array.isArray(d.lessons)) return d;
+      }catch(_){ /* prova la fonte successiva */ }
+    }
+    throw new Error('dati non disponibili');
+  }
+
+  const active = () => !!(st.q.trim() || st.year || st.ch);
+  function match(ev){
+    if(st.year && !(ev.l.sc && ev.l.year === +st.year)) return false;
+    if(st.ch && !(ev.l.sc && ev.l.chs.includes(st.ch))) return false;
+    const q = norm(st.q); return !q || q.split(' ').every(t => ev.hay.includes(t));
+  }
+  const tags = l => (l.year ? `<i>${['','I','II','III'][l.year]} anno</i>` : '') + (l.chs.length ? `<i>${l.chs[0] === 'Unico' ? 'Canale unico' : 'Canale ' + h(l.chs.join('/'))}</i>` : '');
+  const where = ev => `${h(ev.r.name)} · ${h(ev.b.code)}`;
+
+  function drawDays(){
+    const mon = monday(st.date), box = el('auDays');
+    const btn = (iso, i) => `<button type="button" data-d="${iso}" aria-pressed="${iso === st.date}" ${iso < D.from || iso > D.to ? 'disabled' : ''}>${DOW[i]}<small>${+iso.slice(8)}/${+iso.slice(5,7)}</small></button>`;
+    box.innerHTML = `<button type="button" class="au-nav" data-d="${addDays(mon, -7)}" aria-label="Settimana precedente" ${addDays(mon, -7) < monday(D.from) ? 'disabled' : ''}>‹</button>` +
+      [0,1,2,3,4].map(i => btn(addDays(mon, i), i)).join('') +
+      `<button type="button" class="au-nav" data-d="${addDays(mon, 7)}" aria-label="Settimana successiva" ${addDays(mon, 7) > D.to ? 'disabled' : ''}>›</button>`;
+  }
+
+  function drawResults(){
+    const box = el('auRes');
+    if(!active()){ box.innerHTML = ''; return; }
+    const mon = monday(st.date), fri = addDays(mon, 4);
+    const list = EV.filter(ev => (st.mode === 'day' ? ev.date === st.date : ev.date >= mon && ev.date <= fri) && match(ev));
+    const scope = st.mode === 'day' ? dayLabel(st.date) : `settimana ${+mon.slice(8)}/${+mon.slice(5,7)} – ${+fri.slice(8)}/${+fri.slice(5,7)}`;
+    if(!list.length){ box.innerHTML = `<p class="banner">Nessuna lezione trovata per ${h(scope)}. ${st.mode === 'day' ? 'Prova con «Settimana».' : 'Controlla i filtri o cambia settimana.'}</p>`; return; }
+    const row = ev => `<li class="${ev.l.sc ? '' : 'other'}"><b class="au-t">${hhmm(ev.s)}–${hhmm(ev.e)}</b><span class="au-m"><strong>${h(ev.l.name)}</strong><span>${ev.l.prof ? h(ev.l.prof) + ' · ' : ''}${where(ev)}</span><span class="au-tags">${tags(ev.l)}${ev.l.sc ? '' : h(ev.l.deg)}</span></span></li>`;
+    let out = `<h3 class="h3" style="margin-top:0">${list.length} ${list.length === 1 ? 'lezione' : 'lezioni'} · ${h(scope)}</h3>`;
+    if(st.mode === 'day') out += `<ul class="au-list">${list.map(row).join('')}</ul>`;
+    else [0,1,2,3,4].map(i => addDays(mon, i)).forEach(d => { const day = list.filter(ev => ev.date === d); if(day.length) out += `<p class="au-day-h">${h(dayLabel(d))}</p><ul class="au-list">${day.map(row).join('')}</ul>`; });
+    box.innerHTML = out;
+  }
+
+  function drawBuildings(keep){
+    const box = el('auBld'), T = st.time, W = (H1 - H0) * PXH, x = m => (m - H0 * 60) / 60 * PXH, filt = active();
+    if(keep) box.querySelectorAll('.au-tl').forEach(n => scrolls[n.dataset.b] = n.scrollLeft);
+    const inHours = T >= H0 * 60 && T < H1 * 60;
+    box.innerHTML = D.buildings.map(b => {
+      const rooms = b.rooms.filter(r => !(r.lab && !r.ev.length)).map(r => {
+        const day = EV.filter(ev => ev.r === r && ev.date === st.date);
+        const busy = day.find(ev => ev.s <= T && T < ev.e), next = day.find(ev => ev.s > T);
+        return {r, day, busy, next};
+      }).sort((a, c) => (!!a.busy - !!c.busy) || a.r.lab - c.r.lab || a.r.name.localeCompare(c.r.name, 'it', {numeric:true}));
+      const idle = b.rooms.filter(r => r.lab && !r.ev.length);
+      const free = rooms.filter(o => !o.busy && !o.r.err);
+      const hours = []; for(let H = H0; H <= H1; H++) hours.push(`<span class="au-hr" style="left:${(H - H0) * PXH}px">${H}</span>`);
+      const rowsHtml = rooms.map(o => {
+        const groups = {}; o.day.forEach(ev => (groups[ev.s + '-' + ev.e] = groups[ev.s + '-' + ev.e] || []).push(ev));
+        const blocks = Object.values(groups).map(g => {
+          const ev = g[0], l = ev.l, hit = filt && g.some(match), more = g.length > 1 ? ` +${g.length - 1}` : '';
+          const sub = [l.prof.split(' ')[0], l.year ? ['','I','II','III'][l.year] + ' anno' : '', l.chs.length ? (l.chs[0] === 'Unico' ? 'can. unico' : 'can. ' + l.chs.join('/')) : (l.sc ? '' : l.deg)].filter(Boolean).join(' · ');
+          const tip = g.map(e => `${hhmm(e.s)}–${hhmm(e.e)} ${e.l.name}${e.l.prof ? ' — ' + e.l.prof : ''}${e.l.deg ? ' (' + e.l.deg + ')' : ''}`).join('\n');
+          return `<div class="au-ev${l.sc ? ' sc' : ''}${l.once ? ' once' : ''}${filt ? (hit ? ' hit' : ' dim') : ''}" style="left:${x(Math.max(ev.s, H0 * 60)) + 1}px;width:${Math.max(x(Math.min(ev.e, H1 * 60)) - x(Math.max(ev.s, H0 * 60)) - 2, 8)}px" title="${h(tip)}"><b>${h(l.name)}${more}</b><span>${h(sub)}</span><span>${hhmm(ev.s)}–${hhmm(ev.e)}</span></div>`;
+        }).join('');
+        const state = o.r.err ? '<small class="o">dati non disponibili</small>' : o.busy ? `<small class="o">occupata fino alle ${hhmm(o.busy.e)}</small>` : `<small class="f">libera${o.next ? ' fino alle ' + hhmm(o.next.s) : ''}</small>`;
+        return `<div class="au-row"><div class="au-lab">${h(o.r.name)}${state}</div><div class="au-trk" style="width:${W}px;background-size:${PXH}px 100%">${blocks}</div></div>`;
+      }).join('');
+      return `<section class="card au-b" aria-label="${h(b.code)}">
+        <div class="au-bh"><h3 class="h3">${h(b.code)} · ${h(b.name)}</h3><a href="#mappa/${h(b.code)}">Apri sulla mappa</a></div>
+        <p class="au-free"><b>Libere alle ${hhmm(T)} (${free.length} su ${rooms.length}):</b>${free.length ? free.map(o => `<span class="au-chip">${h(o.r.name)} <small>${o.next ? 'fino alle ' + hhmm(o.next.s) : 'fino a sera'}</small></span>`).join('') : ' nessuna'}</p>
+        <div class="au-tl" data-b="${h(b.code)}" tabindex="0" role="group" aria-label="Occupazione delle aule di ${h(b.code)}, ${h(dayLabel(st.date))}">
+          <div class="au-in" style="width:${W + 132}px">
+            <div class="au-row au-head"><div class="au-lab">Aula</div><div class="au-trk" style="width:${W}px">${hours.join('')}</div></div>
+            ${rowsHtml}
+            ${inHours ? `<div class="au-now" data-t="${hhmm(T)}" style="left:calc(var(--au-lab,132px) + ${x(T)}px)"></div>` : ''}
+          </div>
+        </div>
+        ${idle.length ? `<p class="au-note">Laboratori senza programmazione su GOMP: ${idle.map(r => h(r.name)).join(', ')}.</p>` : ''}
+      </section>`;
+    }).join('');
+    box.querySelectorAll('.au-tl').forEach(n => {
+      const lab = n.querySelector('.au-lab').offsetWidth || 132;
+      n.style.setProperty('--au-lab', lab + 'px');
+      n.scrollLeft = keep && scrolls[n.dataset.b] != null ? scrolls[n.dataset.b] + (keep === true ? 0 : keep) : Math.max(0, x(T) - (n.clientWidth - lab) * .3);
+    });
+  }
+
+  function draw(keep){
+    if(!D) return;
+    el('auMDay').setAttribute('aria-pressed', st.mode === 'day'); el('auMWeek').setAttribute('aria-pressed', st.mode === 'week');
+    el('auT').value = hhmm(st.time);
+    drawDays(); drawResults(); drawBuildings(keep);
+    const gen = new Date(D.gen);
+    el('auSrc').innerHTML = `Fonte: <a href="${h(D.src)}" target="_blank" rel="noopener">orario aule GOMP Sapienza</a>, dati letti il ${gen.toLocaleDateString('it-IT')} alle ${gen.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}; periodo ${+D.from.slice(8)}/${+D.from.slice(5,7)} – ${+D.to.slice(8)}/${+D.to.slice(5,7)}. «Libera» vuol dire senza attività programmate su GOMP: l’aula può comunque essere chiusa o usata per altro. Anno e canale sono indicati solo per Scienze Chimiche.`;
+  }
+
+  function goNow(){
+    const n = romeNow(); let d = n.date;
+    if(dow(d) > 4) d = addDays(d, 7 - dow(d));
+    if(d < D.from) d = D.from; if(d > D.to) d = monday(D.to);
+    st.date = d; st.time = n.time; st.live = d === n.date; lastTick = n.time;
+  }
+
+  window.renderAule = function(){
+    if(D){ if(st.live){ goNow(); } draw(); return; }
+    if(loading) return;
+    el('auBld').innerHTML = '<p class="au-note">Carico l’occupazione delle aule…</p>';
+    loading = load().then(d => { D = d; enrich(); goNow(); draw(); })
+      .catch(() => { el('auBld').innerHTML = '<p class="banner">Non riesco a caricare i dati delle aule. Riprova tra poco oppure consulta l’<a href="https://gomp.uniroma1.it/PublicFunctions/GestioneAule/SchedaOrarioProgrammazione.aspx" target="_blank" rel="noopener">orario aule su GOMP</a>.</p>'; })
+      .finally(() => { loading = null; });
+  };
+
+  el('auQ').addEventListener('input', e => { st.q = e.target.value; drawResults(); drawBuildings(true); });
+  el('auY').addEventListener('change', e => { st.year = e.target.value; drawResults(); drawBuildings(true); });
+  el('auC').addEventListener('change', e => { st.ch = e.target.value; drawResults(); drawBuildings(true); });
+  el('auMDay').addEventListener('click', () => { st.mode = 'day'; draw(true); });
+  el('auMWeek').addEventListener('click', () => { st.mode = 'week'; draw(true); });
+  el('auT').addEventListener('change', e => { if(!D || !e.target.value) return; st.time = mins(e.target.value); st.live = false; draw(); });
+  el('auNow').addEventListener('click', () => { if(!D) return; goNow(); draw(); });
+  el('auDays').addEventListener('click', e => {
+    const b = e.target.closest('button[data-d]'); if(!b || b.disabled || !D) return;
+    let d = b.dataset.d; if(b.classList.contains('au-nav')) d = addDays(d, dow(st.date));
+    if(d < D.from) d = D.from; if(d > D.to) d = D.to;
+    st.date = d; st.live = false; draw(true);
+  });
+  /* scorrimento progressivo: in modalità «Adesso» la linea dell'ora avanza e le aule libere si riordinano */
+  setInterval(() => {
+    if(!D || !st.live || el('tab-aule').hidden || document.hidden) return;
+    const n = romeNow(); if(n.date !== st.date || n.time === st.time) return;
+    const delta = (n.time - st.time) / 60 * PXH; st.time = n.time; draw(delta || true);
+  }, 20000);
+  if(!el('tab-aule').hidden) window.renderAule();
+})();
+</script>
 </body></html>
