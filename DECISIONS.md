@@ -264,3 +264,15 @@ leggermente rialzata, la scalinata con i gradini che girano agli angoli e le due
 arcate sottratte al volume di CU001, in coordinate della planimetria (quindi con
 la stessa calibrazione indicativa dei volumi). La statua si carica solo se esiste
 `campus-3d/models/minerva.json`.
+
+## 2026-11-12 — Anteprime del sito solo da pull request
+
+Su richiesta esplicita del proprietario del repository, ogni pubblicazione su
+Cloudflare Pages passa da Git: la produzione dal push su `main` (decisione del
+2026-10-13) e le anteprime dal workflow `pages-preview.yml`, che per ogni PR
+interna che modifica `site/**` pubblica sul ramo di anteprima `pr-<numero>` del
+progetto `orari-chimica`. Nessun agente o persona pubblica a mano con
+`wrangler`, API o dashboard, nemmeno per prova. Le PR da fork non ricevono i
+secrets e quindi non generano anteprime. Il workflow resta nello scope GitHub,
+usa le stesse credenziali e la stessa versione di wrangler della produzione e
+non introduce servizi a pagamento.
