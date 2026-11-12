@@ -1,0 +1,71 @@
+name: Preview Cloudflare Pages
+
+# Anteprima automatica del sito per ogni PR che tocca site/**.
+# Pubblica su un ramo di anteprima (pr-<numero>) del progetto Pages: la produzione
+# resta riservata a pages-deployment.yml, che parte solo dal push su main.
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - "site/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # I secrets non sono disponibili alle PR da fork: lì l'anteprima non parte.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Check Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "Missing repository secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Deploy preview to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.113.0"
+          workingDirectory: site
+          command: pages deploy . --project-name=orari-chimica --branch=pr-${{ github.event.pull_request.number }}
+          githubToken: ${{ github.token }}
+
+      - name: Report preview URL
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Anteprima del sito"
+            echo
+            echo "- Indirizzo stabile della PR: ${PREVIEW_URL:-non disponibile}"
+            echo "- Questo commit: ${DEPLOYMENT_URL:-non disponibile}"
+          } >> "$GITHUB_STEP_SUMMARY"
