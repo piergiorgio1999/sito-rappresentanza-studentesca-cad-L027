@@ -1,0 +1,70 @@
+{
+ "versione": 1,
+ "fonte": "riferimenti/cu014-vettoriale.stl (STL binario fornito dall'utente il 22/10/2026), registrato sulla sagoma OSM di CU014; vedi tools/cu014_stl.py e il paragrafo «Solido di CU014» del README",
+ "nota": "Quote in metri sopra il terreno attorno all'edificio (piano interpolato sui punti fuori sagoma, vedi tools/cu014_stl.py). Rettangoli [u0, v0, u1, v1] nelle coordinate del lato 0 di CU014 (u lungo il lato, v verso l'esterno). La pagina estrude la sagoma OSM, meno i cortili e i vuoti, a `altezzaBase`; dove cade un rettangolo di `ali` usa l'altezza della sua ala. Facciate e texture non cambiano.",
+ "stl": {
+  "scalaMetriPerUnita": 86.203,
+  "rotazioneDeg": 178.07,
+  "traslazione": [1.1243, 0.5481],
+  "centroSagoma": [31.5355, -63.5055],
+  "pianoTerreno": [-8.8384, -0.019477, -0.036533],
+  "nota": "u, v = scala · R(−rotazione) · ((x, y) − traslazione) + centroSagoma; quota sopra il terreno = scala · z − (pianoTerreno[0] + pianoTerreno[1]·u + pianoTerreno[2]·v). Nell'STL z è l'alto e l'unità è arbitraria (1 unità ≈ 86,2 m); il piano del terreno è inclinato di 2,4°, cioè è l'inclinazione della scansione, non quella del suolo."
+ },
+ "stlAnfiteatro": {
+  "scalaMetriPerUnita": 3.4,
+  "rotazioneDeg": -181.75,
+  "traslazione": [0, 0],
+  "centroSagoma": [114.77, 23.98],
+  "pianoTerreno": [3.8562, -0.020724, -0.035249],
+  "nota": "Secondo STL (riferimenti/chimica-anfiteatro.stl, 77 424 triangoli, 37,4 × 35,7 × 8,9 unità, 1 unità ≈ 3,40 m, z in alto). Stessa formula di `stl`: (u, v) = scala · R(−rotazione) · ((x, y) − traslazione) + centroSagoma, quindi la rotazione di 181,75° è scritta con il segno meno; quota sopra il terreno = scala · z − (piano[0] + piano[1]·u + piano[2]·v). Il piano del terreno ha la stessa inclinazione del primo STL (−0,0207 e −0,0352 contro −0,0195 e −0,0365): conferma indipendente della registrazione."
+ },
+ "altezzaBase": 19,
+ "interpiano": 3.425,
+ "nota_interpiano": "Stesso interpiano per tutte le ali (il corpo principale a 19 m ha 4 piani da 3,425 m sopra il basamento di 4,4 m), così le file di finestre combaciano dove due ali si toccano e col ponte sul cancello del cortile dell'azoto. Ogni ala tiene i piani interi che le entrano (l'ultimo anche se ne entra il 75 %), il resto va all'attico: la dorsale a 21 m e il blocco a 20 m hanno l'attico più alto.",
+ "ali": [
+  { "id": "nord", "rect": [-1, -34, 39.5, 1], "altezza": 18.4, "nota": "Lato nord, più basso del corpo principale (18,1-18,6 m in entrambi gli STL)." },
+  { "id": "dorsale", "rect": [39.5, -60, 50, -20], "altezza": 21, "nota": "Corpo centrale, il più alto (coincide con l'altezza 21 m di OSM)." },
+  { "id": "sud-est", "rect": [50, -62, 71.5, -38], "altezza": 19.9, "nota": "Blocco a sud-est, accanto ai due cortili est." },
+  { "id": "sud-est-basso", "rect": [46, -91, 71.5, -62], "altezza": 19.9, "nota": "Prosecuzione del blocco verso sud, fino al bordo dell'ala sud." },
+  { "id": "est", "rect": [71.5, -86, 81.5, -26], "altezza": 15.7, "nota": "Ala est più bassa (15,4-16,3 m, sale verso il bordo); il gradino a u 81,5 viene dal secondo STL (prima 80,5)." },
+  { "id": "bordo-est", "rect": [81.5, -86, 87, -26], "altezza": 10.9, "nota": "Fascia bassa lungo il bordo est (10,8-11,1 m)." },
+  { "id": "fascia-nord-est", "rect": [56.34, -26, 87, -20], "altezza": 10.6, "nota": "Corpo basso affacciato sulla terrazza (10,5-10,8 m)." },
+  { "id": "sud-ovest", "rect": [-1, -91, 9.6, -64.5], "altezza": 14.4, "nota": "Ala sud ovest, a quota più bassa del ventaglio (14,1-14,4 m); confine a u 9,6 dal secondo STL." },
+  { "id": "ventaglio-ovest", "rect": [9.6, -91, 26.2, -64.5], "altezza": 15.3, "nota": "Falda piana del ventaglio, lato ovest (15,0-15,3 m). 27/10: falda del ventaglio a quota unica (15,3 m) come nella vista dall'alto dell'utente: i gradini di 0,1-0,4 m fra le ali tagliavano il tetto con righe dritte che non ci sono." },
+  { "id": "ventaglio-est", "rect": [28.6, -91, 41, -64.5], "altezza": 15.3, "nota": "Falda piana del ventaglio, lato est (15,2-15,5 m; sale a 15,8 verso il blocco sud-est). 27/10: falda del ventaglio a quota unica (15,3 m) come nella vista dall'alto dell'utente: i gradini di 0,1-0,4 m fra le ali tagliavano il tetto con righe dritte che non ci sono." },
+  { "id": "sud-centro", "rect": [41, -91, 46, -71.5], "altezza": 15.3 },
+  { "id": "ventaglio-centro", "rect": [24.6, -91, 30.6, -64.5], "altezza": 15.3, "nota": "Era «lucernario-sud» a 17,8 m: la cresta dell'STL (17-18,1 m attorno a −94°) non è una trave ma l'impianto dell'aria sul tetto (UTA, canali, ventilatori), ora fatto con i pezzi del catalogo in cortile/chimica-esterni.json → primitive (id cond-…). Qui il tetto è piano a 15,3 m, media fra 15,2 (ovest) e 15,4 (est), così UTA e canale poggiano su un piano solo." },
+  { "id": "basso-sud", "rect": [17, -64.5, 41, -60], "altezza": 10.7, "nota": "Corpo basso fra le due ali sud (10,5-10,9 m)." },
+  { "id": "sud-centro-est", "rect": [46, -91, 48.5, -79], "altezza": 15.3, "nota": "Chiude la tacca triangolare sulla facciata sud fra sud-centro e sud-est-basso (nell'STL qui 15,5-15,9 m). 27/10: falda del ventaglio a quota unica (15,3 m) come nella vista dall'alto dell'utente: i gradini di 0,1-0,4 m fra le ali tagliavano il tetto con righe dritte che non ci sono." },
+  { "id": "ventaglio-retro", "rect": [20, -67.5, 37.5, -63.3], "altezza": 16, "nota": "Gradino sul retro del ventaglio, contro il corpo basso: l'STL dà 15,9-16,1 m su tutta la fascia (prima era scambiato per un canale lungo il bordo nord); nelle foto del 23/10 ha il doppio parapetto." }
+ ],
+ "ventaglio": {
+  "nota_scansione": "23/10: retro misurato sulla scansione Scaniverse dell'utente, viste dall'alto tagliate a più quote e sezioni, mediando il lato nord con il sud specchiato (la deriva dell'iPad ruota le due estremità di circa ±2,6°). Balconata a 3,25 m, pianerottoli a 1,23 m, pedana a 0,22 m, sotto della pensilina a 4,1 m (spessa 0,4: soffitto di travertino, guaina sopra). Prima rampa mezza dentro e mezza fuori (d −0,9…+1,45 dalla facciata), muro divisorio di travertino fra le rampe, colonna rettangolare di travertino in cima alla prima rampa sul lato della strada, cancello nel varco in fondo al muro divisorio, testata con porta antipanico. Le misure stanno in tools/ginestra_scale_da_scansione.py.",
+  "nota": "Fronte sud a ventaglio (secondo STL, riferimenti/chimica-anfiteatro.stl, e descrizione dell'utente del 22/10/2026 con le foto del commento 10). Settore di 60° (da −120° a −60°, −90° = sud) attorno al centro [u, v]: il raggio esterno 40,28 m è il cerchio per i vertici dell'arco OSM (scarto < 0,3 m), la facciata sta a 37,3 m. Angoli dall'asse u, antiorari: u = cu + r·cos a, v = cv + r·sin a. La pagina toglie alla sagoma la corona fra raggioFacciata e raggioEsterno + 0,6 (settori) e la loggia della balconata fra balconata.rInterno e raggioFacciata, poi costruisce la balconata centrale e le due scale laterali. I vecchi gradoni di 2 m erano sbagliati: dall'alto l'STL vedeva pensiline (4,1-4,6 m) e pianerottoli (1,9-2,5 m).",
+  "centro": [28.72, -50.38],
+  "raggioFacciata": 37.3,
+  "raggioEsterno": 40.28,
+  "settori": [{ "id": "fronte", "a0": -120, "a1": -60 }],
+  "loggia": {
+   "nota": "Primo piano arretrato lungo tutto l'arco (commento 11: «almeno 3 se non 5 metri»; l'STL vede un piano a 3,2-3,6 m fino a r 34 sotto l'anfiteatro): la pagina toglie alla sagoma la corona fra rInterno e raggioFacciata fra a0 e a1 e la ricostruisce: piano terra, pavimento della loggia a balconata.quota, fondo rivestito di travertino, soffitto, volume sopra alle quote delle ali.",
+   "rInterno": 33.3, "a0": -111.81, "a1": -68.19, "nota_estremi": "31/10: la loggia finisce dove finiscono le pensiline (e il sottoscala): oltre, il corpo scende pieno fino a terra"
+  },
+  "balconata": {
+   "nota": "Piloni, balaustre e porte sono primitive dell'editor (id gin-pilone-…, gin-balaustra-…, gin-porta-…); qui le colonne servono ancora per arretrare il volume sopra la loggia fra il primo e l'ultimo pilone. Centro dell'arco: 4 piloni arancioni sul filo della facciata (0,9 × 0,9 m, salgono fino al tetto come lesene; sopra la loggia il volume fra i piloni è arretrato di `arretramento`), 3 parapetti di travertino fra i piloni, porte a vetri sul fondo della loggia (l'utente ricorda 3 o 4: qui una per campata). La balconata inizia appena prima del primo pilone, dove arrivano le scale.",
+   "a0": -97.604, "a1": -82.396, "quota": 3.25, "arretramento": 0.4,
+   "colonne": { "n": 4, "larghezza": 0.9, "profondita": 0.9, "margine": 0.46 },
+   "parapetto": { "altezza": 1.0, "profondita": 0.3 },
+   "porte": { "n": 3, "larghezza": 1.5, "altezza": 2.7 }
+  },
+  "scale": {
+   "nota": "I pezzi veri (rampe, pedana, pianerottolo, muro divisorio, cancello, colonna, parapetto, testata con porta antipanico, pensilina, staccionata, corrimano) sono primitive dell'editor in cortile/chimica-esterni.json (id gin-…, generate da tools/ginestra_scale_da_scansione.py con le misure della scansione del 23/10/2026): l'utente li sposta e li cambia da lì. Qui servono solo per lasciare il vuoto nel piano terra (sottoscala) e nella soletta della loggia: dall'arrivo della seconda rampa sulla balconata (`arrivo` m dopo il primo pilone) per `gradini` − 1 pedate fino al piede della rampa, poi per `cancello.larghezza` m sul raggio `cancello.raggio` fino al fondo della testata. Sottoscala: dal muro dell'edificio lungo la seconda rampa alla facciata. Raggi in metri dal centro del ventaglio.",
+   "gradini": 16, "pedata": 0.4296, "arrivo": 0.01,
+   "sottoscala": [33.95, 37.3],
+   "cancello": { "larghezza": 2.421, "raggio": 36.125 },
+   "lati": [{ "id": "ovest", "verso": -1 }, { "id": "est", "verso": 1 }]
+  }
+ },
+ "fondi": [
+  { "id": "cortile-nord", "rect": [14.5, -23, 40.5, -11], "quota": 4.4, "nota": "Il cortile nord ha il pavimento in quota (circa 6 m nell'STL), non a terra: la pagina lo chiude con una soletta. Messa a 4,4 m, sulla linea del basamento, perché a 6 m tagliava a metà le finestre del primo piano dei muri del cortile." }
+ ]
+}

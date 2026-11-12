@@ -1,0 +1,3757 @@
+{
+ "versione": 1,
+ "edificio": "CU014",
+ "nota": "Elementi esterni del Vecchio Edificio di Chimica. Ogni elemento usa un lato della sagoma OSM (indice del segmento): u = metri lungo il lato dal suo primo vertice, v = metri verso l'esterno. Lato 0 = facciata nord dell'ala ovest (verso il viale), lato 19 = facciata ovest (cortile dell'azoto). Scale antincendio (fino al quarto piano, 17,1 m): scala metallica aperta a forbice (lunghezza 8.4 m, larghezza 4.3 m, a 0.5 m dal muro), centrata in u e parallela al lato; misure e quote dal rilievo della scala ovest, posizioni delle altre dalla vista satellitare.",
+ "elementi": [
+  {
+   "tipo": "terrazza",
+   "nome": "Terrazza rialzata accanto al Museo \"Primo Levi\"",
+   "lato": 0,
+   "poligono": [
+    [
+     56.3,
+     -20.4
+    ],
+    [
+     69.4,
+     -20.4
+    ],
+    [
+     69.4,
+     -15.5
+    ],
+    [
+     85.75,
+     -15.5
+    ],
+    [
+     85.6,
+     3.6
+    ],
+    [
+     56.3,
+     3.6
+    ]
+   ],
+   "altezza": 1.2,
+   "prato": [
+    69.4,
+    -12.6,
+    82.0,
+    -7.9
+   ],
+   "panchine": [
+    {
+     "u": 70.0,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    },
+    {
+     "u": 72.24,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    },
+    {
+     "u": 74.48,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    },
+    {
+     "u": 76.72,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    },
+    {
+     "u": 78.96,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    },
+    {
+     "u": 81.2,
+     "v": -6.7,
+     "lunghezza": 1.7,
+     "profondita": 0.55,
+     "altezza": 0.45,
+     "rientro": 0.2
+    }
+   ],
+   "gradini": [
+    {
+     "nota": "scalinata interna: dalla rientranza a livello terra sale verso ovest",
+     "lungo": "u",
+     "da": -20.4,
+     "a": -15.5,
+     "bordo": 69.4,
+     "verso": 1,
+     "pedata": 0.45,
+     "alzata": 0.15
+    },
+    {
+     "nota": "estremità ovest: dallo spigolo del museo scendono verso ovest sul pavimento davanti all'ingresso",
+     "lungo": "u",
+     "da": 0.0,
+     "a": 3.6,
+     "bordo": 56.3,
+     "verso": -1,
+     "pedata": 0.3,
+     "alzata": 0.15
+    }
+   ],
+   "nota": "Misure dalla foto satellitare Google annotata dall'utente (21/10/2026), agganciata allo spigolo nord-est del museo (u 56.3, v 0) e allo spigolo sud-est (u 85.6, v -20.6). Il bordo est è allineato alla facciata est; un muretto chiude la rientranza a est. Altezza 1.2 m: circa 8-9 gradini nella foto.",
+   "ringhiere": [
+    [
+     [
+      56.3,
+      3.5
+     ],
+     [
+      84.6,
+      3.5
+     ]
+    ],
+    [
+     [
+      85.5,
+      2.6
+     ],
+     [
+      85.5,
+      -15.5
+     ]
+    ],
+    [
+     [
+      69.4,
+      -15.4
+     ],
+     [
+      85.6,
+      -15.4
+     ]
+    ]
+   ],
+   "ringhiera": {
+    "altezza": 1.0,
+    "passo": 1.3,
+    "intermedio": 0.5,
+    "colore": "#6b1d29",
+    "nota": "Piatti rettangolari in metallo rosso Sapienza un po' più scuro: corrimano e corrente intermedio larghi 'larghezza' in pianta e spessi 'spessore'; montanti con la stessa sezione, faccia larga in verticale. Foto Street View (ottobre 2018) e indicazioni dell'utente.",
+    "larghezza": 0.1,
+    "spessore": 0.04
+   }
+  },
+  {
+   "tipo": "area",
+   "nome": "Pavimento in travertino davanti all'ingresso principale",
+   "lato": 0,
+   "poligono": [
+    [
+     0,
+     0
+    ],
+    [
+     56.3,
+     0
+    ],
+    [
+     56.3,
+     6
+    ],
+    [
+     0,
+     6
+    ]
+   ]
+  },
+  {
+   "tipo": "area",
+   "nome": "Rientranza a livello terra (angolo sud-est della terrazza)",
+   "lato": 0,
+   "poligono": [
+    [
+     69.4,
+     -20.65
+    ],
+    [
+     85.75,
+     -20.65
+    ],
+    [
+     85.75,
+     -15.5
+    ],
+    [
+     69.4,
+     -15.5
+    ]
+   ]
+  },
+  {
+   "tipo": "pilastro",
+   "nome": "Blocco di pietra rialzato all'angolo esterno della terrazza (al posto della ringhiera)",
+   "lato": 0,
+   "poligono": [
+    [
+     84.6,
+     2.6
+    ],
+    [
+     85.6,
+     2.6
+    ],
+    [
+     85.6,
+     3.6
+    ],
+    [
+     84.6,
+     3.6
+    ]
+   ],
+   "altezza": 2.55
+  },
+  {
+   "tipo": "palo",
+   "nome": "Palo della bandiera verde, sul marciapiede accanto all'angolo (lato est)",
+   "lato": 0,
+   "u": 86.1,
+   "v": 3.2,
+   "altezza": 11.0
+  },
+  {
+   "tipo": "area",
+   "nome": "Vialetto in travertino dall'ingresso alla strada",
+   "lato": 0,
+   "poligono": [
+    [
+     44.6,
+     6
+    ],
+    [
+     50.6,
+     6
+    ],
+    [
+     50.6,
+     21.5
+    ],
+    [
+     44.6,
+     21.5
+    ]
+   ],
+   "nota": "Commento sul posto del 21/10/2026: rettangolo di travertino che collega il pavimento dell'ingresso fino alla strada."
+  },
+  {
+   "tipo": "ingresso",
+   "nome": "Ingresso principale (Istituto Chimico)",
+   "lato": 0,
+   "u": 47.63,
+   "nota": "Dalle foto dell'ingresso fornite dall'utente (21/10/2026) e dal commento sul posto che fissa il portone a u 47.6.",
+   "porta": {
+    "larghezza": 2.3,
+    "altezza": 3.3
+   },
+   "rivestimento": {
+    "u": [
+     41.5,
+     54.45
+    ],
+    "altezza": 4.3
+   },
+   "scritta": [
+    "ISTITUTO",
+    "CHIMICO"
+   ],
+   "tattile": {
+    "v": [
+     0.3,
+     21.5
+    ],
+    "larghezza": 0.6
+   },
+   "aiuole": [
+    {
+     "u": [
+      -0.1,
+      44.55
+     ],
+     "v": [
+      6.1,
+      20.6
+     ],
+     "cordolo": 0.18
+    },
+    {
+     "u": [
+      50.6,
+      85.55
+     ],
+     "v": [
+      4.9,
+      20.6
+     ],
+     "cordolo": 0.18
+    }
+   ],
+   "ringhiere": [
+    [],
+    [
+     [
+      50.7,
+      6.6
+     ],
+     [
+      50.7,
+      20.4
+     ]
+    ]
+   ],
+   "ringhiera": {
+    "altezza": 0.9,
+    "passo": 1.3,
+    "intermedio": 0.45,
+    "larghezza": 0.08,
+    "spessore": 0.04,
+    "colore": "#6b1d29"
+   },
+   "panchine": [
+    {
+     "u": 45.0,
+     "v": 9.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 45.5,
+     "v": 11.85,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v",
+     "rimosso": true
+    },
+    {
+     "u": 45.0,
+     "v": 17.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 9.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 13.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 17.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    }
+   ],
+   "palme": [
+    {
+     "u": 52.6,
+     "v": 7.7,
+     "altezza": 3.8
+    },
+    {
+     "u": 42.4,
+     "v": 7.9,
+     "altezza": 3.4,
+     "rimosso": true
+    }
+   ],
+   "totem": [
+    {
+     "u": 51.2,
+     "v": 20.9,
+     "orienta": "v",
+     "scritta": "CU014",
+     "nota": "Un solo totem, all'angolo del prato est verso la strada: lato lungo parallelo al vialetto, lastra rossa forata con i tre cartelli della foto del 21/10/2026 (codice, notizie con il logo del museo, mappa); testi e logo si cambiano dalla scheda dell'editor (campi scritta, cartello, logoMuseo)."
+    }
+   ],
+   "fiori": {
+    "u": [
+     10.95,
+     44.2
+    ],
+    "v": [
+     18.8,
+     20.3
+    ],
+    "altezza": 0.4
+   },
+   "rastrelliera": {
+    "u": 0.45,
+    "v": 0.8,
+    "posti": 3
+   }
+  },
+  {
+   "tipo": "scala",
+   "nome": "Scala antincendio (facciata nord, ala ovest)",
+   "lato": 0,
+   "u": 12.9,
+   "piani": 4
+  },
+  {
+   "tipo": "scala",
+   "nome": "Scala antincendio (facciata ovest, cortile azoto) — rilievo Scaniverse 16/10/2026",
+   "lato": 19,
+   "u": 15.8,
+   "piani": 4,
+   "quote": [
+    2.85,
+    5.25,
+    7.4,
+    9.2,
+    11.15,
+    13.15
+   ],
+   "nota_stl": "Quote 15,1 e 17,1 tolte il 22/10/2026: dall'STL il tetto dell'ala sud-ovest è a circa 15 m, la scala non deve superarlo (da verificare con l'utente, il rilievo arrivava a 17,1)."
+  },
+  {
+   "tipo": "scala",
+   "nome": "Scala antincendio (facciata est)",
+   "lato": 4,
+   "u": 38.6,
+   "piani": 2,
+   "nota_stl": "Piani da 4 a 2 il 22/10/2026: dall'STL la fascia est è alta circa 11,5 m (seconda soletta a 9,2 m)."
+  },
+  {
+   "tipo": "scala",
+   "specchio": "u",
+   "nome": "Scala antincendio (facciata sud, accanto all'anfiteatro)",
+   "lato": 6,
+   "u": 5.7,
+   "piani": 4
+  },
+  {
+   "tipo": "pergolato",
+   "nome": "Pergolato con vite lungo il viale (Street View 2015)",
+   "lato": 0,
+   "u": [
+    16.5,
+    44.4
+   ],
+   "v": [
+    12.1,
+    14.7
+   ],
+   "altezza": 3,
+   "passo": 1.8,
+   "copertura": 1,
+   "fogliame_da": 1
+  },
+  {
+   "tipo": "pergolato",
+   "nome": "Pergolato con vite, di fronte al primo (prato 2 dell'ingresso)",
+   "lato": 0,
+   "u": [
+    52.26,
+    78.76
+   ],
+   "v": [
+    12.1,
+    14.7
+   ],
+   "altezza": 3,
+   "passo": 1.8,
+   "copertura": 1,
+   "fogliame_da": 1
+  },
+  {
+   "tipo": "pergolato",
+   "nome": "Pergolato con vite, specchio sul lato di Fisica: Pergolato con vite lungo il viale (Street View 2015)",
+   "lato": 0,
+   "u": [
+    16.5,
+    44.4
+   ],
+   "v": [
+    44.8,
+    47.4
+   ],
+   "altezza": 3,
+   "passo": 1.8,
+   "copertura": 1,
+   "fogliame_da": 1,
+   "angolo": 180,
+   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "pergolato",
+   "nome": "Pergolato con vite, specchio sul lato di Fisica: Pergolato con vite, di fronte al primo (prato 2 dell'ingresso)",
+   "lato": 0,
+   "u": [
+    52.26,
+    78.76
+   ],
+   "v": [
+    44.8,
+    47.4
+   ],
+   "altezza": 3,
+   "passo": 1.8,
+   "copertura": 1,
+   "fogliame_da": 1,
+   "angolo": 180,
+   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Lampione verde (prato 1)",
+   "lato": 0,
+   "u": 24,
+   "v": 18.7,
+   "altezza": 4.6
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Lampione verde (prato 1, est)",
+   "lato": 0,
+   "u": 40,
+   "v": 18.7,
+   "altezza": 4.6
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Lampione verde (prato 2)",
+   "lato": 0,
+   "u": 55.26,
+   "v": 18.7,
+   "altezza": 4.6
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Lampione verde (prato 2, est)",
+   "lato": 0,
+   "u": 71.26,
+   "v": 18.7,
+   "altezza": 4.6
+  }
+ ],
+ "primitive": [
+  {
+   "id": "gin-ovest-rampa-2-sotto",
+   "nome": "Pieno sotto la seconda rampa (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 347.21,
+   "box": {
+    "u0": 17.84,
+    "u1": 24.15,
+    "v0": -85.36,
+    "v1": -83.46,
+    "h0": 0,
+    "h1": 1.23
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-rampa-2-sotto",
+   "nome": "Pieno sotto la seconda rampa (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 192.79,
+   "box": {
+    "u0": 33.29,
+    "u1": 39.6,
+    "v0": -85.36,
+    "v1": -83.46,
+    "h0": 0,
+    "h1": 1.23
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "pmvjal4zjcw",
+   "forma": "oggetto",
+   "modello": "tuboRosso",
+   "ruota": 90,
+   "box": {
+    "u0": 0.32,
+    "u1": 0.42,
+    "v0": -39.43,
+    "v1": -35.13,
+    "h0": 0.755,
+    "h1": 0.805
+   },
+   "nota": "Commenti del 23/10: tubo rosso aggiunto dall'utente, portato alla quota del tubo della cassetta (0,78 m) e allungato fino al muro del cortile dell'azoto."
+  },
+  {
+   "id": "tubo-rosso-montante",
+   "forma": "oggetto",
+   "modello": "tuboRosso",
+   "ruota": 0,
+   "box": {
+    "u0": 0.36,
+    "u1": 0.46,
+    "v0": -35.18,
+    "v1": -35.08,
+    "h0": 0.755,
+    "h1": 2.075
+   },
+   "nota": "Commenti del 23/10: montante che unisce il tubo esterno (0,78 m) a quello sul muro sinistro del cortile (2,03 m)."
+  },
+  {
+   "id": "cancellata-arco",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 337.85,
+   "box": {
+    "u0": 13.28,
+    "u1": 16.07,
+    "v0": -84.91,
+    "v1": -84.86,
+    "h0": 1.23,
+    "h1": 3.63
+   },
+   "nota": "Commento 15 + scansione del 23/10: grata sul bordo esterno del pianerottolo delle scale (al posto della staccionata).",
+   "rimosso": true
+  },
+  {
+   "id": "cancellata-arco-est",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 196.65,
+   "box": {
+    "u0": 38.0,
+    "u1": 40.79,
+    "v0": -86.1,
+    "v1": -86.05,
+    "h0": 1.23,
+    "h1": 3.63
+   },
+   "nota": "Commento 15 + scansione del 23/10: grata sul bordo esterno del pianerottolo delle scale (al posto della staccionata). Lato est (specchio).",
+   "rimosso": true
+  },
+  {
+   "id": "passaggio-cancello",
+   "forma": "cavedio",
+   "coperto": 4.4,
+   "poligono": [
+    [
+     47.5,
+     -65.5
+    ],
+    [
+     55,
+     -65.5
+    ],
+    [
+     55,
+     -86
+    ],
+    [
+     49.5,
+     -86
+    ],
+    [
+     49.5,
+     -71.2
+    ],
+    [
+     47.5,
+     -71.2
+    ]
+   ],
+   "nota": "Commenti del 23/10: passaggio coperto al piano terra dal cavedio est all'uscita sulla facciata sud, dove c'è il cancello (commenti 18 e 20). Angoli modificabili con «◇ Angoli»."
+  },
+  {
+   "id": "cancello-passaggio-o",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "box": {
+    "u0": 49.5,
+    "u1": 52.25,
+    "v0": -85.42,
+    "v1": -85.37,
+    "h0": 0,
+    "h1": 2.6
+   },
+   "nota": "Commenti del 23/10: cancello all'uscita del passaggio coperto, anta ovest (commento 20)."
+  },
+  {
+   "id": "cancello-passaggio-e",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "specchio": "u",
+   "box": {
+    "u0": 52.25,
+    "u1": 55,
+    "v0": -85.42,
+    "v1": -85.37,
+    "h0": 0,
+    "h1": 2.6
+   },
+   "nota": "Commenti del 23/10: cancello all'uscita del passaggio coperto, anta est (specchiata)."
+  },
+  {
+   "id": "cavedio-est",
+   "forma": "cavedio",
+   "poligono": [
+    [
+     38.5,
+     -60
+    ],
+    [
+     47.5,
+     -60
+    ],
+    [
+     47.5,
+     -71.2
+    ],
+    [
+     46.1,
+     -71.2
+    ],
+    [
+     47.6,
+     -73.5
+    ],
+    [
+     46.5,
+     -75
+    ],
+    [
+     45,
+     -77
+    ],
+    [
+     44,
+     -77
+    ],
+    [
+     41,
+     -71.2
+    ],
+    [
+     38.5,
+     -71.2
+    ]
+   ],
+   "nota": "Cavedio est fra ventaglio e corpo centrale (disegno a colori dell'utente del 23/10): il vuoto nel solido di CU014, fino a terra (giallo). Gli angoli si spostano con «◇ Angoli»."
+  },
+  {
+   "id": "cavedio-est-blu-nord",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "poligono": [
+    [
+     38.5,
+     -60
+    ],
+    [
+     42.5,
+     -60
+    ],
+    [
+     42.5,
+     -66.2
+    ],
+    [
+     38.5,
+     -66.2
+    ]
+   ],
+   "base": 0,
+   "altezza": 8,
+   "nota": "Cavedio est fra ventaglio e corpo centrale (disegno a colori dell'utente del 23/10): blu, terrazza a 8 m verso il ventaglio."
+  },
+  {
+   "id": "cavedio-est-rosso",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "poligono": [
+    [
+     38.5,
+     -66.2
+    ],
+    [
+     42.5,
+     -66.2
+    ],
+    [
+     42.5,
+     -71.2
+    ],
+    [
+     38.5,
+     -71.2
+    ]
+   ],
+   "base": 0,
+   "altezza": 4.5,
+   "nota": "Cavedio est fra ventaglio e corpo centrale (disegno a colori dell'utente del 23/10): rosso, 4,5 m (fra viola e blu)."
+  },
+  {
+   "id": "cavedio-est-viola",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "poligono": [
+    [
+     43.3,
+     -60
+    ],
+    [
+     45.4,
+     -60
+    ],
+    [
+     45.4,
+     -63.9
+    ],
+    [
+     43.3,
+     -63.9
+    ]
+   ],
+   "base": 0,
+   "altezza": 3.2,
+   "nota": "Cavedio est fra ventaglio e corpo centrale (disegno a colori dell'utente del 23/10): viola, 3,2 m contro il corpo centrale. 27/10: spostato dove lo mostra la vista dall'alto dell'utente (u 43,3-45,4, v −60…−63,9; STL 3,1-3,7 m): prima copriva la facciata dell'ala est."
+  },
+  {
+   "id": "cavedio-est-blu-sud",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "poligono": [
+    [
+     41,
+     -71.2
+    ],
+    [
+     46.1,
+     -71.2
+    ],
+    [
+     47.6,
+     -73.5
+    ],
+    [
+     46.5,
+     -75
+    ],
+    [
+     45,
+     -77
+    ],
+    [
+     44,
+     -77
+    ]
+   ],
+   "base": 0,
+   "altezza": 8,
+   "nota": "Cavedio est fra ventaglio e corpo centrale (disegno a colori dell'utente del 23/10): blu, cuneo a 8 m lungo il fianco del ventaglio."
+  },
+  {
+   "id": "cavedio-ovest",
+   "nome": "Cortile ovest della Ginestra (vuoto nell'edificio)",
+   "forma": "cavedio",
+   "cornice": "lato0",
+   "poligono": [
+    [
+     10.3,
+     -60.5
+    ],
+    [
+     18.9,
+     -60.5
+    ],
+    [
+     18.9,
+     -68.8
+    ],
+    [
+     17.6,
+     -71.2
+    ],
+    [
+     13.4,
+     -71.2
+    ],
+    [
+     13.4,
+     -73.6
+    ],
+    [
+     10.3,
+     -73.6
+    ]
+   ],
+   "nota": "Cortile ovest della Ginestra dalla vista dall'alto dell'utente del 27/10 (commenti 1 e 6) e dalle quote dei due STL: fondo a terra fra la facciata ovest (u 10,3) e il fianco del ventaglio, terrazzini a 7,9 m (blu), 4,2 m (rosso) e 2,5 m (viola). Prima era un buco rettangolare fisso in courtyards.json."
+  },
+  {
+   "id": "cavedio-ovest-blu",
+   "nome": "Terrazzino blu del cortile ovest (7,9 m)",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "cornice": "lato0",
+   "poligono": [
+    [
+     16.0,
+     -60.5
+    ],
+    [
+     18.9,
+     -60.5
+    ],
+    [
+     18.9,
+     -65.9
+    ],
+    [
+     16.0,
+     -65.9
+    ]
+   ],
+   "base": 0,
+   "altezza": 7.9,
+   "nota": "Cortile ovest della Ginestra dalla vista dall'alto dell'utente del 27/10 (commenti 1 e 6) e dalle quote dei due STL: fondo a terra fra la facciata ovest (u 10,3) e il fianco del ventaglio, terrazzini a 7,9 m (blu), 4,2 m (rosso) e 2,5 m (viola). Prima era un buco rettangolare fisso in courtyards.json."
+  },
+  {
+   "id": "cavedio-ovest-rosso",
+   "nome": "Terrazzino rosso del cortile ovest (4,2 m)",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "cornice": "lato0",
+   "poligono": [
+    [
+     15.3,
+     -65.9
+    ],
+    [
+     18.9,
+     -65.9
+    ],
+    [
+     18.9,
+     -68.8
+    ],
+    [
+     17.6,
+     -71.2
+    ],
+    [
+     15.3,
+     -71.2
+    ]
+   ],
+   "base": 0,
+   "altezza": 4.2,
+   "nota": "Cortile ovest della Ginestra dalla vista dall'alto dell'utente del 27/10 (commenti 1 e 6) e dalle quote dei due STL: fondo a terra fra la facciata ovest (u 10,3) e il fianco del ventaglio, terrazzini a 7,9 m (blu), 4,2 m (rosso) e 2,5 m (viola). Prima era un buco rettangolare fisso in courtyards.json."
+  },
+  {
+   "id": "cavedio-ovest-viola",
+   "nome": "Terrazzino viola del cortile ovest (2,5 m)",
+   "forma": "prisma",
+   "materiale": "edificio",
+   "cornice": "lato0",
+   "poligono": [
+    [
+     10.3,
+     -70.9
+    ],
+    [
+     12.5,
+     -70.9
+    ],
+    [
+     12.5,
+     -73.6
+    ],
+    [
+     10.3,
+     -73.6
+    ]
+   ],
+   "base": 0,
+   "altezza": 2.5,
+   "nota": "Cortile ovest della Ginestra dalla vista dall'alto dell'utente del 27/10 (commenti 1 e 6) e dalle quote dei due STL: fondo a terra fra la facciata ovest (u 10,3) e il fianco del ventaglio, terrazzini a 7,9 m (blu), 4,2 m (rosso) e 2,5 m (viola). Prima era un buco rettangolare fisso in courtyards.json."
+  },
+  {
+   "id": "pmvi579i36b",
+   "box": {
+    "h0": -0.09,
+    "h1": -0.04,
+    "u0": -6.15,
+    "u1": 1.85,
+    "v0": -94.25,
+    "v1": 20.5
+   },
+   "forma": "box",
+   "materiale": "asfalto",
+   "rimosso": true
+  },
+  {
+   "id": "pmvi5eehk4w",
+   "box": {
+    "h0": -0.09,
+    "h1": -0.04,
+    "u0": 56.25,
+    "u1": 85.55,
+    "v0": 3.5,
+    "v1": 5.15
+   },
+   "forma": "box",
+   "materiale": "asfalto"
+  },
+  {
+   "id": "pmvi74yrjm4",
+   "altezza": 0.15,
+   "base": -0.04,
+   "discese": [],
+   "forma": "marciapiede",
+   "poligono": [
+    [
+     -5.15,
+     -32.7
+    ],
+    [
+     -1,
+     -32.7
+    ],
+    [
+     -1,
+     -19.55
+    ],
+    [
+     -5.15,
+     -19.55
+    ]
+   ],
+   "raggio": 0.3,
+   "rimosso": true
+  },
+  {
+   "id": "pmvi77470sy",
+   "altezza": 0.15,
+   "base": -0.09,
+   "discese": [
+    {
+     "larghezza": 1.4,
+     "lato": 0,
+     "profondita": 0.9,
+     "t": 0.39
+    }
+   ],
+   "forma": "marciapiede",
+   "poligono": [
+    [
+     -2.95,
+     -40.8
+    ],
+    [
+     0.45,
+     -40.85
+    ],
+    [
+     0.45,
+     20.75
+    ],
+    [
+     -6.25,
+     20.75
+    ],
+    [
+     -6.05,
+     -38.85
+    ],
+    [
+     -4.85,
+     -40.45
+    ]
+   ],
+   "raggio": 0.3
+  },
+  {
+   "id": "pmvi7i1ot6y",
+   "altezza": 0.3,
+   "base": -0.09,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     62.05,
+     -89.25
+    ],
+    [
+     89.9,
+     -89.25
+    ],
+    [
+     89.9,
+     -63.55
+    ],
+    [
+     62.05,
+     -63.55
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmvi7jmdoff",
+   "altezza": 0.05,
+   "base": 11.35,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     95.6,
+     -91.35
+    ],
+    [
+     104.7,
+     -91.35
+    ],
+    [
+     104.7,
+     -20.35
+    ],
+    [
+     95.6,
+     -20.35
+    ]
+   ],
+   "rimosso": true,
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmvi7k8iv1y",
+   "altezza": 0.3,
+   "base": -0.09,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     92.1,
+     -88.9
+    ],
+    [
+     107.05,
+     -88.9
+    ],
+    [
+     107.05,
+     -21.35
+    ],
+    [
+     92.1,
+     -21.35
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmvi7mhv86q",
+   "altezza": 0.3,
+   "base": -0.09,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     109.9,
+     -88.4
+    ],
+    [
+     112.9,
+     -88.4
+    ],
+    [
+     112.9,
+     -22.1
+    ],
+    [
+     109.9,
+     -22.1
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "cond-uta",
+   "forma": "oggetto",
+   "modello": "uta",
+   "ruota": 0,
+   "angolo": 90,
+   "raccordo": {
+    "larghezza": 1.3,
+    "da": 0.33,
+    "a": 1.5
+   },
+   "box": {
+    "u0": 23.0,
+    "u1": 31.0,
+    "v0": -83.2,
+    "v1": -80.8,
+    "h0": 15.3,
+    "h1": 17.85
+   },
+   "nota": "Foto Google Earth del 23/10 e STL: UTA verso la facciata (STL 17,7-17,9 m, v −78/−86): cappa con griglia in testa verso sud, corpo a pannelli, raccordo rastremato verso il canale a nord; lamiera del kit."
+  },
+  {
+   "id": "cond-cassetta",
+   "forma": "oggetto",
+   "modello": "cassetta",
+   "ruota": 0,
+   "box": {
+    "u0": 28.3,
+    "u1": 29.3,
+    "v0": -86.0,
+    "v1": -84.2,
+    "h0": 15.3,
+    "h1": 16.6
+   },
+   "nota": "Foto Google Earth del 23/10 e STL: cassetta in lamiera accanto alla testa della UTA, lato est (STL 16,6 m)."
+  },
+  {
+   "id": "cond-asse",
+   "forma": "oggetto",
+   "modello": "condotta",
+   "ruota": 0,
+   "angolo": 90,
+   "box": {
+    "u0": 20.685,
+    "u1": 32.685,
+    "v0": -71.91,
+    "v1": -71.29,
+    "h0": 15.3,
+    "h1": 16.6
+   },
+   "nota": "30/10: sono due canali affiancati (non uno solo), dalla UTA (v −77,6) al canale trasversale nord (v −65,6), zincatura del kit dell'utente."
+  },
+  {
+   "id": "cond-asse-2",
+   "forma": "oggetto",
+   "modello": "condotta",
+   "ruota": 0,
+   "angolo": 90,
+   "box": {
+    "u0": 21.315,
+    "u1": 33.315,
+    "v0": -71.91,
+    "v1": -71.29,
+    "h0": 15.3,
+    "h1": 16.6
+   },
+   "nota": "30/10: sono due canali affiancati (non uno solo), dalla UTA (v −77,6) al canale trasversale nord (v −65,6), zincatura del kit dell'utente."
+  },
+  {
+   "id": "cond-t",
+   "forma": "oggetto",
+   "modello": "condotta",
+   "ruota": 0,
+   "box": {
+    "u0": 21.2,
+    "u1": 37.3,
+    "v0": -65.6,
+    "v1": -64.8,
+    "h0": 15.42,
+    "h1": 16.6
+   },
+   "nota": "30/10: dall'altro lato, verso il retro della Ginestra, i due canali fanno una T con un canale trasversale lungo il gradino nord."
+  },
+  {
+   "id": "cond-cappello-o",
+   "forma": "oggetto",
+   "modello": "cappelloPiramide",
+   "ruota": 0,
+   "box": {
+    "u0": 20.4,
+    "u1": 21.3,
+    "v0": -65.65,
+    "v1": -64.75,
+    "h0": 15.42,
+    "h1": 17.5
+   },
+   "nota": "30/10: bocca in alto a cappello piramidale (profilo isoscele, lati a 45°) all'estremo ovest della T."
+  },
+  {
+   "id": "cond-curva-e",
+   "forma": "oggetto",
+   "modello": "kitCurva",
+   "ruota": 0,
+   "angolo": 0,
+   "box": {
+    "u0": 37.3,
+    "u1": 38.3,
+    "v0": -66.0,
+    "v1": -65.0,
+    "h0": 15.42,
+    "h1": 15.81
+   },
+   "nota": "30/10: all'estremo est della T la bocca gira a gomito di 90° verso il lato opposto al cortile dell'azoto (curva del kit)."
+  },
+  {
+   "id": "cond-vent-1",
+   "forma": "oggetto",
+   "modello": "ventilatore",
+   "ruota": 0,
+   "box": {
+    "u0": 28.0,
+    "u1": 29.2,
+    "v0": -77.9,
+    "v1": -75.7,
+    "h0": 15.3,
+    "h1": 16.75
+   },
+   "nota": "Foto Google Earth del 23/10 e STL: unità esterna con due ventole accanto al canale, lato est, dove comincia il raccordo della UTA (STL 16,8-16,9 m)."
+  },
+  {
+   "id": "gin-pilone-1",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 353.1,
+   "box": {
+    "u0": 23.85,
+    "u1": 24.74,
+    "v0": -87.41,
+    "v1": -86.51,
+    "h0": 3.25,
+    "h1": 15.34
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-pilone-2",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 357.8,
+   "box": {
+    "u0": 26.86,
+    "u1": 27.75,
+    "v0": -87.65,
+    "v1": -86.75,
+    "h0": 3.25,
+    "h1": 15.34
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-pilone-3",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 2.2,
+   "box": {
+    "u0": 29.69,
+    "u1": 30.58,
+    "v0": -87.65,
+    "v1": -86.75,
+    "h0": 3.25,
+    "h1": 15.34
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-pilone-4",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 6.9,
+   "box": {
+    "u0": 32.7,
+    "u1": 33.59,
+    "v0": -87.41,
+    "v1": -86.51,
+    "h0": 3.25,
+    "h1": 15.34
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-balaustra-1",
+   "forma": "oggetto",
+   "modello": "balaustra",
+   "ruota": 0,
+   "angolo": 355.45,
+   "box": {
+    "u0": 24.7,
+    "u1": 26.85,
+    "v0": -87.56,
+    "v1": -87.26,
+    "h0": 3.25,
+    "h1": 4.25
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-balaustra-2",
+   "forma": "oggetto",
+   "modello": "balaustra",
+   "ruota": 0,
+   "angolo": 0.0,
+   "box": {
+    "u0": 27.74,
+    "u1": 29.7,
+    "v0": -87.68,
+    "v1": -87.38,
+    "h0": 3.25,
+    "h1": 4.25
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-balaustra-3",
+   "forma": "oggetto",
+   "modello": "balaustra",
+   "ruota": 0,
+   "angolo": 4.55,
+   "box": {
+    "u0": 30.59,
+    "u1": 32.74,
+    "v0": -87.56,
+    "v1": -87.26,
+    "h0": 3.25,
+    "h1": 4.25
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-porta-1",
+   "forma": "oggetto",
+   "modello": "portaVetri",
+   "ruota": 0,
+   "angolo": 355.45,
+   "box": {
+    "u0": 25.24,
+    "u1": 26.9,
+    "v0": -83.7,
+    "v1": -83.62,
+    "h0": 3.25,
+    "h1": 6.03
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-porta-2",
+   "forma": "oggetto",
+   "modello": "portaVetri",
+   "ruota": 0,
+   "angolo": 0.0,
+   "box": {
+    "u0": 27.89,
+    "u1": 29.55,
+    "v0": -83.81,
+    "v1": -83.73,
+    "h0": 3.25,
+    "h1": 6.03
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-porta-3",
+   "forma": "oggetto",
+   "modello": "portaVetri",
+   "ruota": 0,
+   "angolo": 4.55,
+   "box": {
+    "u0": 30.54,
+    "u1": 32.2,
+    "v0": -83.7,
+    "v1": -83.62,
+    "h0": 3.25,
+    "h1": 6.03
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due)."
+  },
+  {
+   "id": "gin-ovest-gradino-angolo",
+   "nome": "Gradino attorno alla pedana (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 350.32,
+   "box": {
+    "u0": 20.3,
+    "u1": 24.37,
+    "v0": -89.44,
+    "v1": -86.24,
+    "h0": 0,
+    "h1": 0.11
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-base",
+   "nome": "Pedana in fondo alla prima rampa (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 347.86,
+   "box": {
+    "u0": 17.7,
+    "u1": 23.94,
+    "v0": -88.29,
+    "v1": -85.94,
+    "h0": 0,
+    "h1": 0.22
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-rampa-1",
+   "nome": "Prima rampa (mezza fuori dalla facciata) (ovest)",
+   "forma": "oggetto",
+   "modello": "rampaScala",
+   "ruota": 0,
+   "angolo": 166.18,
+   "pedata": 0.44,
+   "box": {
+    "u0": 17.73,
+    "u1": 21.76,
+    "v0": -88.04,
+    "v1": -85.69,
+    "h0": 0.22,
+    "h1": 1.23
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-pianerottolo",
+   "nome": "Pianerottolo (ovest)",
+   "forma": "prisma",
+   "materiale": "travertino",
+   "poligono": [
+    [
+     14.83,
+     -85.91
+    ],
+    [
+     15.14,
+     -86.03
+    ],
+    [
+     15.45,
+     -86.15
+    ],
+    [
+     15.76,
+     -86.26
+    ],
+    [
+     16.07,
+     -86.37
+    ],
+    [
+     16.38,
+     -86.48
+    ],
+    [
+     16.69,
+     -86.58
+    ],
+    [
+     17.0,
+     -86.69
+    ],
+    [
+     17.32,
+     -86.79
+    ],
+    [
+     17.63,
+     -86.88
+    ],
+    [
+     18.85,
+     -82.86
+    ],
+    [
+     18.57,
+     -82.78
+    ],
+    [
+     18.29,
+     -82.69
+    ],
+    [
+     18.01,
+     -82.6
+    ],
+    [
+     17.74,
+     -82.5
+    ],
+    [
+     17.46,
+     -82.41
+    ],
+    [
+     17.18,
+     -82.31
+    ],
+    [
+     16.91,
+     -82.21
+    ],
+    [
+     16.63,
+     -82.11
+    ],
+    [
+     16.36,
+     -82.0
+    ]
+   ],
+   "base": 0,
+   "altezza": 1.23,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-pianerottolo-dentro",
+   "forma": "prisma",
+   "materiale": "travertino",
+   "poligono": [
+    [
+     19.02,
+     -84.42
+    ],
+    [
+     18.76,
+     -84.35
+    ],
+    [
+     18.51,
+     -84.28
+    ],
+    [
+     18.25,
+     -84.2
+    ],
+    [
+     18.0,
+     -84.12
+    ],
+    [
+     17.75,
+     -84.04
+    ],
+    [
+     17.16,
+     -85.84
+    ],
+    [
+     17.43,
+     -85.93
+    ],
+    [
+     17.69,
+     -86.01
+    ],
+    [
+     17.96,
+     -86.09
+    ],
+    [
+     18.23,
+     -86.17
+    ],
+    [
+     18.5,
+     -86.25
+    ]
+   ],
+   "base": 0,
+   "altezza": 2.2,
+   "nota": "scala ovest: pianerottolo dentro, davanti al cancello, sotto l'edificio",
+   "rimosso": true
+  },
+  {
+   "id": "gin-ovest-rampa-2",
+   "nome": "Seconda rampa (sotto l’edificio) (ovest)",
+   "forma": "oggetto",
+   "modello": "rampaScala",
+   "ruota": 0,
+   "angolo": 347.21,
+   "pedata": 0.42,
+   "box": {
+    "u0": 17.84,
+    "u1": 24.15,
+    "v0": -85.36,
+    "v1": -83.46,
+    "h0": 1.23,
+    "h1": 3.25
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-pilone",
+   "nome": "Colonna rettangolare di travertino (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 342.83,
+   "box": {
+    "u0": 16.17,
+    "u1": 18.78,
+    "v0": -87.18,
+    "v1": -86.38,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-pensilina",
+   "nome": "Pensilina (travertino sotto, guaina sopra) (ovest)",
+   "forma": "prisma",
+   "materiale": "pensilina",
+   "poligono": [
+    [
+     13.75,
+     -87.79
+    ],
+    [
+     14.07,
+     -87.92
+    ],
+    [
+     14.39,
+     -88.05
+    ],
+    [
+     14.71,
+     -88.17
+    ],
+    [
+     15.04,
+     -88.29
+    ],
+    [
+     15.36,
+     -88.4
+    ],
+    [
+     15.69,
+     -88.51
+    ],
+    [
+     16.01,
+     -88.62
+    ],
+    [
+     16.34,
+     -88.73
+    ],
+    [
+     16.67,
+     -88.84
+    ],
+    [
+     17.0,
+     -88.94
+    ],
+    [
+     17.33,
+     -89.04
+    ],
+    [
+     17.66,
+     -89.13
+    ],
+    [
+     17.99,
+     -89.23
+    ],
+    [
+     18.33,
+     -89.32
+    ],
+    [
+     18.66,
+     -89.4
+    ],
+    [
+     18.99,
+     -89.49
+    ],
+    [
+     19.33,
+     -89.57
+    ],
+    [
+     19.67,
+     -89.65
+    ],
+    [
+     20.0,
+     -89.73
+    ],
+    [
+     20.34,
+     -89.8
+    ],
+    [
+     20.68,
+     -89.87
+    ],
+    [
+     21.02,
+     -89.94
+    ],
+    [
+     21.35,
+     -90.0
+    ],
+    [
+     21.69,
+     -90.06
+    ],
+    [
+     22.03,
+     -90.12
+    ],
+    [
+     22.37,
+     -90.18
+    ],
+    [
+     22.72,
+     -90.23
+    ],
+    [
+     23.06,
+     -90.28
+    ],
+    [
+     23.4,
+     -90.33
+    ],
+    [
+     23.99,
+     -85.92
+    ],
+    [
+     23.68,
+     -85.87
+    ],
+    [
+     23.38,
+     -85.83
+    ],
+    [
+     23.07,
+     -85.78
+    ],
+    [
+     22.77,
+     -85.73
+    ],
+    [
+     22.47,
+     -85.68
+    ],
+    [
+     22.17,
+     -85.63
+    ],
+    [
+     21.87,
+     -85.57
+    ],
+    [
+     21.57,
+     -85.51
+    ],
+    [
+     21.26,
+     -85.45
+    ],
+    [
+     20.96,
+     -85.38
+    ],
+    [
+     20.67,
+     -85.31
+    ],
+    [
+     20.37,
+     -85.24
+    ],
+    [
+     20.07,
+     -85.17
+    ],
+    [
+     19.77,
+     -85.1
+    ],
+    [
+     19.47,
+     -85.02
+    ],
+    [
+     19.18,
+     -84.94
+    ],
+    [
+     18.88,
+     -84.85
+    ],
+    [
+     18.59,
+     -84.77
+    ],
+    [
+     18.29,
+     -84.68
+    ],
+    [
+     18.0,
+     -84.59
+    ],
+    [
+     17.71,
+     -84.5
+    ],
+    [
+     17.42,
+     -84.4
+    ],
+    [
+     17.13,
+     -84.3
+    ],
+    [
+     16.84,
+     -84.2
+    ],
+    [
+     16.55,
+     -84.1
+    ],
+    [
+     16.26,
+     -83.99
+    ],
+    [
+     15.97,
+     -83.89
+    ],
+    [
+     15.68,
+     -83.78
+    ],
+    [
+     15.4,
+     -83.66
+    ]
+   ],
+   "base": 4.1,
+   "altezza": 0.4,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-cancello",
+   "nome": "Cancello fra le due rampe (ovest)",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 340.11,
+   "box": {
+    "u0": 15.51,
+    "u1": 17.35,
+    "v0": -84.37,
+    "v1": -84.32,
+    "h0": 1.23,
+    "h1": 3.48
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "angolo": 165.31,
+   "box": {
+    "h0": 0.25,
+    "h1": 1.25,
+    "u0": 15.89,
+    "u1": 17.89,
+    "v0": -100.04,
+    "v1": -99.99
+   },
+   "forma": "oggetto",
+   "id": "gin-ovest-staccionata-rampa",
+   "modello": "staccionata",
+   "rimosso": true,
+   "ruota": 0
+  },
+  {
+   "id": "gin-ovest-staccionata-pianerottolo",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 337.85,
+   "box": {
+    "u0": 13.28,
+    "u1": 16.07,
+    "v0": -84.91,
+    "v1": -84.86,
+    "h0": 1.23,
+    "h1": 2.23
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due).",
+   "rimosso": true
+  },
+  {
+   "id": "gin-ovest-staccionata-testata",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 245.7,
+   "box": {
+    "u0": 11.9,
+    "u1": 16.9,
+    "v0": -82.12,
+    "v1": -82.07,
+    "h0": 1.23,
+    "h1": 2.23
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due).",
+   "rimosso": true
+  },
+  {
+   "id": "gin-ovest-staccionata-corsia",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 254.02,
+   "box": {
+    "u0": 17.64,
+    "u1": 18.89,
+    "v0": -86.91,
+    "v1": -86.86,
+    "h0": 2.2,
+    "h1": 3.2
+   },
+   "nota": "scala ovest: staccionata sul salto verso la corsia",
+   "rimosso": true
+  },
+  {
+   "id": "pmvk7o45ss9",
+   "nome": "Muro divisorio di travertino fra le rampe (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 346.98,
+   "box": {
+    "u0": 17.17,
+    "u1": 23.99,
+    "v0": -85.85,
+    "v1": -85.3,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "pmvk7skt3lh",
+   "nome": "Staccionata sulla prima rampa (ovest)",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 167.02,
+   "box": {
+    "u0": 18.52,
+    "u1": 21.53,
+    "v0": -88.14,
+    "v1": -88.09,
+    "h0": 0.22,
+    "h1": 1.95
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-gradino-angolo",
+   "nome": "Gradino attorno alla pedana (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 189.68,
+   "box": {
+    "u0": 33.07,
+    "u1": 37.14,
+    "v0": -89.44,
+    "v1": -86.24,
+    "h0": 0,
+    "h1": 0.11
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-base",
+   "nome": "Pedana in fondo alla prima rampa (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 192.14,
+   "box": {
+    "u0": 33.5,
+    "u1": 39.74,
+    "v0": -88.29,
+    "v1": -85.94,
+    "h0": 0,
+    "h1": 0.22
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-rampa-1",
+   "nome": "Prima rampa (mezza fuori dalla facciata) (est)",
+   "forma": "oggetto",
+   "modello": "rampaScala",
+   "ruota": 0,
+   "angolo": 13.82,
+   "pedata": 0.44,
+   "box": {
+    "u0": 35.68,
+    "u1": 39.71,
+    "v0": -88.04,
+    "v1": -85.69,
+    "h0": 0.22,
+    "h1": 1.23
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-pianerottolo",
+   "nome": "Pianerottolo (est)",
+   "forma": "prisma",
+   "materiale": "travertino",
+   "poligono": [
+    [
+     41.08,
+     -82.0
+    ],
+    [
+     40.81,
+     -82.11
+    ],
+    [
+     40.53,
+     -82.21
+    ],
+    [
+     40.26,
+     -82.31
+    ],
+    [
+     39.98,
+     -82.41
+    ],
+    [
+     39.7,
+     -82.5
+    ],
+    [
+     39.43,
+     -82.6
+    ],
+    [
+     39.15,
+     -82.69
+    ],
+    [
+     38.87,
+     -82.78
+    ],
+    [
+     38.59,
+     -82.86
+    ],
+    [
+     39.81,
+     -86.88
+    ],
+    [
+     40.12,
+     -86.79
+    ],
+    [
+     40.44,
+     -86.69
+    ],
+    [
+     40.75,
+     -86.58
+    ],
+    [
+     41.06,
+     -86.48
+    ],
+    [
+     41.37,
+     -86.37
+    ],
+    [
+     41.68,
+     -86.26
+    ],
+    [
+     41.99,
+     -86.15
+    ],
+    [
+     42.3,
+     -86.03
+    ],
+    [
+     42.61,
+     -85.91
+    ]
+   ],
+   "base": 0,
+   "altezza": 1.23,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-pianerottolo-dentro",
+   "forma": "prisma",
+   "materiale": "travertino",
+   "poligono": [
+    [
+     35.45,
+     -87.06
+    ],
+    [
+     35.73,
+     -87.01
+    ],
+    [
+     36.01,
+     -86.96
+    ],
+    [
+     36.28,
+     -86.9
+    ],
+    [
+     36.55,
+     -86.85
+    ],
+    [
+     36.83,
+     -86.78
+    ],
+    [
+     36.41,
+     -84.94
+    ],
+    [
+     36.16,
+     -84.99
+    ],
+    [
+     35.9,
+     -85.05
+    ],
+    [
+     35.63,
+     -85.1
+    ],
+    [
+     35.38,
+     -85.15
+    ],
+    [
+     35.11,
+     -85.19
+    ]
+   ],
+   "base": 0,
+   "altezza": 2.2,
+   "nota": "scala est: pianerottolo dentro, davanti al cancello, sotto l'edificio (specchio del lato ovest)",
+   "rimosso": true
+  },
+  {
+   "id": "gin-est-rampa-2",
+   "nome": "Seconda rampa (sotto l’edificio) (est)",
+   "forma": "oggetto",
+   "modello": "rampaScala",
+   "ruota": 0,
+   "angolo": 192.79,
+   "pedata": 0.42,
+   "box": {
+    "u0": 33.29,
+    "u1": 39.6,
+    "v0": -85.36,
+    "v1": -83.46,
+    "h0": 1.23,
+    "h1": 3.25
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-pilone",
+   "nome": "Colonna rettangolare di travertino (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 197.17,
+   "box": {
+    "u0": 38.66,
+    "u1": 41.27,
+    "v0": -87.18,
+    "v1": -86.38,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-pensilina",
+   "nome": "Pensilina (travertino sotto, guaina sopra) (est)",
+   "forma": "prisma",
+   "materiale": "pensilina",
+   "poligono": [
+    [
+     42.04,
+     -83.66
+    ],
+    [
+     41.76,
+     -83.78
+    ],
+    [
+     41.47,
+     -83.89
+    ],
+    [
+     41.18,
+     -83.99
+    ],
+    [
+     40.89,
+     -84.1
+    ],
+    [
+     40.6,
+     -84.2
+    ],
+    [
+     40.31,
+     -84.3
+    ],
+    [
+     40.02,
+     -84.4
+    ],
+    [
+     39.73,
+     -84.5
+    ],
+    [
+     39.44,
+     -84.59
+    ],
+    [
+     39.15,
+     -84.68
+    ],
+    [
+     38.85,
+     -84.77
+    ],
+    [
+     38.56,
+     -84.85
+    ],
+    [
+     38.26,
+     -84.94
+    ],
+    [
+     37.97,
+     -85.02
+    ],
+    [
+     37.67,
+     -85.1
+    ],
+    [
+     37.37,
+     -85.17
+    ],
+    [
+     37.07,
+     -85.24
+    ],
+    [
+     36.77,
+     -85.31
+    ],
+    [
+     36.48,
+     -85.38
+    ],
+    [
+     36.18,
+     -85.45
+    ],
+    [
+     35.87,
+     -85.51
+    ],
+    [
+     35.57,
+     -85.57
+    ],
+    [
+     35.27,
+     -85.63
+    ],
+    [
+     34.97,
+     -85.68
+    ],
+    [
+     34.67,
+     -85.73
+    ],
+    [
+     34.37,
+     -85.78
+    ],
+    [
+     34.06,
+     -85.83
+    ],
+    [
+     33.76,
+     -85.87
+    ],
+    [
+     33.45,
+     -85.92
+    ],
+    [
+     34.04,
+     -90.33
+    ],
+    [
+     34.38,
+     -90.28
+    ],
+    [
+     34.72,
+     -90.23
+    ],
+    [
+     35.07,
+     -90.18
+    ],
+    [
+     35.41,
+     -90.12
+    ],
+    [
+     35.75,
+     -90.06
+    ],
+    [
+     36.09,
+     -90.0
+    ],
+    [
+     36.42,
+     -89.94
+    ],
+    [
+     36.76,
+     -89.87
+    ],
+    [
+     37.1,
+     -89.8
+    ],
+    [
+     37.44,
+     -89.73
+    ],
+    [
+     37.77,
+     -89.65
+    ],
+    [
+     38.11,
+     -89.57
+    ],
+    [
+     38.45,
+     -89.49
+    ],
+    [
+     38.78,
+     -89.4
+    ],
+    [
+     39.11,
+     -89.32
+    ],
+    [
+     39.45,
+     -89.23
+    ],
+    [
+     39.78,
+     -89.13
+    ],
+    [
+     40.11,
+     -89.04
+    ],
+    [
+     40.44,
+     -88.94
+    ],
+    [
+     40.77,
+     -88.84
+    ],
+    [
+     41.1,
+     -88.73
+    ],
+    [
+     41.43,
+     -88.62
+    ],
+    [
+     41.75,
+     -88.51
+    ],
+    [
+     42.08,
+     -88.4
+    ],
+    [
+     42.4,
+     -88.29
+    ],
+    [
+     42.73,
+     -88.17
+    ],
+    [
+     43.05,
+     -88.05
+    ],
+    [
+     43.37,
+     -87.92
+    ],
+    [
+     43.69,
+     -87.79
+    ]
+   ],
+   "base": 4.1,
+   "altezza": 0.4,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-cancello",
+   "nome": "Cancello fra le due rampe (est)",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 199.89,
+   "box": {
+    "u0": 40.09,
+    "u1": 41.93,
+    "v0": -84.37,
+    "v1": -84.32,
+    "h0": 1.23,
+    "h1": 3.48
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "angolo": 9.19,
+   "box": {
+    "u0": 34.74,
+    "u1": 36.74,
+    "v0": -100.95,
+    "v1": -100.89,
+    "h0": 0.25,
+    "h1": 1.25
+   },
+   "forma": "oggetto",
+   "id": "gin-est-staccionata-rampa",
+   "modello": "staccionata",
+   "rimosso": true,
+   "ruota": 0
+  },
+  {
+   "id": "gin-est-staccionata-pianerottolo",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 196.65,
+   "box": {
+    "u0": 38.0,
+    "u1": 40.79,
+    "v0": -86.1,
+    "v1": -86.05,
+    "h0": 1.23,
+    "h1": 2.23
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due).",
+   "rimosso": true
+  },
+  {
+   "id": "gin-est-staccionata-testata",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 288.8,
+   "box": {
+    "u0": 37.43,
+    "u1": 42.43,
+    "v0": -83.35,
+    "v1": -83.3,
+    "h0": 1.23,
+    "h1": 2.23
+   },
+   "nota": "Retro della Ginestra rifatto dalla scansione Scaniverse dell'utente del 23/10 (balconata 3,25 m, pianerottoli 1,23 m, pensiline 4,1 m, prima rampa sul filo della facciata, seconda nel sottoscala, pilone e cancello fra le due).",
+   "rimosso": true
+  },
+  {
+   "id": "gin-est-staccionata-corsia",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 280.48,
+   "box": {
+    "u0": 35.01,
+    "u1": 36.26,
+    "v0": -87.75,
+    "v1": -87.69,
+    "h0": 2.2,
+    "h1": 3.2
+   },
+   "nota": "scala est: staccionata sul salto verso la corsia (specchio del lato ovest)",
+   "rimosso": true
+  },
+  {
+   "id": "gin-est-pmvk7o45ss9",
+   "nome": "Muro divisorio di travertino fra le rampe (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 193.02,
+   "box": {
+    "u0": 33.45,
+    "u1": 40.27,
+    "v0": -85.85,
+    "v1": -85.3,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-pmvk7skt3lh",
+   "nome": "Staccionata sulla prima rampa (est)",
+   "forma": "oggetto",
+   "modello": "staccionata",
+   "ruota": 0,
+   "angolo": 12.98,
+   "box": {
+    "u0": 35.91,
+    "u1": 38.92,
+    "v0": -88.14,
+    "v1": -88.09,
+    "h0": 0.22,
+    "h1": 1.95
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-architrave",
+   "nome": "Architrave sopra il cancello (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 340.11,
+   "box": {
+    "u0": 15.51,
+    "u1": 17.35,
+    "v0": -84.62,
+    "v1": -84.07,
+    "h0": 3.48,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-architrave",
+   "nome": "Architrave sopra il cancello (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 199.89,
+   "box": {
+    "u0": 40.09,
+    "u1": 41.93,
+    "v0": -84.62,
+    "v1": -84.07,
+    "h0": 3.48,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-parapetto",
+   "nome": "Parapetto sotto la finestra (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 339.76,
+   "box": {
+    "u0": 14.72,
+    "u1": 16.21,
+    "v0": -86.51,
+    "v1": -86.16,
+    "h0": 0,
+    "h1": 1.8
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-parapetto",
+   "nome": "Parapetto sotto la finestra (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 200.24,
+   "box": {
+    "u0": 41.23,
+    "u1": 42.72,
+    "v0": -86.51,
+    "v1": -86.16,
+    "h0": 0,
+    "h1": 1.8
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-architrave-finestra",
+   "nome": "Architrave sopra la finestra (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 339.76,
+   "box": {
+    "u0": 14.8,
+    "u1": 16.28,
+    "v0": -86.53,
+    "v1": -85.73,
+    "h0": 3.45,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-architrave-finestra",
+   "nome": "Architrave sopra la finestra (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 200.24,
+   "box": {
+    "u0": 41.16,
+    "u1": 42.64,
+    "v0": -86.53,
+    "v1": -85.73,
+    "h0": 3.45,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-testata",
+   "nome": "Testata in fondo al pianerottolo (ovest)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 338.42,
+   "box": {
+    "u0": 15.25,
+    "u1": 15.54,
+    "v0": -86.34,
+    "v1": -81.79,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-testata",
+   "nome": "Testata in fondo al pianerottolo (est)",
+   "forma": "box",
+   "materiale": "travertino",
+   "angolo": 201.58,
+   "box": {
+    "u0": 41.9,
+    "u1": 42.19,
+    "v0": -86.34,
+    "v1": -81.79,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-porta",
+   "nome": "Porta antipanico (uscita di sicurezza) (ovest)",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 248.71,
+   "box": {
+    "u0": 14.7,
+    "u1": 15.9,
+    "v0": -84.83,
+    "v1": -84.78,
+    "h0": 1.23,
+    "h1": 3.48
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-porta",
+   "nome": "Porta antipanico (uscita di sicurezza) (est)",
+   "forma": "oggetto",
+   "modello": "cancelloScala",
+   "ruota": 0,
+   "angolo": 291.29,
+   "box": {
+    "u0": 41.54,
+    "u1": 42.74,
+    "v0": -84.83,
+    "v1": -84.78,
+    "h0": 1.23,
+    "h1": 3.48
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-muro-scala",
+   "nome": "Muro dell’edificio lungo la seconda rampa (ovest)",
+   "forma": "prisma",
+   "materiale": "intonaco arancione",
+   "poligono": [
+    [
+     16.11,
+     -81.88
+    ],
+    [
+     16.38,
+     -81.99
+    ],
+    [
+     16.65,
+     -82.09
+    ],
+    [
+     16.92,
+     -82.19
+    ],
+    [
+     17.2,
+     -82.29
+    ],
+    [
+     17.47,
+     -82.39
+    ],
+    [
+     17.74,
+     -82.49
+    ],
+    [
+     18.02,
+     -82.58
+    ],
+    [
+     18.3,
+     -82.67
+    ],
+    [
+     18.57,
+     -82.76
+    ],
+    [
+     18.85,
+     -82.84
+    ],
+    [
+     19.13,
+     -82.93
+    ],
+    [
+     19.41,
+     -83.01
+    ],
+    [
+     19.69,
+     -83.09
+    ],
+    [
+     19.97,
+     -83.16
+    ],
+    [
+     20.25,
+     -83.23
+    ],
+    [
+     20.53,
+     -83.31
+    ],
+    [
+     20.81,
+     -83.37
+    ],
+    [
+     21.09,
+     -83.44
+    ],
+    [
+     21.37,
+     -83.51
+    ],
+    [
+     21.66,
+     -83.57
+    ],
+    [
+     21.94,
+     -83.63
+    ],
+    [
+     22.23,
+     -83.68
+    ],
+    [
+     22.51,
+     -83.74
+    ],
+    [
+     22.8,
+     -83.79
+    ],
+    [
+     23.08,
+     -83.84
+    ],
+    [
+     23.37,
+     -83.89
+    ],
+    [
+     23.66,
+     -83.93
+    ],
+    [
+     23.94,
+     -83.97
+    ],
+    [
+     24.23,
+     -84.01
+    ],
+    [
+     24.32,
+     -83.34
+    ],
+    [
+     24.04,
+     -83.3
+    ],
+    [
+     23.76,
+     -83.26
+    ],
+    [
+     23.48,
+     -83.21
+    ],
+    [
+     23.2,
+     -83.17
+    ],
+    [
+     22.92,
+     -83.12
+    ],
+    [
+     22.64,
+     -83.07
+    ],
+    [
+     22.36,
+     -83.02
+    ],
+    [
+     22.08,
+     -82.96
+    ],
+    [
+     21.8,
+     -82.9
+    ],
+    [
+     21.52,
+     -82.84
+    ],
+    [
+     21.24,
+     -82.78
+    ],
+    [
+     20.97,
+     -82.71
+    ],
+    [
+     20.69,
+     -82.65
+    ],
+    [
+     20.42,
+     -82.58
+    ],
+    [
+     20.14,
+     -82.5
+    ],
+    [
+     19.87,
+     -82.43
+    ],
+    [
+     19.59,
+     -82.35
+    ],
+    [
+     19.32,
+     -82.27
+    ],
+    [
+     19.05,
+     -82.19
+    ],
+    [
+     18.78,
+     -82.11
+    ],
+    [
+     18.5,
+     -82.02
+    ],
+    [
+     18.23,
+     -81.93
+    ],
+    [
+     17.96,
+     -81.84
+    ],
+    [
+     17.7,
+     -81.75
+    ],
+    [
+     17.43,
+     -81.65
+    ],
+    [
+     17.16,
+     -81.56
+    ],
+    [
+     16.9,
+     -81.46
+    ],
+    [
+     16.63,
+     -81.35
+    ],
+    [
+     16.37,
+     -81.25
+    ]
+   ],
+   "base": 0,
+   "altezza": 3.25,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-muro-scala",
+   "nome": "Muro dell’edificio lungo la seconda rampa (est)",
+   "forma": "prisma",
+   "materiale": "intonaco arancione",
+   "poligono": [
+    [
+     41.07,
+     -81.25
+    ],
+    [
+     40.81,
+     -81.35
+    ],
+    [
+     40.54,
+     -81.46
+    ],
+    [
+     40.28,
+     -81.56
+    ],
+    [
+     40.01,
+     -81.65
+    ],
+    [
+     39.74,
+     -81.75
+    ],
+    [
+     39.48,
+     -81.84
+    ],
+    [
+     39.21,
+     -81.93
+    ],
+    [
+     38.94,
+     -82.02
+    ],
+    [
+     38.66,
+     -82.11
+    ],
+    [
+     38.39,
+     -82.19
+    ],
+    [
+     38.12,
+     -82.27
+    ],
+    [
+     37.85,
+     -82.35
+    ],
+    [
+     37.57,
+     -82.43
+    ],
+    [
+     37.3,
+     -82.5
+    ],
+    [
+     37.02,
+     -82.58
+    ],
+    [
+     36.75,
+     -82.65
+    ],
+    [
+     36.47,
+     -82.71
+    ],
+    [
+     36.2,
+     -82.78
+    ],
+    [
+     35.92,
+     -82.84
+    ],
+    [
+     35.64,
+     -82.9
+    ],
+    [
+     35.36,
+     -82.96
+    ],
+    [
+     35.08,
+     -83.02
+    ],
+    [
+     34.8,
+     -83.07
+    ],
+    [
+     34.52,
+     -83.12
+    ],
+    [
+     34.24,
+     -83.17
+    ],
+    [
+     33.96,
+     -83.21
+    ],
+    [
+     33.68,
+     -83.26
+    ],
+    [
+     33.4,
+     -83.3
+    ],
+    [
+     33.12,
+     -83.34
+    ],
+    [
+     33.21,
+     -84.01
+    ],
+    [
+     33.5,
+     -83.97
+    ],
+    [
+     33.78,
+     -83.93
+    ],
+    [
+     34.07,
+     -83.89
+    ],
+    [
+     34.36,
+     -83.84
+    ],
+    [
+     34.64,
+     -83.79
+    ],
+    [
+     34.93,
+     -83.74
+    ],
+    [
+     35.21,
+     -83.68
+    ],
+    [
+     35.5,
+     -83.63
+    ],
+    [
+     35.78,
+     -83.57
+    ],
+    [
+     36.07,
+     -83.51
+    ],
+    [
+     36.35,
+     -83.44
+    ],
+    [
+     36.63,
+     -83.37
+    ],
+    [
+     36.91,
+     -83.31
+    ],
+    [
+     37.19,
+     -83.23
+    ],
+    [
+     37.47,
+     -83.16
+    ],
+    [
+     37.75,
+     -83.09
+    ],
+    [
+     38.03,
+     -83.01
+    ],
+    [
+     38.31,
+     -82.93
+    ],
+    [
+     38.59,
+     -82.84
+    ],
+    [
+     38.87,
+     -82.76
+    ],
+    [
+     39.14,
+     -82.67
+    ],
+    [
+     39.42,
+     -82.58
+    ],
+    [
+     39.7,
+     -82.49
+    ],
+    [
+     39.97,
+     -82.39
+    ],
+    [
+     40.24,
+     -82.29
+    ],
+    [
+     40.52,
+     -82.19
+    ],
+    [
+     40.79,
+     -82.09
+    ],
+    [
+     41.06,
+     -81.99
+    ],
+    [
+     41.33,
+     -81.88
+    ]
+   ],
+   "base": 0,
+   "altezza": 3.25,
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-corrimano",
+   "nome": "Corrimano sul muro divisorio (ovest)",
+   "forma": "oggetto",
+   "modello": "corrimano",
+   "ruota": 0,
+   "angolo": 166.18,
+   "box": {
+    "u0": 18.06,
+    "u1": 21.97,
+    "v0": -85.8,
+    "v1": -85.72,
+    "h0": 0.22,
+    "h1": 2.18
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-corrimano",
+   "nome": "Corrimano sul muro divisorio (est)",
+   "forma": "oggetto",
+   "modello": "corrimano",
+   "ruota": 0,
+   "angolo": 13.82,
+   "specchio": "v",
+   "box": {
+    "u0": 35.47,
+    "u1": 39.38,
+    "v0": -85.8,
+    "v1": -85.72,
+    "h0": 0.22,
+    "h1": 2.18
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-intonaco-muro",
+   "nome": "Intonaco del muro divisorio verso la seconda rampa (ovest)",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 346.98,
+   "box": {
+    "u0": 17.26,
+    "u1": 24.03,
+    "v0": -85.31,
+    "v1": -85.29,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-intonaco-muro",
+   "nome": "Intonaco del muro divisorio verso la seconda rampa (est)",
+   "forma": "box",
+   "materiale": "intonaco arancione",
+   "angolo": 193.02,
+   "box": {
+    "u0": 33.41,
+    "u1": 40.18,
+    "v0": -85.31,
+    "v1": -85.29,
+    "h0": 0,
+    "h1": 4.1
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-ovest-corrimano-interno",
+   "nome": "Corrimano sul muro divisorio lungo la seconda rampa (ovest)",
+   "forma": "oggetto",
+   "modello": "corrimano",
+   "ruota": 0,
+   "angolo": 346.98,
+   "box": {
+    "u0": 17.57,
+    "u1": 23.75,
+    "v0": -85.29,
+    "v1": -85.21,
+    "h0": 1.23,
+    "h1": 4.11
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "gin-est-corrimano-interno",
+   "nome": "Corrimano sul muro divisorio lungo la seconda rampa (est)",
+   "forma": "oggetto",
+   "modello": "corrimano",
+   "ruota": 0,
+   "angolo": 193.02,
+   "specchio": "v",
+   "box": {
+    "u0": 33.69,
+    "u1": 39.87,
+    "v0": -85.29,
+    "v1": -85.21,
+    "h0": 1.23,
+    "h1": 4.11
+   },
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+  },
+  {
+   "id": "cu-ovest-nastro-1p",
+   "nome": "Finestra a nastro rientrante del primo piano (facciata ovest)",
+   "forma": "oggetto",
+   "modello": "nicchiaSerrande",
+   "cornice": "lato0",
+   "ruota": 0,
+   "box": {
+    "u0": -0.05,
+    "u1": 0.53,
+    "v0": -34.35,
+    "v1": -25.15,
+    "h0": 4.97,
+    "h1": 7.35
+   },
+   "nota": "Commento con foto del 31/10: al primo piano, verso l'angolo col cortile dell'azoto, le tre finestre delle campate 8-10 (dall'angolo nord) sono un'unica apertura rientrante con tre serrande marroni. La nicchia toglie le finestre dipinte della facciata (stencil) e ha spalle, cielino, davanzale e cornice chiara."
+  },
+  {
+   "id": "sw-marciapiede",
+   "nome": "Marciapiede attorno all'angolo sud-ovest (cordolo in travertino)",
+   "forma": "marciapiede",
+   "base": -0.09,
+   "altezza": 0.15,
+   "raggio": 0.3,
+   "raggi": [
+    0,
+    0.3,
+    3.0,
+    0.3,
+    0,
+    0
+   ],
+   "poligono": [
+    [
+     0.75,
+     -76.0
+    ],
+    [
+     -5.2,
+     -76.0
+    ],
+    [
+     -5.2,
+     -95.3
+    ],
+    [
+     10.3,
+     -94.6
+    ],
+    [
+     10.3,
+     -85.27
+    ],
+    [
+     0.75,
+     -85.75
+    ]
+   ],
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): marciapiede in conglomerato grigio con cordolo di travertino che gira l'angolo con un raggio largo (foto 5517cb39, cff9065b, 072b52a8); verso est finisce dove inizia lo spazio asfaltato davanti all'ingresso CUSTODI."
+  },
+  {
+   "id": "sw-prato-ovest",
+   "nome": "Striscia di prato lungo la facciata ovest",
+   "forma": "aiuola",
+   "tipo": "squadrata",
+   "terreno": "prato",
+   "base": -0.09,
+   "altezza": 0.25,
+   "cordolo": 0.14,
+   "poligono": [
+    [
+     -2.2,
+     -87.0
+    ],
+    [
+     0.75,
+     -87.0
+    ],
+    [
+     0.75,
+     -76.0
+    ],
+    [
+     -2.2,
+     -76.0
+    ]
+   ],
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): prato con cordolo basso di travertino fra la facciata ovest e il marciapiede (foto 48f33710, ac69488f)."
+  },
+  {
+   "id": "sw-grigliato",
+   "nome": "Grigliato salvaprato davanti alla facciata sud (ala ovest)",
+   "forma": "aiuola",
+   "tipo": "squadrata",
+   "terreno": "grigliato",
+   "base": -0.09,
+   "altezza": 0.25,
+   "cordolo": 0.14,
+   "poligono": [
+    [
+     -2.14,
+     -87.19
+    ],
+    [
+     10.2,
+     -86.61
+    ],
+    [
+     10.44,
+     -91.6
+    ],
+    [
+     -1.9,
+     -92.18
+    ]
+   ],
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): masselli erbosi chiari con l'erba nelle celle (foto 12504eea, 0e6f7ff6, 3c47dc6b, e55e325d), cordolo di travertino; fra il grigliato e il muro resta una striscia di conglomerato di circa 1,3 m (foto 964de25b)."
+  },
+  {
+   "id": "sw-bocchetta-1",
+   "nome": "Bocca di aerazione sul grigliato (ovest)",
+   "forma": "oggetto",
+   "modello": "bocchetta",
+   "ruota": 0,
+   "angolo": 2.7,
+   "box": {
+    "u0": 1.57,
+    "u1": 3.47,
+    "v0": -89.77,
+    "v1": -88.77,
+    "h0": 0.1,
+    "h1": 0.75
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): cassone intonacato rosa con piano in travertino e griglia (foto 18f516b6, 3c47dc6b, e55e325d)."
+  },
+  {
+   "id": "sw-bocchetta-2",
+   "nome": "Bocca di aerazione sul grigliato (est)",
+   "forma": "oggetto",
+   "modello": "bocchetta",
+   "ruota": 0,
+   "angolo": 2.7,
+   "box": {
+    "u0": 8.01,
+    "u1": 9.91,
+    "v0": -90.47,
+    "v1": -89.47,
+    "h0": 0.1,
+    "h1": 0.75
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): seconda bocca verso l'ingresso CUSTODI (foto 48f33710, 0e6f7ff6); posizione stimata."
+  },
+  {
+   "id": "sw-tattile-sud",
+   "nome": "Percorso tattile lungo il marciapiede sud",
+   "forma": "oggetto",
+   "modello": "tattile",
+   "ruota": 90,
+   "box": {
+    "u0": -3.0,
+    "u1": 10.0,
+    "v0": -94.2,
+    "v1": -93.6,
+    "h0": 0.06,
+    "h1": 0.075
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): lastre grigie a righe a forma di L (foto 5517cb39, cff9065b, 48f33710); posizione stimata."
+  },
+  {
+   "id": "sw-tattile-ovest",
+   "nome": "Percorso tattile verso la facciata ovest",
+   "forma": "oggetto",
+   "modello": "tattile",
+   "ruota": 0,
+   "box": {
+    "u0": -2.9,
+    "u1": -2.3,
+    "v0": -93.6,
+    "v1": -87.0,
+    "h0": 0.06,
+    "h1": 0.075
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): braccio nord della L del percorso tattile (foto 5517cb39, ac69488f); posizione stimata."
+  },
+  {
+   "id": "sw-bacheca",
+   "nome": "Bacheca per manifesti R.S.U. all'angolo",
+   "forma": "oggetto",
+   "modello": "bacheca",
+   "ruota": 0,
+   "angolo": 315,
+   "box": {
+    "u0": -4.7,
+    "u1": -2.1,
+    "v0": -93.56,
+    "v1": -93.44,
+    "h0": 0.06,
+    "h1": 2.56
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): telaio scuro con manifesti strappati e targhetta R.S.U. (foto 072b52a8, 66b97ecb, cf6abdba); orientamento stimato."
+  },
+  {
+   "id": "sw-paracarro",
+   "nome": "Paracarro di travertino davanti alla bacheca",
+   "forma": "oggetto",
+   "modello": "paracarro",
+   "ruota": 0,
+   "angolo": 315,
+   "box": {
+    "u0": -4.14,
+    "u1": -3.86,
+    "v0": -94.41,
+    "v1": -94.19,
+    "h0": 0.06,
+    "h1": 0.91
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): foto 072b52a8, 66b97ecb."
+  },
+  {
+   "id": "sw-mappa",
+   "nome": "Pannello con la pianta della Città universitaria",
+   "forma": "oggetto",
+   "modello": "mappaCampus",
+   "ruota": 0,
+   "box": {
+    "u0": 2.85,
+    "u1": 4.35,
+    "v0": -95.1,
+    "v1": -94.6,
+    "h0": 0.06,
+    "h1": 2.01
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): pannello su zoccolo di travertino, girato verso il grigliato (foto 18f516b6, 072b52a8); posizione stimata."
+  },
+  {
+   "id": "sw-leggio",
+   "nome": "Leggio informativo scuro",
+   "forma": "oggetto",
+   "modello": "leggio",
+   "ruota": 0,
+   "box": {
+    "u0": -1.35,
+    "u1": -0.65,
+    "v0": -93.1,
+    "v1": -92.5,
+    "h0": 0.06,
+    "h1": 1.25
+   },
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): leggio grigio scuro accanto al grigliato (foto 5517cb39, cff9065b, e55e325d)."
+  },
+  {
+   "id": "sw-senso-vietato",
+   "nome": "Segnale di senso vietato",
+   "forma": "oggetto",
+   "modello": "segnale",
+   "ruota": 0,
+   "box": {
+    "u0": -1.3,
+    "u1": -0.7,
+    "v0": -94.99,
+    "v1": -94.91,
+    "h0": 0.06,
+    "h1": 2.96
+   },
+   "segnale": "divieto",
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): palo con il segnale rosso di senso vietato rivolto a sud (foto cff9065b, 5517cb39)."
+  },
+  {
+   "id": "sw-direzione-destra",
+   "nome": "Segnale di direzione obbligatoria a destra",
+   "forma": "oggetto",
+   "modello": "segnale",
+   "ruota": 0,
+   "box": {
+    "u0": 1.0,
+    "u1": 1.6,
+    "v0": -94.74,
+    "v1": -94.66,
+    "h0": 0.06,
+    "h1": 2.96
+   },
+   "segnale": "destra",
+   "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): segnale blu con la freccia a destra, più basso, su un secondo palo (foto cff9065b, 5517cb39); posizione stimata."
+  }
+ ]
+}

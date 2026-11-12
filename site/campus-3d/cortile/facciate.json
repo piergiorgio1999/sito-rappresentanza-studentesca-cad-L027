@@ -1,0 +1,64 @@
+{
+ "versione": 1,
+ "nota": "Facciate degli edifici modificate dall'editor sul posto: texture ('cortina', 'giallo', 'travertino', 'ocra', 'intonaco') e celle con finestra tolta ('togli') o aggiunta ('aggiungi'), in coordinate di mondo della scena (x, y, z del centro, w × h, ang = direzione del muro).",
+ "edifici": {
+  "CU014": {
+   "facciata": "cortina",
+   "finestre": [
+    {
+     "tipo": "texture",
+     "palette": "arancione",
+     "kind": "base",
+     "x": -122.38,
+     "y": 2.24,
+     "z": 66.66,
+     "w": 34.81,
+     "h": 4.4,
+     "ang": 1.2036,
+     "u0": 0.2419,
+     "v0": -0.0,
+     "du": 9.6692,
+     "dv": 1.0,
+     "perp": 138.14
+    },
+    {
+     "tipo": "texture",
+     "palette": "arancione",
+     "kind": "body",
+     "x": -122.38,
+     "y": 11.29,
+     "z": 66.66,
+     "w": 34.81,
+     "h": 13.7,
+     "ang": 1.2036,
+     "u0": 0.2419,
+     "v0": 0.0,
+     "du": 9.6692,
+     "dv": 4.0,
+     "perp": 138.14
+    },
+    {
+     "tipo": "texture",
+     "palette": "arancione",
+     "kind": "attic",
+     "x": -122.38,
+     "y": 18.59,
+     "z": 66.66,
+     "w": 34.81,
+     "h": 0.9,
+     "ang": 1.2036,
+     "u0": 0.2419,
+     "v0": -0.0,
+     "du": 9.6692,
+     "dv": 1.0,
+     "perp": 138.14
+    }
+   ],
+   "nota": "Muro ovest verso l'angolo nord-ovest in intonaco arancione verniciato, non mattoni (commento sul posto del 21/10/2026). Quote del corpo e dell'attico riportate da 21 a 19 m il 22/10/2026: l'ala nord-ovest, dall'STL, è alta circa 19 m (cu014-solido.json)."
+  },
+  "CU006": {
+   "facciata": "travertino",
+   "finestre": []
+  }
+ }
+}

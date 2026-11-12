@@ -1,0 +1,8 @@
+{
+ "nota": "Magnolie con chiome ampie dell'artifact «Cortile Chimica 3D» (alberi 1 e 2 = magnolie A e B del cortile). I .wasm sono geometrie grezze (non WebAssembly: estensione servita dagli artifact) nel riferimento del cortile, con l'origine al piede del tronco: nv posizioni float32 xyz (X = u, Y = h, Z = -v), poi nv uv float32, poi nf triangoli uint32 x3. altezzaRif e raggioRif sono i valori di cortile/modello.json a cui l'albero compare in scala 1; piede = quota e raggio dell'anello inferiore del tronco, sotto il quale si aggiunge un ceppo fino al terreno (suolo). Modello 3DExport fornito dall'utente.",
+ "suolo": 0.36,
+ "alberi": [
+  { "id": "A", "chioma": "magnolia_a_chioma.wasm", "tronco": "magnolia_a_tronco.wasm", "nvChioma": 3168, "nfChioma": 2112, "nvTronco": 2318, "nfTronco": 2476, "altezzaRif": 11.23, "raggioRif": 3.8, "piede": { "h": 0.741, "r": 0.333 } },
+  { "id": "B", "chioma": "magnolia_b_chioma.wasm", "tronco": "magnolia_b_tronco.wasm", "nvChioma": 3210, "nfChioma": 2154, "nvTronco": 2318, "nfTronco": 2476, "altezzaRif": 10.63, "raggioRif": 4.2, "chiomaOffset": [3.6, 0, 0.1], "piede": { "h": 0.958, "r": 0.524 } }
+ ]
+}

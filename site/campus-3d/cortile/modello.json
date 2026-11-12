@@ -1,0 +1,350 @@
+{
+ "versione": 1,
+ "nota": "Cortile dell'azoto (Chimica), modello minimale. Coordinate locali in metri: u lungo la cancellata su strada, v verso il portico, h in alto. Misure ricavate dalla pianta della scansione Scaniverse registrata, dalle foto e da CORREZIONI_RIFERIMENTI.md. La scansione grezza non è usata nel modello.",
+ "riferimento": {
+  "scansione": "115418",
+  "angoloDeg": -47.7,
+  "origine": [
+   3.66,
+   -6.06
+  ]
+ },
+ "pavimento": {
+  "u": [
+   0.2,
+   16.6
+  ],
+  "v": [
+   0,
+   13
+  ],
+  "fasceTravertino": [
+   [
+    8.4,
+    9.0
+   ],
+   [
+    11.0,
+    11.6
+   ]
+  ]
+ },
+ "aiuole": [
+  {
+   "id": "A",
+   "u": [
+    1.75,
+    6.15
+   ],
+   "v": [
+    1.45,
+    8.3
+   ],
+   "altezza": 0.42,
+   "nota": "Specchio dell'aiuola B rispetto all'asse u 8.4 (senza il varco della porticina, che è della gabbia)."
+  },
+  {
+   "id": "B",
+   "u": [
+    10.65,
+    15.05
+   ],
+   "v": [
+    1.45,
+    8.3
+   ],
+   "altezza": 0.42,
+   "varco": {
+    "lato": "u-",
+    "da": 6.07,
+    "a": 7.27,
+    "quota": 0.12
+   }
+  }
+ ],
+ "magnolie": [
+  {
+   "id": "A",
+   "u": 3.3,
+   "v": 4.2,
+   "altezza": 11.23,
+   "raggio": 3.8,
+   "stagione": "auto"
+  },
+  {
+   "id": "B",
+   "u": 13.8,
+   "v": 3.4,
+   "altezza": 10.63,
+   "raggio": 4.2,
+   "stagione": "auto"
+  }
+ ],
+ "serbatoio": {
+  "u": 11.95,
+  "v": 7.1,
+  "raggio": 0.8,
+  "altezza": 4.0,
+  "fondo": 1.0,
+  "calotta": 0.28,
+  "fronte": 180,
+  "suolo": 0.36,
+  "serpentino": 0.55,
+  "piedi": {
+   "n": 3,
+   "raggio": 0.62,
+   "base": 0.3,
+   "sfasamento": 60,
+   "nota": "Tre piedi in lamiera triangolare piegata a L con la piega tonda verso l'esterno e l'orecchia forata in cima (foto dell'utente del 27/10/2026); al posto della vecchia base cilindrica."
+  },
+  "nota": "Commento 4 del 27/10/2026: fasciame alto 4 m (rilievo 115418: sommità 3,97 m, raggio 0,80-0,85), fondo del fasciame a 1 m, calotte con freccia 0,28. Quadro valvole verso la porticina (fronte 180) come nello schema 'Evaporatore criogenico per O2-N2-Ar' sul serbatoio; il bianco attorno all'erogazione V2 è ghiaccio. Cartelli: ritagli provvisori in tex/azoto/, da sostituire con quelli lavorati."
+ },
+ "tubi": {
+  "u": 13.68,
+  "v": 6.74,
+  "ruota": 270,
+  "scala": 1,
+  "base": 0.36,
+  "colonne": 3,
+  "file": 2,
+  "nota": "Evaporatore alettato dietro il silos: modello dell'utente intero (USDZ SystemPreviewAxO6vL, DVAP3, 6 tubi 3x2 con le valvole) in models/tubi-glb.json. Ripristinato il 27/10/2026 dopo l'eliminazione dall'editor: dentro la gabbia, fra il serbatoio e la rete lato corridoio (l'utente l'aveva messo in u 15,79 v 6,74).",
+  "altezza": 3.2
+ },
+ "gabbia": {
+  "u": [
+   10.65,
+   13.95
+  ],
+  "v": [
+   5.3,
+   8.25
+  ],
+  "altezza": 1.63,
+  "porta": {
+   "lato": "u-",
+   "v": [
+    6.07,
+    7.27
+   ],
+   "soglia": 0.12,
+   "sommita": 2.05
+  },
+  "cartello": "v-",
+  "nota": "Rete montata sul cordolo dell'aiuola sul lato della porticina (u-) e sul fondo (v+). Misure dal rilievo 115418 e dalle foto del 19/10/2026: angolo lato cartello a v 5.5, sommità a 2.05 m da terra, porticina larga 1.2 m su una soglia ribassata nel cordolo."
+ },
+ "cancellata": {
+  "v": 0,
+  "muretto": 0.9,
+  "ringhiera": 1.15,
+  "varco": [
+   6.0,
+   10.6
+  ],
+  "apertureDeg": 70,
+  "rientro": 0.9,
+  "altezzaCancello": 2.1,
+  "sporgenza": 0.4,
+  "cassetta": {
+   "u": 5.09,
+   "larghezza": 1.0,
+   "altezza": 0.5,
+   "profondita": 0.45,
+   "h0": 0.42,
+   "tuboRosso": 0.78
+  },
+  "nota_cassetta": "Cassetta antincendio (bocciolone, vetro scuro in cornice di alluminio) addossata alla faccia su strada del muretto, a sinistra del varco (commento con foto 22/10: u 5.09, h 0.67). Misure stimate dalla foto (cassetta circa 100 x 50 cm, a filo con la sommita del muretto) da confermare; il tubo rosso a sinistra corre a h 0.78. Nella foto le barre della ringhiera sono color crema. 30/10: profondità portata a 0,45 m (commento: «molto più sporgente, quasi il doppio»).",
+  "nota_sporgenza": "Muretto e ringhiera si prolungano di \"sporgenza\" metri oltre i muri del cortile (u 0.2 e 16.6), con lo stesso passo delle barre (3 barre per lato), per chiudere il vuoto fra cancellata e ala (commento utente 21/10/2026).",
+  "nota": "Cancello a U: anta principale arretrata di \"rientro\" metri verso il cortile, collegata al muretto da due cancelletti pedonali perpendicolari."
+ },
+ "muri": [
+  {
+   "id": "sinistro",
+   "u": 0.2,
+   "v": [
+    0,
+    9.4
+   ],
+   "altezza": 4.4,
+   "tuboRosso": 2.0,
+   "condizionatori": [
+    5.5
+   ],
+   "finestre": [
+    7.4
+   ]
+  },
+  {
+   "id": "destro",
+   "u": 16.6,
+   "v": [
+    0,
+    9.4
+   ],
+   "altezza": 4.4,
+   "condizionatori": [
+    2.5,
+    6.0
+   ]
+  }
+ ],
+ "pilastri": [
+  {
+   "u": [
+    5.02,
+    6.22
+   ],
+   "v": [
+    8.05,
+    8.95
+   ],
+   "altezza": 4.85,
+   "scritta": "AULE",
+   "nota": "Specchio della colonna dietro la gabbia rispetto all'asse u 8.4 (mezzeria dei muri sinistro 0.2 e destro 16.6)."
+  },
+  {
+   "u": [
+    10.58,
+    11.78
+   ],
+   "v": [
+    8.05,
+    8.95
+   ],
+   "altezza": 4.85,
+   "nota": "Colonna rettangolare in travertino dietro la gabbia (commento sul posto del 21/10/2026)."
+  }
+ ],
+ "portico": {
+  "v": [
+   8.0,
+   13.0
+  ],
+  "u": [
+   1.5,
+   16.6
+  ],
+  "corpoU": [
+   0.2,
+   16.6
+  ],
+  "soffitto": 4.5,
+  "piani": 1,
+  "nota_piani": "Piani del corpo sopra il portico oltre il piano terra (1 = solo il primo piano, chiuso da un solo tetto piano liscio, senza attico: il ponte sopra il cancello fra i due cortili)."
+ },
+ "transenne": [
+  {
+   "u": 5.15,
+   "v": 2.85,
+   "lunghezza": 2,
+   "angoloDeg": 8
+  }
+ ],
+ "vuoti": [
+  [
+   0.2,
+   -4.0,
+   16.6,
+   40.3
+  ]
+ ],
+ "nota_vuoti": "Rettangolo [u0, v0, u1, v1] sottratto alle sagome OSM a tutte le quote: i due cortili (azoto e interno) sono un unico vuoto largo quanto il cortile (u 0.2 -> 16.6, dalla cancellata al fondo del cortile interno), con le ali alte ai lati diritte e continue sulla stessa u. Dentro il vuoto resta solo il ponte di un piano sopra il portico, costruito a parte (portico.corpoU, portico.piani).",
+ "pieni": [
+  [
+   -1.3,
+   -0.4,
+   0.2,
+   9.4
+  ]
+ ],
+ "nota_pieni": "Rettangoli [u0, v0, u1, v1] uniti alle sagome OSM che li toccano: la facciata dell'ala sinistra portata a filo del cortile (u 0.2, come i muri e il vuoto), senza il gradino con il fondo.",
+ "tombini": [
+  {
+   "u": 8.4,
+   "v": 4.875,
+   "lato": 0.6
+  }
+ ],
+ "tuboScarico": {
+  "raggio": 0.08,
+  "percorso": [
+   [
+    11.37,
+    7.37,
+    0.68
+   ],
+   [
+    11.37,
+    5.95,
+    0.68
+   ],
+   [
+    10.48,
+    5.95,
+    0.68
+   ],
+   [
+    10.48,
+    5.95,
+    0.1
+   ],
+   [
+    10.48,
+    1.2,
+    0.1
+   ],
+   [
+    10.48,
+    1.2,
+    0.45
+   ],
+   [
+    10.48,
+    0.925,
+    0.45
+   ]
+  ],
+  "canaletta": {
+   "u": 10.48,
+   "v": [
+    4.5,
+    6.05
+   ],
+   "larghezza": 0.22
+  },
+  "nota": "Tubo di scarico del silos, metallico (foto del 19/10/2026 e indicazioni dell'utente): dal basamento del serbatoio corre a 0.68 m lungo il lato del cartello, scavalca il cordolo vicino alla porticina e scende nella fossetta scoperta lungo la base del cordolo; corre in vista sul fondo della fossetta fino al cancello, dove risale con un doppio gomito (90° verso l'alto, poi 90° in orizzontale) e termina a contatto con l'anta del cancello. Vicino alla discesa è adagiato in un mezzo tubo bianco.",
+  "fossetta": {
+   "u": 10.5,
+   "v": [
+    0.9,
+    6.15
+   ],
+   "larghezza": 0.22
+  }
+ },
+ "fondo": {
+  "v": 12.88,
+  "varco": [
+   6.4,
+   10.4
+  ],
+  "spessore": 0.24,
+  "passo": 0.12,
+  "correnti": [
+   0.12,
+   1.1,
+   2.3
+  ],
+  "nota": "Fondo dell'area coperta: parete piena in travertino (spessore, fino al soffitto del portico) con il cancello a barre solo nel varco [u0, u1] (commento 3 dell'utente: il cancello sta dentro una parete, non occupa tutta la larghezza; il cortile interno si vede attraverso le grate, rilievo 132517). STIMA: varco 4 m centrato sul cortile (u 6.4-10.4), da confermare con le foto promesse e da modificare qui."
+ },
+ "tubi4": {
+  "u": 13.68,
+  "v": 7.62,
+  "ruota": 270,
+  "scala": 1,
+  "base": 0.36,
+  "colonne": 2,
+  "file": 2,
+  "nota": "Dall'altro lato dei 6, gruppo da 4 tubi (2x2) dello stesso modello (indicazione dell'utente del 27/10/2026).",
+  "altezza": 3.2
+ }
+}
