@@ -467,7 +467,7 @@ main>section.panel{border:0;background:none;padding:0;box-shadow:none;border-rad
 @media(max-width:420px){#mkSeg .soonb{display:block;margin:3px auto 0;width:max-content}}
 .soon b{font-size:.95rem}
 .is-soon{opacity:.55;pointer-events:none;filter:grayscale(.3)}
-footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.78rem;line-height:1.5}
+footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.78rem;line-height:1.5}.student-links{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:18px 0;padding:14px;background:var(--rose);border-radius:12px;font-size:.9rem}.student-links a{color:var(--sap);font-weight:700;text-underline-offset:3px}.community{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,230px);gap:24px;align-items:center;margin:30px 0;padding:clamp(20px,4vw,36px);background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(75,19,36,.08)}.community-copy{max-width:62ch}.community-kicker{margin:0 0 6px;color:var(--sap);font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.community h2{margin:0 0 10px;color:var(--ink);font:700 clamp(1.35rem,3vw,1.9rem)/1.15 var(--sans)}.community-copy>p:not(.community-kicker){margin:0 0 12px;color:var(--ink)}.community-join{display:inline-block;color:var(--sap);font-weight:800;text-underline-offset:3px}.community-copy small{display:block;margin-top:9px;color:var(--muted);font-size:.78rem}.community-qr{display:block;justify-self:center;width:min(100%,210px);padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px}.community-qr img{display:block;width:100%;height:auto}@media(max-width:600px){.community{grid-template-columns:1fr}.community-qr{width:min(70vw,220px)}}
 @media(prefers-reduced-motion:no-preference){.btn{transition:background .15s}}
 
 /* ===== Barra laterale (prova) ===== */
@@ -1449,9 +1449,14 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     </div>
   </section>
 
+  <section class="community" id="gruppi-ufficiali" aria-labelledby="community-title">
+    <div class="community-copy"><p class="community-kicker">Comunità studentesca</p><h2 id="community-title">Gruppi WhatsApp ufficiali</h2><p>Entra nella community di Scienze Chimiche per ricevere informazioni e trovare il gruppo del tuo anno e canale.</p><a class="community-join" href="https://chat.whatsapp.com/LcRtvVw65GxBGHrBqpPY31" target="_blank" rel="noopener">Apri la community su WhatsApp →</a><small>WhatsApp può chiederti di confermare l’ingresso nella community.</small></div>
+    <a class="community-qr" href="https://chat.whatsapp.com/LcRtvVw65GxBGHrBqpPY31" target="_blank" rel="noopener" aria-label="Scansiona il QR per aprire la community WhatsApp ufficiale"><img src="/community-scienze-chimiche-2026.png" alt="QR code di invito alla community WhatsApp ufficiale di Scienze Chimiche"></a>
+  </section>
   <footer>
     <p class="follow"><a class="ig" href="https://www.instagram.com/chimica_la_sapienza/" target="_blank" rel="noopener"><svg class="ig-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"></rect><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"></circle><circle cx="17.3" cy="6.7" r="1.3" fill="currentColor"></circle></svg>Seguici su Instagram: @chimica_la_sapienza</a></p>
     <p class="credit">Fatto con cura dai rappresentanti degli studenti del CAD di Scienze Chimiche. Ospitato su Cloudflare da Piergiorgio Liverani (matricola 2183505), con l'aiuto degli altri rappresentanti come amministratori. È un'iniziativa spontanea e gratuita: nessuno ce l'ha chiesto e nessuno ci paga, ci sembrava solo un modo carino per darvi una mano.</p>
+    <nav class="student-links" aria-label="Link rapidi per studenti"><a href="/presentazione/">Presentazione studenti</a> · <a href="/campus-3d/?standalone=1&amp;focus=banchetto">Mappa 3D</a> · <a href="#gruppi-ufficiali">Gruppi WhatsApp ufficiali</a> · <a href="/">Orari e servizi</a></nav>
     <p class="legal-links"><a href="/privacy.html">Informativa privacy</a> · <a href="/termini.html">Termini di servizio</a></p>
     <details class="legal" id="avvertenze">
       <summary>Avvertenze</summary>

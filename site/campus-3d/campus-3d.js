@@ -3561,6 +3561,9 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     /* adesivi della lista (commento del 13/11, ritagliati dalle immagini dell'utente): logo tondo «Liberiamo Sapienza» e adesivo
        «Pazienza – Università di Roma»; finché non sono caricati i poster si disegnano senza */
     const ADESIVI = {}, attendeAdesivi = [];
+    const QR_VOTA = new Image(); let qrVotaPronto = false;
+    QR_VOTA.onload = () => { qrVotaPronto = true; const t = cache.get('poster|vota'); if (t) { t.disegna(t.ctx, t.c.width, t.c.height, 0); t.tex.needsUpdate = true; } };
+    QR_VOTA.src = 'tex/banchetto/vota-uvote.png';
     function adesivo(k) {
       if (!(k in ADESIVI)) {
         ADESIVI[k] = null;
@@ -3594,11 +3597,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       vota: (ctx, w, h, t) => {
         ctx.fillStyle = COL.bianco; ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#f6e3e3'; for (let i = 0; i < 9; i += 1) for (let j = 0; j < 4; j += 1) if ((i + j) % 2) ctx.fillRect(i * 80, j * 70, 80, 70);
-        logoTondo(ctx, 128, 128, 196, Math.sin(t * 0.9) * 0.18);
-        scrittaOndulata(ctx, 'I TUOI', 430, 100, 50, COL.rosso, t, 4, '#f1c4c4');
-        scrittaOndulata(ctx, 'RAPPRESENTANTI', 430, 160, 35, COL.rossoScuro, t + 0.6, 4, '#f1c4c4');
-        const s = 1 + Math.max(0, Math.sin(t * 5)) * 0.08;
-        ctx.save(); ctx.translate(430, 208); ctx.scale(s, s); ctx.textAlign = 'center'; ctx.font = font(22, 800); ctx.fillStyle = COL.notte; ctx.fillText('INFORMATI SUL PROGRAMMA', 0, 0); ctx.restore(); ctx.textAlign = 'start';
+        logoTondo(ctx, 116, 128, 178, Math.sin(t * 0.9) * 0.18);
+        ctx.textAlign = 'center'; ctx.font = font(28, 900); ctx.fillStyle = COL.rossoScuro; ctx.fillText('PROGRAMMA', 350, 76);
+        ctx.font = font(17, 700); ctx.fillStyle = COL.notte; ctx.fillText('e rappresentanza', 350, 105);
+        if (qrVotaPronto) { ctx.fillStyle = '#fff'; ctx.fillRect(488, 118, 136, 132); ctx.drawImage(QR_VOTA, 500, 120, 112, 112); ctx.font = font(13, 800); ctx.fillStyle = COL.rossoScuro; ctx.fillText('VOTA ONLINE', 556, 244); }
+        else { ctx.font = font(22, 800); ctx.fillStyle = COL.notte; ctx.fillText('INFORMATI SUL PROGRAMMA', 350, 208); }
+        ctx.textAlign = 'start';
         ctx.strokeStyle = COL.rosso; ctx.lineWidth = 10; ctx.strokeRect(5, 5, w - 10, h - 10);
       },
       // lato destro: specchio del sinistro, logo tondo che dondola a destra, invito al banchetto e una striscia che scorre in basso
