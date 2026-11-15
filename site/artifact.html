@@ -4459,7 +4459,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     status.textContent=message; status.hidden=!message;
     if(enabled){
       status.textContent='Caricamento della vista…';status.hidden=false;
-      inlineFrame.src='campus-3d/index.html?embedded=1'+(mpSel?'&code='+encodeURIComponent(mpSel):'');
+      inlineFrame.src='campus-3d/index.html?embedded=1'+(mpSel?'&code='+encodeURIComponent(mpSel):'')+(window.mpVista?'&vista='+window.mpVista:''); window.mpVista='';
       loadTimer=setTimeout(()=>{dim='2d';base='carta';sync();setActive(false,'La vista 3D e satellite non è disponibile: la mappa 2D resta utilizzabile.');},40000);
     }else{
       inlineFrame.src='about:blank';
@@ -4513,7 +4513,11 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
   });
   sync();
   /* collegamento dalla vecchia vista autonoma: apre il 3D a schermo intero */
-  if(new URLSearchParams(location.search).get('campus')==='3d-full'){
+  /* collegamento breve /3d (?campus=3d-chimica): come sopra, ma la scena si apre davanti a Chimica */
+  const campusLink=new URLSearchParams(location.search).get('campus');
+  if(campusLink==='3d-full'||campusLink==='3d-chimica'){
+    if(campusLink==='3d-chimica') window.mpVista='chimica';
+    if(location.hash!=='#mappa') location.hash='#mappa';
     history.replaceState(null,'',location.pathname+location.hash);
     setTimeout(()=>{ dim='3d'; base='satellite'; apply(); setFull(true); },300);
   }

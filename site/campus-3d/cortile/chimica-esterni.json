@@ -500,44 +500,6 @@
    "fogliame_da": 1
   },
   {
-   "tipo": "pergolato",
-   "nome": "Pergolato con vite, specchio sul lato di Fisica: Pergolato con vite lungo il viale (Street View 2015)",
-   "lato": 0,
-   "u": [
-    16.5,
-    44.4
-   ],
-   "v": [
-    44.8,
-    47.4
-   ],
-   "altezza": 3,
-   "passo": 1.8,
-   "copertura": 1,
-   "fogliame_da": 1,
-   "angolo": 180,
-   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
-  },
-  {
-   "tipo": "pergolato",
-   "nome": "Pergolato con vite, specchio sul lato di Fisica: Pergolato con vite, di fronte al primo (prato 2 dell'ingresso)",
-   "lato": 0,
-   "u": [
-    52.26,
-    78.76
-   ],
-   "v": [
-    44.8,
-    47.4
-   ],
-   "altezza": 3,
-   "passo": 1.8,
-   "copertura": 1,
-   "fogliame_da": 1,
-   "angolo": 180,
-   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
-  },
-  {
    "tipo": "lampione",
    "nome": "Lampione verde (prato 1)",
    "lato": 0,
@@ -3752,6 +3714,22 @@
    },
    "segnale": "destra",
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): segnale blu con la freccia a destra, più basso, su un secondo palo (foto cff9065b, 5517cb39); posizione stimata."
+  },
+  {
+   "id": "banchetto-liberiamo",
+   "nome": "Banchetto elettorale Liberiamo Sapienza",
+   "forma": "oggetto",
+   "modello": "banchetto",
+   "ruota": 270,
+   "box": {
+    "u0": 42.28,
+    "u1": 43.72,
+    "v0": 29.05,
+    "v1": 30.95,
+    "h0": 0,
+    "h1": 1.8
+   },
+   "nota": "Banchetto di Liberiamo Sapienza (spostato il 14/11): al centro dello stradone fra il Vecchio Edificio di Chimica e l'edificio Marconi (u a metà facciata, v a metà fra le due facciate, circa 30 m), poster verso l'ingresso di piazzale Aldo Moro. Si sposta dall'editor come gli altri oggetti."
   }
  ]
 }
