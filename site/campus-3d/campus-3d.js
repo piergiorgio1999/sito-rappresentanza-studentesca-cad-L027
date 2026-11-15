@@ -4,6 +4,9 @@
   const CONTEXT_SOURCE = 'campus-context.geojson';
   const CHEMISTRY = new Set(['CU014', 'CU032', 'CU035']);
   const DISEGNATI = new Set(['CU014', 'CU032']); // edifici disegnati nella scena (CU035 tolto su richiesta, commento del 23/10)
+  // edifici con un modello di dettaglio (corpo dall'STL, facciate, esterni dai file): nella mappa del sito restano loro,
+  // al posto del volume estruso dalla planimetria ufficiale (richiesta del 15/11/2026)
+  const MODELLATI = new Set(['CU014', 'CU013']); // CU013 = Edificio di Fisica (impronta OSM della relazione 5457573)
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
   const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
   // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
@@ -33,6 +36,8 @@
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
   const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+  const launchFocus = new URLSearchParams(location.search).get('focus')?.toLowerCase() || '';
+  let launchFocusApplied = false;
   if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
     const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
     location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
@@ -307,6 +312,17 @@
     };
     cameraTweenId = requestAnimationFrame(frame);
   }
+  function applyLaunchFocus(root) {
+    if (embedded || launchFocus !== 'banchetto' || launchFocusApplied || !camera || !controls) return;
+    const object = root.getObjectByProperty('userData.primitiva', 'banchetto-liberiamo');
+    if (!object) return;
+    root.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(object);
+    if (bounds.isEmpty()) return;
+    const center = bounds.getCenter(new THREE.Vector3());
+    launchFocusApplied = true;
+    flyTo({ x: center.x, n: -center.z }, 12, 0);
+  }
   function selectBuilding(code, options = {}) {
     const b = buildings.find((feature) => feature.code === code);
     if (!b) return;
@@ -455,7 +471,7 @@
       planTexture?.dispose();
     }
     officialPlan = plan;
-    officialPlanCodes = new Set(plan.features.map((feature) => String(feature.code || '').toUpperCase()));
+    officialPlanCodes = new Set(plan.features.map((feature) => String(feature.code || '').toUpperCase()).filter((code) => !MODELLATI.has(code)));
     planLayerGroup = new THREE.Group(); planLayerGroup.name = 'planimetria';
     planBuildingsGroup = new THREE.Group();
     planLayerGroup.add(planBuildingsGroup);
@@ -463,7 +479,7 @@
     planMeshesByCode.clear(); planOutlinesByCode.clear(); planPointsByCode.clear(); planMask = [];
     for (const feature of plan.features) {
       const code = String(feature.code || '').toUpperCase();
-      if (!code) continue;
+      if (!code || MODELLATI.has(code)) continue; // gli edifici modellati restano quelli di dettaglio (georeferenziati su OSM e ortofoto)
       const parsed = planShape(feature.path);
       if (!parsed?.shapes?.length) continue;
       const osmBuilding = baseBuildings.find((building) => building.code.toUpperCase() === code);
@@ -620,7 +636,7 @@
   function planFeaturesLesson(code) { return Boolean(officialPlan?.features.find((feature) => String(feature.code).toUpperCase() === code)?.lesson); }
   function applyParentContext(context) {
     latestParentContext = context;
-    if (context?.plan?.features) officialPlanCodes = new Set(context.plan.features.map((feature) => String(feature.code || '').toUpperCase()));
+    if (context?.plan?.features) officialPlanCodes = new Set(context.plan.features.map((feature) => String(feature.code || '').toUpperCase()).filter((code) => !MODELLATI.has(code)));
     if (renderer && context?.plan?.features) buildPlanLayer(context.plan);
     if (context?.selectedCode) {
       pendingSelectedCode = context.selectedCode;
@@ -1058,6 +1074,36 @@
       : new THREE.MeshStandardMaterial(Object.assign({ map: kind === 'base' ? baseCanvas2(p, 1, false) : windowCanvas(p, 1, false) }, common));
     patchMats.set(key, mat);
     return mat;
+  }
+  /* facciate salvate nei file (cortile/facciate.json): texture dell'edificio e riquadri appoggiati sui muri (un'altra texture,
+     finestre tolte o aggiunte), in coordinate di mondo. Nell'artifact con l'editor le applica editor.js, che le unisce alle
+     modifiche del db; nel sito, senza editor, le applica la scena (15/11/2026). I riquadri stanno nel gruppo degli edifici:
+     ne seguono la visibilità e lo schiacciamento della vista 2D. */
+  let facadeFileGroup = null;
+  async function applyFacadeFile() {
+    if (document.querySelector('script[src*="editor.js"]')) return;
+    let data = null;
+    try { const r = await fetch('cortile/facciate.json', { cache: 'no-cache' }); if (r.ok) data = await r.json(); } catch (_) { data = null; }
+    if (!data || !data.edifici || !buildingGroup) return;
+    if (facadeFileGroup) { buildingGroup.remove(facadeFileGroup); facadeFileGroup.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+    facadeFileGroup = new THREE.Group(); facadeFileGroup.name = 'facciate-riquadri';
+    for (const [code, st] of Object.entries(data.edifici)) {
+      const key = String(code).toUpperCase();
+      if (!st || officialPlanCodes.has(key)) continue; // volume della planimetria: niente facciata di dettaglio
+      setFacade(key, st.facciata || null);
+      const name = facadeNameFor(key);
+      // prima i muri con un'altra texture, poi finestre tolte o aggiunte (stesso ordine dell'editor)
+      for (const f of (st.finestre || []).slice().sort((a, b) => (a.tipo === 'texture' ? 0 : 1) - (b.tipo === 'texture' ? 0 : 1))) {
+        if (!(f.w > 0) || !(f.h > 0)) continue;
+        const g = new THREE.PlaneGeometry(f.w, f.h), uv = g.attributes.uv;
+        if (f.tipo !== 'aggiungi') for (let i = 0; i < uv.count; i += 1) uv.setXY(i, f.u0 + uv.getX(i) * f.du, f.v0 + uv.getY(i) * f.dv); // stesse coordinate del muro: mattoni e finestre combaciano
+        const m = new THREE.Mesh(g, facadePatchMaterial(f.palette || name, f.kind, f.tipo === 'togli' ? 'muro' : f.tipo === 'texture' ? 'facciata' : 'finestra'));
+        const x = new THREE.Vector3(Math.cos(f.ang), 0, Math.sin(f.ang)), y = new THREE.Vector3(0, 1, 0), z = new THREE.Vector3().crossVectors(x, y);
+        m.matrixAutoUpdate = false; m.matrix.makeBasis(x, y, z).setPosition(f.x, f.y, f.z); m.matrixWorldNeedsUpdate = true;
+        m.userData.codice = key; m.receiveShadow = true; facadeFileGroup.add(m);
+      }
+    }
+    buildingGroup.add(facadeFileGroup);
   }
   // cerchio ai minimi quadrati (Kåsa) per una serie di punti [x, z], attorno al loro baricentro (coordinate di centinaia di metri);
   // null se i punti sono quasi allineati
@@ -2978,7 +3024,11 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const trav = travPhoto, bench = (g, p, h) => addBench(turned(g, p, Number(p.u), Number(p.v)), p, h), railing = addRailing, { ocra, ocraScura } = fireStairMats();
     for (const [index, el] of (cfg.elementi || []).entries()) {
       if (!(el.lato >= 0 && el.lato < ring.length - 1)) continue;
-      const g = sideFrame(ring, el.lato); g.userData.elemento = index; holder.add(g);
+      const gF = sideFrame(ring, el.lato); gF.userData.elemento = index; holder.add(gF);
+      // `riflesso` (metri): l'elemento è costruito riflesso rispetto all'asse v = riflesso / 2 (v diventa riflesso − v):
+      // serve alle copie speculari sul lato di Fisica, oltre il viale. Le scritte le raddrizza chi le disegna (userData.riflesso).
+      let g = gF;
+      if (Number(el.riflesso)) { g = new THREE.Group(); g.position.z = -Number(el.riflesso); g.scale.z = -1; g.userData.riflesso = true; gF.add(g); }
       if (el.rimosso) continue; // eliminato dall'editor: resta la cornice, senza contenuto
       if (el.tipo === 'terrazza') {
         const h = Number(el.altezza) || 0.8;
@@ -3034,6 +3084,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     scene.add(holder);
     updateClipMask(holder);
     if (JSON.stringify(cavediCu()) !== cavediFatti) rebuildCu014();
+    applyLaunchFocus(holder);
   }
   /* ---------- primitive aggiunte dall'editor: forma e materiale a scelta ---------- */
   const PRIM_COLORS = { intonaco: ['#e0c9a6', 0.9, 0], cemento: ['#9a9a95', 0.95, 0], bianco: ['#f2f1ec', 0.7, 0], 'metallo rosso': ['#6b1d29', 0.55, 0.4], 'ferro verde': ['#235b42', 0.55, 0.35], acciaio: ['#b9bdc0', 0.35, 0.75], legno: ['#6b4a2f', 0.8, 0], erba: ['#5f8a3e', 1, 0], asfalto: ['#4a4d50', 0.95, 0], 'intonaco arancione': ['#c98a5c', 0.9, 0], guaina: ['#28292b', 0.95, 0] };
@@ -3452,6 +3503,482 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       box(-0.025, 0.025, 0, H, -W / 2 + 0.04, W / 2, fr);
     }) },
   };
+  /* ---------- banchetto elettorale «Liberiamo Sapienza» (commento del 13/11) ----------
+     Oggetto del catalogo «banchetto»: tavolo quadrato pieghevole da picnic (piano a doghe di legno, gambe a X in alluminio), pile basse di
+     volantini sul piano, poster animati sui tre lati verso il pubblico (dal bordo del piano fino a metà altezza delle gambe, con un leggero
+     svolazzo in basso) e tre studenti low poly dietro il tavolo, animati in modo amichevole (salutano, porgono volantini, li riprendono
+     dalla pila). Studenti: Kenney «Blocky Characters» 2.0 (CC0, kenney.nl, scaricati da OpenGameArt), character-e / b / f,
+     ridotti alle animazioni usate e con la texture dentro il GLB, in models/banchetto-glb.json (glb_base64 come la Minerva).
+     Locale: origine al centro del tavolo a terra, +z = lato dei poster (il pubblico), −z = lato degli studenti. Una scatola invisibile
+     fissa l'ingombro (1,9 × 1,45 × 1,8 m), così la scatola dell'editor non cambia quando gli studenti finiscono di caricarsi. */
+  const BANCHETTO = (() => {
+    const LATO = 0.9, ALTO = 0.72, STUD_H = 1.76, POSTER_H = ALTO / 2, SNELLO = 0.8;
+    const INGOMBRO = { x0: -0.95, x1: 0.95, z0: -0.9, z1: 0.55, y1: 1.8 };
+    const STUDENTI = [ // posti dietro il tavolo
+      { x: -0.78, z: -0.55, yaw: 0.3, fase: 0 },
+      { x: 0, z: -0.78, yaw: 0, fase: 2.3 },
+      { x: 0.78, z: -0.55, yaw: -0.3, fase: 4.1 }
+    ];
+    const istanze = new Set();
+    const cache = new Map();
+    let dati = null, posterGeo = null, ultimoPoster = 0, ultimoFrame = 0;
+    const once = (k, f) => { if (!cache.has(k)) cache.set(k, f()); return cache.get(k); };
+    const mat = (k, o) => once('mat|' + k, () => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.75, metalness: 0 }, o)));
+    function tela(w, h, disegna) {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d'), tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+      const t = { c, ctx, tex, disegna }; disegna(ctx, w, h, 0); tex.needsUpdate = true;
+      return t;
+    }
+    /* ---- grafica dei poster (canvas 640 × 256, proporzioni 0,9 × 0,36 m) ---- */
+    // colori presi dal logo tondo della lista (rosso e bianco) e dall'adesivo «Pazienza» (bordeaux)
+    const COL = { rosso: '#b62b2e', rossoScuro: '#8e1f22', bianco: '#ffffff', crema: '#fff6ef', notte: '#3a0d10', bordeaux: '#9b0329' };
+    const font = (px, peso = 900) => `${peso} ${px}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+    function scrittaOndulata(ctx, testo, cx, y, px, colore, t, ampiezza, ombra) {
+      ctx.font = font(px); ctx.textBaseline = 'alphabetic';
+      const larghezze = [...testo].map((ch) => ctx.measureText(ch).width), tot = larghezze.reduce((a, b) => a + b, 0) + (testo.length - 1) * px * 0.04;
+      let x = cx - tot / 2;
+      [...testo].forEach((ch, i) => {
+        const dy = Math.sin(t * 3.2 - i * 0.55) * ampiezza;
+        if (ombra) { ctx.fillStyle = ombra; ctx.fillText(ch, x + px * 0.06, y + dy + px * 0.06); }
+        ctx.fillStyle = colore; ctx.fillText(ch, x, y + dy);
+        x += larghezze[i] + px * 0.04;
+      });
+    }
+    function coriandoli(ctx, w, h, t, colori, n, seme) {
+      for (let i = 0; i < n; i += 1) {
+        const r = Math.sin(i * 91.7 + seme) * 0.5 + 0.5, s = Math.sin(i * 37.3 + seme * 2) * 0.5 + 0.5;
+        const y = ((t * (18 + 22 * s) + r * h * 1.3) % (h + 30)) - 15, x = r * w + Math.sin(t * 1.7 + i) * 12, a = t * (1 + s * 2) + i;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = colori[i % colori.length];
+        ctx.fillRect(-5, -3, 10, 6); ctx.restore();
+      }
+    }
+    function cuore(ctx, x, y, s, colore) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = colore; ctx.beginPath();
+      ctx.moveTo(0, 6); ctx.lineTo(-10, -3); ctx.lineTo(-6, -9); ctx.lineTo(0, -5); ctx.lineTo(6, -9); ctx.lineTo(10, -3); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    /* adesivi della lista (commento del 13/11, ritagliati dalle immagini dell'utente): logo tondo «Liberiamo Sapienza» e adesivo
+       «Pazienza – Università di Roma»; finché non sono caricati i poster si disegnano senza */
+    const ADESIVI = {}, attendeAdesivi = [];
+    function adesivo(k) {
+      if (!(k in ADESIVI)) {
+        ADESIVI[k] = null;
+        const img = new Image();
+        img.onload = () => { ADESIVI[k] = img; attendeAdesivi.splice(0).forEach((t) => { t.disegna(t.ctx, t.c.width, t.c.height, 0); t.tex.needsUpdate = true; }); };
+        img.src = k === 'tondo' ? 'tex/banchetto/liberiamo-sapienza-tondo.png' : 'tex/banchetto/pazienza-rettangolo.png';
+      }
+      return ADESIVI[k];
+    }
+    function logoTondo(ctx, x, y, d, ang) {
+      const img = adesivo('tondo'); if (!img) return;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang || 0);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.arc(4, 6, d / 2, 0, Math.PI * 2); ctx.fill(); // ombra dell'adesivo
+      ctx.drawImage(img, -d / 2, -d / 2, d, d); ctx.restore();
+    }
+    const POSTER = {
+      // davanti: logo tondo della lista che ondeggia, invito a scoprire il programma, coriandoli bianchi
+      fronte: (ctx, w, h, t) => {
+        ctx.fillStyle = COL.rosso; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = COL.rossoScuro; for (let i = -2; i < 12; i += 1) { ctx.beginPath(); const x = i * 70 + ((t * 20) % 70); ctx.moveTo(x, 0); ctx.lineTo(x + 35, 0); ctx.lineTo(x - 45, h); ctx.lineTo(x - 80, h); ctx.fill(); }
+        coriandoli(ctx, w, h, t, [COL.bianco, COL.crema, '#ffb3b3'], 20, 1);
+        // impaginazione a due colonne con margini ampi: logo a sinistra, invito a destra (niente saluto né caselle da spuntare, commento del 13/11)
+        logoTondo(ctx, 140, h / 2 + Math.sin(t * 2) * 3, 196 * (1 + Math.sin(t * 4) * 0.02), Math.sin(t * 1.3) * 0.05);
+        { const dy = Math.sin(t * 2) * 2; ctx.textAlign = 'center'; ctx.font = font(44);
+          for (const [txt, y] of [['SCOPRI IL', 92], ['PROGRAMMA', 146]]) { ctx.fillStyle = COL.notte; ctx.fillText(txt, 448, y + dy + 3); ctx.fillStyle = COL.bianco; ctx.fillText(txt, 445, y + dy); }
+          ctx.textAlign = 'start'; }
+        ctx.textAlign = 'center'; ctx.font = font(22, 800); ctx.fillStyle = '#ffd6d6'; ctx.fillText('SCRITTO ASSIEME A VOI', 445, 196); ctx.textAlign = 'start';
+        ctx.strokeStyle = COL.bianco; ctx.lineWidth = 10; ctx.strokeRect(5, 5, w - 10, h - 10);
+      },
+      // lato sinistro: fondo bianco, logo tondo che gira piano come un adesivo appena attaccato, «i tuoi rappresentanti»
+      vota: (ctx, w, h, t) => {
+        ctx.fillStyle = COL.bianco; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#f6e3e3'; for (let i = 0; i < 9; i += 1) for (let j = 0; j < 4; j += 1) if ((i + j) % 2) ctx.fillRect(i * 80, j * 70, 80, 70);
+        logoTondo(ctx, 128, 128, 196, Math.sin(t * 0.9) * 0.18);
+        scrittaOndulata(ctx, 'I TUOI', 430, 100, 50, COL.rosso, t, 4, '#f1c4c4');
+        scrittaOndulata(ctx, 'RAPPRESENTANTI', 430, 160, 35, COL.rossoScuro, t + 0.6, 4, '#f1c4c4');
+        const s = 1 + Math.max(0, Math.sin(t * 5)) * 0.08;
+        ctx.save(); ctx.translate(430, 208); ctx.scale(s, s); ctx.textAlign = 'center'; ctx.font = font(22, 800); ctx.fillStyle = COL.notte; ctx.fillText('INFORMATI SUL PROGRAMMA', 0, 0); ctx.restore(); ctx.textAlign = 'start';
+        ctx.strokeStyle = COL.rosso; ctx.lineWidth = 10; ctx.strokeRect(5, 5, w - 10, h - 10);
+      },
+      // lato destro: specchio del sinistro, logo tondo che dondola a destra, invito al banchetto e una striscia che scorre in basso
+      megafono: (ctx, w, h, t) => {
+        ctx.fillStyle = COL.notte; ctx.fillRect(0, 0, w, h);
+        coriandoli(ctx, w, h - 56, t, ['#6a1a1e', '#802126', '#ffffff33'], 16, 3);
+        logoTondo(ctx, w - 118, 98, 168, Math.sin(t * 1.1 + 1) * 0.16);
+        scrittaOndulata(ctx, 'PASSA AL', 225, 84, 50, COL.bianco, t, 4, '#1c0507');
+        scrittaOndulata(ctx, 'BANCHETTO!', 225, 148, 50, '#ffb3b3', t + 0.6, 4, '#1c0507');
+        ctx.fillStyle = COL.rosso; ctx.fillRect(0, h - 56, w, 56);
+        ctx.font = font(28, 800); ctx.fillStyle = COL.bianco; ctx.textBaseline = 'middle';
+        const nastro = 'LIBERIAMO SAPIENZA  ★  VIENI A TROVARCI  ★  INFORMATI SUL PROGRAMMA  ★  ', lw = ctx.measureText(nastro).width, off = -((t * 70) % lw);
+        for (let x = off; x < w; x += lw) ctx.fillText(nastro, x, h - 28);
+        ctx.textBaseline = 'alphabetic';
+      }
+    };
+    function posterTela(k) { return once('poster|' + k, () => { const t = tela(640, 256, POSTER[k]); attendeAdesivi.push(t); return t; }); }
+    // volantino segnaposto (in attesa delle grafiche vere): fascia col logo tondo della lista e omini stilizzati, righe di testo finte
+    function omino(ctx, x, y, s, braccio, colore) {
+      ctx.strokeStyle = colore; ctx.fillStyle = colore; ctx.lineWidth = 2.6 * s; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(x, y - 22 * s, 5.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x, y - 16 * s); ctx.lineTo(x, y); // busto
+      ctx.moveTo(x, y); ctx.lineTo(x - 6 * s, y + 14 * s); ctx.moveTo(x, y); ctx.lineTo(x + 6 * s, y + 14 * s); // gambe
+      ctx.moveTo(x, y - 12 * s); ctx.lineTo(x - 9 * s, y - 4 * s); // braccio sinistro giù
+      if (braccio === 'saluta') { ctx.moveTo(x, y - 12 * s); ctx.lineTo(x + 8 * s, y - 24 * s); } else { ctx.moveTo(x, y - 12 * s); ctx.lineTo(x + 9 * s, y - 4 * s); }
+      ctx.stroke();
+    }
+    function volantinoTex(i) {
+      return once('volantino|' + i, () => {
+        const fondo = [COL.rosso, COL.rossoScuro, COL.bianco, COL.rosso][i % 4], riga = i % 4 === 2 ? COL.rosso : '#b9b3aa';
+        const t = tela(128, 182, (ctx, w, h) => {
+          ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = fondo; ctx.fillRect(0, 0, w, 62);
+          if (ADESIVI.tondo) ctx.drawImage(ADESIVI.tondo, w / 2 - 28, 3, 56, 56);
+          else { ctx.fillStyle = fondo === COL.bianco ? COL.rosso : COL.bianco; ctx.textAlign = 'center'; ctx.font = font(15); ctx.fillText('LIBERIAMO', w / 2, 28); ctx.fillText('SAPIENZA', w / 2, 48); ctx.textAlign = 'start'; }
+          // omini che si tengono per mano, uno saluta (varia con la pila)
+          const n = 3 + (i % 2), passo = 96 / (n - 1), y0 = 112;
+          for (let k = 0; k < n; k += 1) omino(ctx, 16 + k * passo, y0, 1, k === (i % n) ? 'saluta' : 'mano', k % 2 ? COL.rosso : '#2a2a2a');
+          ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(10, y0 + 15); ctx.lineTo(118, y0 + 15); ctx.stroke(); // terreno
+          ctx.fillStyle = riga; for (let r = 0; r < 3; r += 1) ctx.fillRect(14, 140 + r * 10, r === 2 ? 60 : 100 - r * 14, 4);
+          ctx.fillStyle = COL.rosso; ctx.fillRect(14, 170, 36, 6);
+        });
+        adesivo('tondo'); attendeAdesivi.push(t);
+        return t.tex;
+      });
+    }
+    /* adesivi sparsi sul piano (commento del 13/11): il tondo della lista e il rettangolare «Pazienza», alla rinfusa, alcuni impilati e
+       alcuni sopra le pile di volantini (attaccati al foglio sciolto, così si sollevano con lui) */
+    const ADESIVO_MISURE = { tondo: [0.075, 0.075], pazienza: [0.11, 0.11 * 123 / 340] };
+    function adesivoMat(k, v) {
+      if (v) return once('mat|adesivoImg|' + (v.asset || v.url), () => new THREE.MeshStandardMaterial({ map: texImmagine(v), transparent: true, alphaTest: 0.35, roughness: 0.45, metalness: 0, side: THREE.DoubleSide }));
+      return once('mat|adesivo|' + k, () => {
+        const tex = new THREE.TextureLoader().load(k === 'tondo' ? 'tex/banchetto/liberiamo-sapienza-tondo.png' : 'tex/banchetto/pazienza-rettangolo.png');
+        tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+        return new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, roughness: 0.45, metalness: 0, side: THREE.DoubleSide });
+      });
+    }
+    function adesivoMesh(k, x, y, z, rot, imm) {
+      const v = immagine(imm, k === 'tondo' ? 'adesivo1' : 'adesivo2');
+      let [w, d] = ADESIVO_MISURE[k];
+      if (v) { const lungo = Math.max(w, d), ar = v.w / v.h; [w, d] = ar >= 1 ? [lungo, lungo / ar] : [lungo * ar, lungo]; }
+      const o = new THREE.Mesh(once('adesivoGeo', () => { const q = new THREE.PlaneGeometry(1, 1); q.rotateX(-Math.PI / 2); return q; }), adesivoMat(k, v));
+      o.scale.set(w, 1, d); o.position.set(x, y, z); o.rotation.y = rot; o.receiveShadow = true; return o;
+    }
+    function adesiviSulTavolo(g, fogli, imm) {
+      const sparsi = [ // [tipo, x, z, rotazione, livello nella pila]
+        ['tondo', 0.31, 0.31, 0.3, 0], ['pazienza', 0.3, 0.32, -0.5, 1], ['tondo', 0.33, 0.29, 1.1, 2], ['pazienza', 0.28, 0.33, 0.2, 3],
+        ['tondo', -0.12, 0.37, 0.7, 0], ['pazienza', 0.36, -0.06, 1.3, 0], ['tondo', -0.38, 0.03, -0.4, 0], ['tondo', 0.17, -0.3, 2.1, 0],
+        ['pazienza', -0.14, -0.33, -0.25, 0], ['tondo', -0.1, -0.31, 0.9, 1], ['pazienza', 0.12, 0.36, 0.45, 0]
+      ];
+      for (const [k, x, z, r, liv] of sparsi) g.add(adesivoMesh(k, x, ALTO + 0.0012 + liv * 0.0009, z, r, imm));
+      // sopra alcune pile: sul foglio sciolto (coordinate della cerniera: z da 0 a 0,21 lungo il foglio)
+      [[0, 'tondo', 0.02, 0.12, 0.5], [2, 'pazienza', -0.01, 0.08, -0.3], [3, 'tondo', -0.03, 0.15, 1.7], [3, 'pazienza', 0.02, 0.06, 0.15]]
+        .forEach(([i, k, x, z, r], n) => { if (fogli[i]) fogli[i].cerniera.add(adesivoMesh(k, x, 0.0012 + n * 0.0004, z, r, imm)); });
+    }
+    /* fumetti degli studenti: ogni tanto uno di loro dice una frase a caso fra quelle del campo «frasi» dell'editor (separate da ;) */
+    // toni da rappresentanti degli studenti, non da campagna di partito (commento del 13/11): niente «vota», inviti a conoscerci e informarsi
+    const FRASI = 'Ciao! Siamo i tuoi rappresentanti di Liberiamo Sapienza; Vieni a trovarci!; Scopri il nostro programma, scritto assieme a voi; Parla con noi dei tuoi problemi in Sapienza: possiamo risolverli; Scopri cosa facciamo per gli studenti; Prendi un volantino!; Hai dubbi su esami o corsi? Chiedici pure; Clicca per approfondire';
+    function frasiDi(pr) { const f = String(pr && pr.frasi != null ? pr.frasi : FRASI).split(';').map((x) => x.trim()).filter(Boolean); return f.length ? f : FRASI.split(';').map((x) => x.trim()); }
+    function disegnaFumetto(ctx, w, h, testo) {
+      ctx.clearRect(0, 0, w, h);
+      const bx = 10, by = 10, bw = w - 20, bh = h - 70, r = 34;
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = COL.notte; ctx.lineWidth = 7; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(bx + r, by); ctx.arcTo(bx + bw, by, bx + bw, by + bh, r); ctx.arcTo(bx + bw, by + bh, bx, by + bh, r);
+      ctx.lineTo(150, by + bh); ctx.lineTo(108, h - 10); ctx.lineTo(112, by + bh); // codina verso la testa
+      ctx.arcTo(bx, by + bh, bx, by, r); ctx.arcTo(bx, by, bx + bw, by, r); ctx.closePath(); ctx.fill(); ctx.stroke();
+      // testo a capo automatico, al massimo tre righe
+      let px = 40, righe;
+      for (;;) {
+        ctx.font = font(px, 800); righe = []; let riga = '';
+        for (const parola of testo.split(/\s+/)) { const prova = riga ? riga + ' ' + parola : parola; if (ctx.measureText(prova).width > bw - 50 && riga) { righe.push(riga); riga = parola; } else riga = prova; }
+        if (riga) righe.push(riga);
+        if ((righe.length <= 3 && righe.every((x) => ctx.measureText(x).width <= bw - 40)) || px <= 22) break;
+        px -= 3;
+      }
+      ctx.fillStyle = COL.notte; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      righe.slice(0, 3).forEach((x, k, a) => ctx.fillText(x, w / 2, by + bh / 2 + (k - (a.length - 1) / 2) * px * 1.12));
+      ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+    }
+    function fumetto(g, pr) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+      const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0 });
+      const sp = new THREE.Sprite(mat); sp.center.set(0.21, 0.02); sp.visible = false; sp.renderOrder = 5; sp.raycast = () => {};
+      g.add(sp);
+      return { sp, c, ctx: c.getContext('2d'), tex, frasi: frasiDi(pr), ultima: -1, dal: 0, al: 0, prossimo: performance.now() + 2500 + Math.random() * 2500 };
+    }
+    function aggiornaFumetto(g, f, ora, ridotto) {
+      const st = (g.userData.studenti || []);
+      if (!f.sp.visible) {
+        if (ora < f.prossimo || !st.length) return;
+        let i = Math.floor(Math.random() * f.frasi.length); if (f.frasi.length > 1 && i === f.ultima) i = (i + 1) % f.frasi.length; f.ultima = i;
+        disegnaFumetto(f.ctx, f.c.width, f.c.height, f.frasi[i]); f.tex.needsUpdate = true;
+        const chi = st[Math.floor(Math.random() * st.length)].holder;
+        f.sp.position.set(chi.position.x + 0.12, STUD_H + 0.12, chi.position.z);
+        f.dal = ora; f.al = ora + 3200 + f.frasi[i].length * 45; f.sp.visible = true;
+      }
+      const t = (ora - f.dal) / 1000, fine = (f.al - ora) / 1000;
+      const pop = ridotto ? 1 : (t < 0.35 ? 1 + 2.4 * Math.pow(t / 0.35 - 1, 3) + 1.4 * Math.pow(t / 0.35 - 1, 2) : 1);
+      const s = Math.max(0.01, pop) * (1 + (ridotto ? 0 : Math.sin(t * 2.5) * 0.015));
+      f.sp.scale.set(1.25 * s, 0.625 * s, 1);
+      f.sp.material.opacity = Math.max(0, Math.min(1, t / 0.15, fine / 0.3));
+      if (ora > f.al) { f.sp.visible = false; f.prossimo = ora + 2500 + Math.random() * 4500; }
+    }
+    function pacco() { // fianchi della pila: fogli bianchi con le righe dei bordi
+      return once('pacco', () => { const t = tela(64, 64, (ctx, w, h) => { ctx.fillStyle = '#f4f1ea'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#d8d2c6'; for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 1); }); t.tex.wrapS = t.tex.wrapT = THREE.RepeatWrapping; t.tex.repeat.set(1, 3); return t.tex; });
+    }
+    // piano a doghe: legno chiaro con le venature
+    function legno() {
+      return once('legno', () => tela(256, 64, (ctx, w, h) => {
+        ctx.fillStyle = '#c99a5b'; ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 18; i += 1) { ctx.strokeStyle = i % 2 ? 'rgba(120,78,36,0.28)' : 'rgba(240,200,140,0.25)'; ctx.lineWidth = 1 + (i % 3); ctx.beginPath(); const y = (i * 37) % h; ctx.moveTo(0, y); ctx.bezierCurveTo(w * 0.3, y + 6, w * 0.6, y - 6, w, y + 2); ctx.stroke(); }
+      }).tex);
+    }
+    function box(g, w, h, d, x, y, z, m) { const o = new THREE.Mesh(once(`box|${w}|${h}|${d}`, () => new THREE.BoxGeometry(w, h, d)), m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; }
+    function tubo(g, a, b, r, m) {
+      const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), L = A.distanceTo(B);
+      const o = new THREE.Mesh(once('tubo|' + r, () => new THREE.CylinderGeometry(r, r, 1, 6)), m);
+      o.scale.y = L; o.position.copy(A).add(B).multiplyScalar(0.5);
+      o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); o.castShadow = true; g.add(o); return o;
+    }
+    function tavolo(g) {
+      const doghe = 5, gap = 0.012, dw = (LATO - gap * (doghe - 1)) / doghe, sp = 0.025;
+      const mLegno = once('mat|doga', () => new THREE.MeshStandardMaterial({ map: legno(), roughness: 0.8, metalness: 0 }));
+      for (let i = 0; i < doghe; i += 1) box(g, LATO, sp, dw, 0, ALTO - sp / 2, -LATO / 2 + dw / 2 + i * (dw + gap), mLegno);
+      const allu = mat('alluminio', { color: 0xb9bec4, roughness: 0.45, metalness: 0.35 });
+      const r = 0.012, telaio = ALTO - sp - 0.015;
+      for (const s of [-1, 1]) {
+        box(g, LATO - 0.04, 0.03, 0.02, 0, telaio, s * (LATO / 2 - 0.03), allu); // traversi sotto il piano
+        box(g, 0.02, 0.03, LATO - 0.04, s * (LATO / 2 - 0.03), telaio, 0, allu);
+        const x = s * (LATO / 2 - 0.06), d = LATO / 2 - 0.08;
+        tubo(g, [x, 0.012, -d], [x, telaio, d], r, allu); tubo(g, [x, 0.012, d], [x, telaio, -d], r, allu); // gambe a X pieghevoli
+        tubo(g, [x, 0.012, -d - 0.03], [x, 0.012, -d + 0.05], r * 1.2, allu); tubo(g, [x, 0.012, d - 0.05], [x, 0.012, d + 0.03], r * 1.2, allu); // piedini
+        box(g, 0.03, 0.03, 0.03, x, ALTO / 2 - 0.02, 0, mat('perno', { color: 0x2b2b2b, roughness: 0.6 })); // perno della X
+      }
+      tubo(g, [-(LATO / 2 - 0.06), 0.18, -0.24], [LATO / 2 - 0.06, 0.18, -0.24], r, allu); // barra di irrigidimento
+    }
+    /* immagini caricate dall'editor (campo «immagini» del banchetto, commento del 13/11): per ogni chiave { asset, w, h } (asset
+       dell'artifact, servito da /_blob/<id>) oppure { url, w, h }; le misure seguono le proporzioni dell'immagine */
+    const IMMAGINI = ['posterFronte', 'posterSinistra', 'posterDestra', 'volantino', 'adesivo1', 'adesivo2'];
+    function immagine(imm, k) { const v = imm && imm[k]; return v && (v.asset || v.url) && v.w > 0 && v.h > 0 ? v : null; }
+    function texImmagine(v) {
+      const src = v.url || '/_blob/' + v.asset;
+      return once('img|' + src, () => { const t = new THREE.TextureLoader().load(src); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; });
+    }
+    const geoSvolazzo = new Set();
+    function volantini(g, imm) {
+      const vi = immagine(imm, 'volantino'), ar = vi ? vi.w / vi.h : 0.148 / 0.21;
+      const fw = ar >= 1 ? 0.21 : 0.21 * ar, fd = ar >= 1 ? 0.21 / ar : 0.21; // lato lungo 21 cm, l'altro in proporzione
+      const pile = [[-0.27, 0.14, 0.035, 0.12, 0], [-0.04, 0.2, 0.05, -0.06, 1], [0.22, 0.13, 0.025, 0.2, 2], [0.04, -0.13, 0.04, -0.15, 3], [-0.28, -0.16, 0.02, 0.05, 2]];
+      const fogli = [];
+      for (const [x, z, h, rot, i] of pile) {
+        const top = vi ? once('mat|volimg|' + (vi.asset || vi.url), () => new THREE.MeshStandardMaterial({ map: texImmagine(vi), roughness: 0.9 })) : once('mat|vol' + i, () => new THREE.MeshStandardMaterial({ map: volantinoTex(i), roughness: 0.9 }));
+        const lato = once('mat|pacco', () => new THREE.MeshStandardMaterial({ map: pacco(), roughness: 0.95 }));
+        const p = new THREE.Group(); p.position.set(x, ALTO, z); p.rotation.y = rot; g.add(p);
+        const pila = box(p, fw, h, fd, 0, h / 2, 0, [lato, lato, top, lato, lato, lato]);
+        pila.receiveShadow = true;
+        // ultimo foglio sciolto: incernierato sul bordo posteriore, si solleva un poco con la brezza
+        const cerniera = new THREE.Group(); cerniera.position.set(0, h + 0.002, -fd / 2); p.add(cerniera);
+        const foglio = new THREE.Mesh(once(`foglio|${fw}|${fd}`, () => { const q = new THREE.PlaneGeometry(fw, fd); q.rotateX(-Math.PI / 2); q.translate(0, 0, fd / 2); return q; }), top.map && vi ? once('mat|fogimg|' + (vi.asset || vi.url), () => new THREE.MeshStandardMaterial({ map: texImmagine(vi), roughness: 0.9, side: THREE.DoubleSide })) : once('mat|foglio' + i, () => new THREE.MeshStandardMaterial({ map: volantinoTex(i), roughness: 0.9, side: THREE.DoubleSide })));
+        foglio.rotation.y = 0.05; foglio.castShadow = true; cerniera.add(foglio);
+        fogli.push({ cerniera, fase: x * 7 + z * 3 });
+      }
+      return fogli;
+    }
+    function posterGeometria() {
+      if (!posterGeo) { posterGeo = new THREE.PlaneGeometry(LATO, POSTER_H, 12, 3); posterGeo.userData.base = posterGeo.attributes.position.array.slice(); }
+      return posterGeo;
+    }
+    function posters(g, imm) {
+      const lati = [['fronte', 'posterFronte', 0, LATO / 2 + 0.006, 0], ['vota', 'posterSinistra', -LATO / 2 - 0.006, 0, -Math.PI / 2], ['megafono', 'posterDestra', LATO / 2 + 0.006, 0, Math.PI / 2]];
+      for (const [k, ki, x, z, ry] of lati) {
+        const v = immagine(imm, ki);
+        let geo = posterGeometria(), m, alto = POSTER_H;
+        if (v) { // immagine caricata: largo quanto il lato del tavolo, alto in proporzione (al massimo fin quasi a terra, allora si stringe)
+          const ar = v.w / v.h; let pw = LATO; alto = pw / ar;
+          if (alto > ALTO - 0.04) { alto = ALTO - 0.04; pw = alto * ar; }
+          geo = once(`posterImg|${pw.toFixed(3)}|${alto.toFixed(3)}`, () => { const q = new THREE.PlaneGeometry(pw, alto, 12, 3); q.userData.base = q.attributes.position.array.slice(); q.userData.h = alto; return q; });
+          geoSvolazzo.add(geo);
+          m = once('mat|posterImg|' + (v.asset || v.url), () => new THREE.MeshStandardMaterial({ map: texImmagine(v), roughness: 0.7, side: THREE.DoubleSide }));
+        } else { const t = posterTela(k); m = once('mat|poster|' + k, () => new THREE.MeshStandardMaterial({ map: t.tex, roughness: 0.7, side: THREE.DoubleSide })); }
+        const o = new THREE.Mesh(geo, m);
+        o.position.set(x, ALTO - alto / 2 - 0.005, z); o.rotation.y = ry; o.castShadow = true; o.receiveShadow = true;
+        g.add(o);
+        // listello di nastro adesivo sul bordo del piano
+        const nastro = box(g, LATO * 0.98, 0.018, 0.004, 0, 0, 0, mat('nastro', { color: 0xf3efe2, roughness: 0.6 }));
+        nastro.position.set(x, ALTO - 0.012, z); nastro.rotation.y = ry; nastro.translateZ(0.003);
+      }
+    }
+    // svolazzo dei poster: il bordo basso si gonfia verso l'esterno (geometria condivisa da tutti i banchetti)
+    function svolazza(t) {
+      if (posterGeo) geoSvolazzo.add(posterGeo);
+      for (const geo of geoSvolazzo) {
+        const p = geo.attributes.position, b = geo.userData.base, H = geo.userData.h || POSTER_H;
+        for (let i = 0; i < p.count; i += 1) {
+          const x = b[i * 3], y = b[i * 3 + 1], giu = Math.max(0, (H / 2 - y) / H); // 0 in alto (fissato), 1 in basso
+          p.array[i * 3 + 2] = giu * giu * (0.018 + 0.012 * Math.sin(t * 2.1 + x * 5));
+        }
+        p.needsUpdate = true; geo.computeVertexNormals();
+      }
+    }
+    /* ---- studenti ---- */
+    /* studenti low poly (commento del 13/11): «Cartoon boy» scaricato dall'utente, fuso davvero in un'unica mesh e poi ridotto a zone (corpo e vestiti
+       molto, capelli a sagoma, viso e mani poco: ~5,6k triangoli), vestiti e capelli a tinta piatta, colori cotti sui vertici e ombreggiatura a faccette; tre pose (7, 14, 23) che si alternano in dissolvenza. Varianti di colore
+       (felpa, pantaloni, capelli, pelle, barba sì/no) scelte a caso; ogni modello compare al massimo una volta al banchetto e il
+       cambio avviene solo con modelli assenti. File: models/studenti-lowpoly.json (glb_base64, come la Minerva). */
+    const VARIANTI = [
+      { felpa: 0xffffff, pant: 0xffffff, capelli: 0xffffff, pelle: 0xffffff, barba: true },
+      { felpa: 0xc23a3d, pant: 0x3b3f4a, capelli: 0x3a2a20, pelle: 0xd8b49a, barba: false },
+      { felpa: 0x2f4b7a, pant: 0x9aa3ad, capelli: 0x5a4030, pelle: 0xb88a6a, barba: true },
+      { felpa: 0xd9a933, pant: 0x2b2b2b, capelli: 0x2a1d16, pelle: 0x8a5a3c, barba: false },
+      { felpa: 0x3f7a4f, pant: 0x6b5a48, capelli: 0xe0c08a, pelle: 0xf0d2c0, barba: false },
+      { felpa: 0x7a7f86, pant: 0x2f3e66, capelli: 0x1c1c1c, pelle: 0x6e4630, barba: true }
+    ];
+    const RUOLO = (nome) => (/Hoodie/.test(nome) ? 'felpa' : /Pants/.test(nome) ? 'pant' : /Hair|Scalp|Eyebrow|Beard|Mustache/.test(nome) ? 'capelli' : /Skin/.test(nome) ? 'pelle' : null);
+    const POSE = ['Pose  7', 'Pose  23', 'Pose  14'];
+    function caricaDati(env) {
+      if (!dati) dati = env.caricaLoader().then(() => fetch(env.url || 'models/studenti.json')).then((r) => (r.ok ? r.json() : Promise.reject(new Error('studenti'))))
+        .then((j) => Promise.all(j.modelli.map(async (m) => { // modelli come file .glb separati (più leggeri), o dentro il JSON in base64
+          const b = m.file ? await (await fetch(m.file)).arrayBuffer() : Uint8Array.from(atob(m.glb_base64), (ch) => ch.charCodeAt(0)).buffer; b.pose = m.pose; b.alt = m.alt; b.vicino = m.fileVicino; return b; })))
+        .catch((e) => { dati = null; throw e; });
+      return dati;
+    }
+    function nuovoStudente(g, buf, slot, vi) {
+      return new Promise((res) => new THREE.GLTFLoader().parse(buf.slice(0), '', (gltf) => {
+        if (g.userData.smontato) return res(null);
+        const m = gltf.scene, v = VARIANTI[vi]; m.updateMatrixWorld(true);
+        const h = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3()).y || 1; m.scale.setScalar((buf.alt || STUD_H) / h);
+        const mats = [];
+        m.traverse((o) => {
+          if (!o.isMesh) return;
+          o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
+          // corpo (colori sui vertici): materiale a faccette; testa: restano i materiali originali con le loro texture
+          if (o.geometry.attributes.color && !o.material.map) o.material = new THREE.MeshStandardMaterial({ name: 'Studente', vertexColors: true, flatShading: true, skinning: !!o.isSkinnedMesh, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
+          // strati sfumati (barba, attaccatura, baffi, ciglia): restano trasparenti e si disegnano in ordine, dal più interno
+          const nm = o.material.name || ''; o.material.userData.sfuma = !!o.material.transparent;
+          o.renderOrder = /Scalp/.test(nm) ? 1 : /Beard_Base/.test(nm) ? 2 : /Chinstrap/.test(nm) ? 3 : /Mustache/.test(nm) ? 4 : /Eyelash/.test(nm) ? 5 : 0;
+          o.material.transparent = true; o.material.opacity = 0;
+          mats.push(o.material);
+        });
+        const holder = new THREE.Group(); holder.position.set(slot.x, 0, slot.z); holder.rotation.y = slot.yaw; holder.add(m); g.add(holder);
+        const mixer = new THREE.AnimationMixer(m), azioni = {};
+        for (const c of gltf.animations) { const a = mixer.clipAction(c); a.setEffectiveWeight(0); a.play(); azioni[c.name] = a; }
+        const st = { mixer, azioni, holder, mats, vi, pose: buf.pose || POSE, yaw: slot.yaw, fase: slot.fase, posa: null, prossima: 0, nato: performance.now(), esce: 0 };
+        cambiaPosa(st, performance.now(), 0); res(st);
+      }, () => res(null)));
+    }
+    function cambiaPosa(st, ora, durata = 1.1) {
+      const disponibili = st.pose.filter((p) => st.azioni[p] && p !== st.posa), p = disponibili[Math.floor(Math.random() * disponibili.length)];
+      if (!p) return;
+      const nuova = st.azioni[p], vecchia = st.posa && st.azioni[st.posa];
+      nuova.enabled = true; nuova.setEffectiveTimeScale(1); nuova.setEffectiveWeight(1);
+      if (durata && vecchia) vecchia.crossFadeTo(nuova, durata, false); else if (vecchia) vecchia.setEffectiveWeight(0);
+      st.posa = p; st.prossima = ora + 3500 + Math.random() * 4000;
+    }
+    function aggiungiStudenti(g, env) {
+      caricaDati(env).then(async (buffers) => {
+        if (g.userData.smontato || !buffers.length) return;
+        // mai lo stesso personaggio due volte al banchetto (commento del 13/11): un modello per posto, al massimo tre;
+        // con un solo modello c'è un solo studente, al centro. Colori a caso a ogni caricamento.
+        const modelli = buffers.map((_, i) => i).sort(() => Math.random() - 0.5), n = Math.min(STUDENTI.length, modelli.length);
+        const posti = n === 1 ? [1] : n === 2 ? [0, 2] : [0, 1, 2];
+        g.userData.studenti = [];
+        g.userData.cambio = { buffers, posti, prossimo: performance.now() + 30000 + Math.random() * 30000 };
+        for (let k = 0; k < n; k += 1) {
+          const st = await nuovoStudente(g, buffers[modelli[k]], STUDENTI[posti[k]], Math.floor(Math.random() * VARIANTI.length));
+          if (st) { st.slot = posti[k]; st.mi = modelli[k]; g.userData.studenti.push(st); }
+        }
+      }).catch(() => {});
+    }
+    // il cambio: uno dei tre sfuma via e al suo posto compare una variante che non è al banchetto
+    function cambioStudente(g, ora) {
+      const c = g.userData.cambio, st = g.userData.studenti || [];
+      if (!c || ora < c.prossimo || !st.length || st.some((x) => x.esce)) return;
+      c.prossimo = ora + 30000 + Math.random() * 30000;
+      // il cambio avviene solo con un personaggio (modello) che non è già al banchetto
+      const liberi = c.buffers.map((_, i) => i).filter((i) => !st.some((x) => x.mi === i));
+      if (!liberi.length) return;
+      const via = st[Math.floor(Math.random() * st.length)], mi = liberi[Math.floor(Math.random() * liberi.length)];
+      via.esce = ora;
+      nuovoStudente(g, c.buffers[mi], STUDENTI[via.slot], Math.floor(Math.random() * VARIANTI.length)).then((nuovo) => {
+        if (!nuovo) return; nuovo.slot = via.slot; nuovo.mi = mi; nuovo.nato = ora + 1200; st.push(nuovo);
+      });
+    }
+    function crea(pr, env) {
+      const g = new THREE.Group(); g.name = 'banchetto';
+      const ing = new THREE.Mesh(once('ingombro', () => { const b = new THREE.BoxGeometry(INGOMBRO.x1 - INGOMBRO.x0, INGOMBRO.y1, INGOMBRO.z1 - INGOMBRO.z0); b.translate((INGOMBRO.x0 + INGOMBRO.x1) / 2, INGOMBRO.y1 / 2, (INGOMBRO.z0 + INGOMBRO.z1) / 2); return b; }), once('mat|invisibile', () => new THREE.MeshBasicMaterial({ visible: false })));
+      ing.castShadow = false; ing.receiveShadow = false; ing.userData.ingombro = true; ing.raycast = () => {}; g.add(ing);
+      const imm = (pr && pr.immagini) || {};
+      tavolo(g); posters(g, imm);
+      g.userData.fogli = volantini(g, imm);
+      adesiviSulTavolo(g, g.userData.fogli, imm);
+      g.userData.fumetto = fumetto(g, pr);
+      g.userData.nato = performance.now();
+      istanze.add(g);
+      aggiungiStudenti(g, env);
+      return g;
+    }
+    /* caricamento progressivo (commento del 14/11): all'inizio si scarica la versione leggera di ogni studente; quando la camera
+       arriva entro VICINO metri dal banchetto si scarica quella dettagliata e la si scambia sul posto, stessa posa, senza stacchi */
+    const VICINO = 14, dettagliati = new Map(); let _pb = null; // THREE si carica dopo: niente new THREE qui
+    function dettagliato(buf) {
+      if (!dettagliati.has(buf)) dettagliati.set(buf, fetch(buf.vicino).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('vicino')))).then((b) => { b.pose = buf.pose; b.alt = buf.alt; return b; }).catch(() => { dettagliati.delete(buf); return null; }));
+      return dettagliati.get(buf);
+    }
+    function avvicina(g, cam, ora) {
+      if (!cam || !g.userData.cambio) return;
+      if (!g.userData.vicino) { if (cam.position.distanceTo(g.getWorldPosition(_pb || (_pb = new THREE.Vector3()))) > VICINO) return; g.userData.vicino = true; }
+      const lista = g.userData.studenti || [];
+      for (const st of lista) {
+        const base = g.userData.cambio.buffers[st.mi];
+        if (st.hd || st.esce || !base || !base.vicino || ora - st.nato < 1300) continue;
+        st.hd = true;
+        dettagliato(base).then((buf) => buf && nuovoStudente(g, buf, STUDENTI[st.slot], st.vi)).then((n) => {
+          if (!n) return;
+          const i = lista.indexOf(st); if (i < 0 || st.esce) { n.holder.parent && n.holder.parent.remove(n.holder); return; }
+          // stessa posa e stesso istante dell'animazione del modello leggero
+          for (const [k, a] of Object.entries(n.azioni)) { a.stopFading(); a.setEffectiveWeight(k === st.posa ? 1 : 0); if (st.azioni[k]) a.time = st.azioni[k].time; }
+          Object.assign(n, { hd: true, slot: st.slot, mi: st.mi, posa: st.posa, prossima: st.prossima, nato: -1e9, fase: st.fase });
+          n.holder.rotation.y = st.holder.rotation.y; n.mixer.update(0);
+          lista[i] = n; st.holder.parent && st.holder.parent.remove(st.holder);
+          st.holder.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+        });
+      }
+    }
+    function inScena(o) { let p = o; while (p.parent) p = p.parent; return p.isScene; }
+    function aggiorna(ora, ridotto, cam) {
+      if (!istanze.size) return;
+      const dt = Math.min(0.1, ultimoFrame ? (ora - ultimoFrame) / 1000 : 0); ultimoFrame = ora;
+      const t = ora / 1000;
+      let visibili = 0;
+      for (const g of istanze) {
+        if (!inScena(g)) { if (ora - g.userData.nato > 4000) { g.userData.smontato = true; istanze.delete(g); } continue; }
+        visibili += 1;
+        if (ridotto) { if (g.userData.fumetto) aggiornaFumetto(g, g.userData.fumetto, ora, true); continue; }
+        for (const f of g.userData.fogli || []) { const raffica = Math.max(0, Math.sin(t * 0.7 + f.fase)) ** 6; f.cerniera.rotation.x = -(0.02 + raffica * 0.35) * (0.6 + 0.4 * Math.sin(t * 9 + f.fase)); }
+        cambioStudente(g, ora); avvicina(g, cam, ora);
+        const lista = g.userData.studenti || [];
+        for (let i = lista.length - 1; i >= 0; i -= 1) {
+          const st = lista[i];
+          if (ora > st.prossima && !st.esce) cambiaPosa(st, ora);
+          st.mixer.update(dt);
+          st.holder.rotation.y = st.yaw + Math.sin(t * 0.35 + st.fase) * 0.15; // si guardano intorno
+          st.holder.scale.y = 1 + Math.sin(t * 1.6 + st.fase) * 0.004; // respiro
+          const op = st.esce ? 1 - (ora - st.esce) / 1200 : (ora - st.nato) / 1200;
+          for (const m of st.mats) m.opacity = Math.max(0, Math.min(1, op));
+          const pieno = op >= 1; for (const m of st.mats) if (!m.userData.sfuma && m.transparent === pieno) { m.transparent = !pieno; m.needsUpdate = true; }
+          if (st.esce && op <= 0) { st.holder.parent && st.holder.parent.remove(st.holder); lista.splice(i, 1); }
+        }
+        if (g.userData.fumetto) aggiornaFumetto(g, g.userData.fumetto, ora, false);
+      }
+      if (!visibili || ridotto) return;
+      if (ora - ultimoPoster > 50) { // poster a 20 fps
+        ultimoPoster = ora;
+        for (const k of Object.keys(POSTER)) { const p = cache.get('poster|' + k); if (p) { p.disegna(p.ctx, p.c.width, p.c.height, t); p.tex.needsUpdate = true; } }
+        svolazza(t);
+      }
+    }
+    return { crea, aggiorna, ingombro: INGOMBRO, frasi: FRASI, immagini: IMMAGINI };
+  })();
   const CATALOGO = {
     ...CATALOGO_GINESTRA,
     ...Object.fromEntries(Object.entries(KIT_CONDOTTE).map(([k, [code, nome, size]]) => [k, { nome, crea: () => kitPiece(code, size) }])),
@@ -3536,6 +4063,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
         if (v1 > v0 + 0.05) add(dr, (v1 - v0) / dr.size.x, d / dr.size.y, W / dr.size.z, xr + d / 2 + d / 2, (v0 + v1) / 2, Math.PI / 2);
       });
     }) },
+    banchetto: { nome: 'Banchetto elettorale Liberiamo Sapienza (tavolo pieghevole, volantini, poster e tre studenti animati)', proporzioni: true, crea: (pr) => BANCHETTO.crea(pr, { caricaLoader: () => loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function') }) },
     panchina: { nome: 'Panchina in travertino', crea: () => group((g) => addBench(g, { u: 0, v: 0 }, 0)) },
     palma: { nome: 'Palma', crea: () => albero(palmTree({ u: 0, v: 0, altezza: 4 })) },
     magnolia: { nome: 'Magnolia', crea: () => albero(magnoliaTree({ u: 0, v: 0, altezza: 12.5, raggio: 3.8 }, 0)) },
@@ -3800,8 +4328,16 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // un asse piatto (scritta, cartello sottile) non si stira: resta com'è, al centro della scatola
     const axis = (size, lo, hi, min) => (size < 0.005 ? [1, (lo + hi) / 2 - (min + size / 2)] : [(hi - lo) / size, lo - min * ((hi - lo) / size)]);
     const [sx, px] = axis(s.x, b.u0, b.u1, bb.min.x), [sy, py] = axis(s.y, b.h0, b.h1, bb.min.y), [sz, pz] = axis(s.z, -b.v1, -b.v0, bb.min.z);
-    fit.scale.set(sx, sy, sz);
-    fit.position.set(px, py, pz);
+    if (CATALOGO[pr.modello] && CATALOGO[pr.modello].proporzioni) {
+      // proporzioni bloccate (commento del 14/11): la scatola dell'editor ingrandisce o rimpicciolisce l'oggetto, ma x, y e z restano
+      // nello stesso rapporto: scala unica (la più piccola delle tre), oggetto centrato nella scatola e appoggiato alla sua base
+      const k = Math.min(sx, sy, sz);
+      fit.scale.set(k, k, k);
+      fit.position.set((b.u0 + b.u1) / 2 - k * (bb.min.x + s.x / 2), b.h0 - k * bb.min.y, -(b.v0 + b.v1) / 2 - k * (bb.min.z + s.z / 2));
+    } else {
+      fit.scale.set(sx, sy, sz);
+      fit.position.set(px, py, pz);
+    }
     // «Specchia» dell'editor (pr.specchio: 'u', 'v' o 'uv'): scala −1 sull'asse, riflessa rispetto al centro della scatola (le normali le corregge il renderer)
     const mi = String(pr.specchio || '');
     if (mi.includes('u')) { fit.scale.x = -fit.scale.x; fit.position.x = b.u0 + b.u1 - fit.position.x; }
@@ -4150,6 +4686,7 @@ void main() {
     const R = el.rivestimento || {}, [ra, rb] = R.u || [uc - 6, uc + 6], H = Number(R.altezza) || 4.6;
     const std = (c, r = 0.8, m = 0) => new THREE.MeshStandardMaterial({ color: new THREE.Color(c).convertSRGBToLinear(), roughness: r, metalness: m });
     const rect = (u0, u1, v0, v1) => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+    const rifl = Boolean(g.userData.riflesso); // copia riflessa: scritte raddrizzate e parole scambiate di lato
     const facePlane = (w, hh, u, y, v, mat) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, hh), mat); m.rotation.y = Math.PI; m.position.set(u, y, -v); g.add(m); return m; }; // rivolto verso l'esterno
     if (!R.rimosso) {
       // stesso travertino (e stessa scala di lastre) del piano terra dell'edificio, senza finestre
@@ -4164,7 +4701,8 @@ void main() {
         ctx.clearRect(0, 0, w, hh); ctx.fillStyle = '#3f3a33'; ctx.font = 'bold 78px "Times New Roman", Times, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, w / 2, hh / 2 + 4);
       }, 1, 1, true) }));
       const [w1, w2] = el.scritta || ['ISTITUTO', 'CHIMICO'];
-      word(w1, uc + W / 2 + 1.75); word(w2, uc - W / 2 - 1.75); // a sinistra e a destra del portone, viste da fuori
+      const sx = rifl ? -1 : 1;
+      word(w1, uc + sx * (W / 2 + 1.75)).scale.x = sx; word(w2, uc - sx * (W / 2 + 1.75)).scale.x = sx; // a sinistra e a destra del portone, viste da fuori
       const plaque = canvasTex(64, 48, (ctx, w, hh) => { ctx.fillStyle = '#8a1f2d'; ctx.fillRect(0, 0, w, hh); ctx.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 4; i += 1) ctx.fillRect(8, 9 + i * 8, i ? 30 + (i % 2) * 14 : 46, 3); });
       for (const y of [1.75, 2.3]) facePlane(0.42, 0.32, uc - W / 2 - 0.75, y, 0.075, new THREE.MeshStandardMaterial({ map: plaque, roughness: 0.6 }));
     }
@@ -4192,7 +4730,11 @@ void main() {
     for (const p of (el.panchine || []).filter((x) => !x.rimosso)) bench(g, p, 0);
     railing(g, el.ringhiere || [], 0, el.ringhiera || { altezza: 0.9 });
     for (const p of (el.palme || []).filter((x) => !x.rimosso)) turned(g, p, Number(p.u), Number(p.v)).add(albero(palmTree(p)));
-    for (const t of (el.totem || []).filter((x) => !x.rimosso)) addTotem(turned(g, t, Number(t.u), Number(t.v)), t);
+    for (const t of (el.totem || []).filter((x) => !x.rimosso)) {
+      let tg = turned(g, t, Number(t.u), Number(t.v));
+      if (rifl) { const fx = new THREE.Group(); fx.position.x = 2 * Number(t.u); fx.scale.x = -1; tg.add(fx); tg = fx; } // seconda riflessione attorno al totem: le scritte tornano leggibili
+      addTotem(tg, t);
+    }
     const RS = el.rastrelliera;
     if (RS && !RS.rimosso) addBikeRack(turned(g, RS, Number(RS.u), Number(RS.v)), RS);
   }
@@ -5256,6 +5798,7 @@ void main() {
     animateSelectionMarker(performance.now());
     updateWater(performance.now());
     updateFountains(performance.now());
+    BANCHETTO.aggiorna(performance.now(), reducedMotion, camera);
     { const now = performance.now(); updateFog(Math.min(0.1, (now - (renderFrame.last || now)) / 1000)); renderFrame.last = now; }
     if (frameHook) frameHook(); else { freeView(); controls.update(); }
     if (splatMat) splatMat.uniforms.uPx.value = renderer.domElement.height / 2;
@@ -5373,11 +5916,12 @@ void main() {
       try { await loadDependency('vendor/polygon-clipping.umd.min.js', () => typeof window.polygonClipping?.difference === 'function'); } catch (_) { /* senza la libreria i cortili tornano buchi semplici */ }
       const queryCode = new URLSearchParams(location.hash.split('?')[1] || '').get('code') || new URLSearchParams(location.search).get('code');
       if (queryCode) selectBuilding(queryCode, { animate: false, notify: false });
-      if (latestParentContext?.plan?.features) officialPlanCodes = new Set(latestParentContext.plan.features.map((feature) => String(feature.code || '').toUpperCase()));
+      if (latestParentContext?.plan?.features) officialPlanCodes = new Set(latestParentContext.plan.features.map((feature) => String(feature.code || '').toUpperCase()).filter((code) => !MODELLATI.has(code)));
       courtyardFrame = await loadCourtyardFrame();
       try { const r = await fetch('courtyards.json', { cache: 'no-cache' }); if (r.ok) courtyardHoles = (await r.json()).courtyards || {}; } catch (_) { courtyardHoles = {}; }
       try { const r = await fetch('cu014-solido.json', { cache: 'no-cache' }); if (r.ok) cuSolido = await r.json(); } catch (_) { cuSolido = null; } // senza il file CU014 resta la sagoma OSM intera
       buildScene(context);
+      applyFacadeFile(); // facciate dei file (texture e finestre dei muri), se non c'è l'editor
       if (!extrasGroup) buildMinervaArea(); // Minerva e vasca anche senza la planimetria del sito principale
       setView('3d');
       tourButton.disabled = reducedMotion;
@@ -5404,7 +5948,7 @@ void main() {
     // file 3D: prepara(file) li legge, misura e impacchetta; registra(p, asset) tiene in memoria il modello già letto per quell'asset
     modelli3d: { formati: Object.keys(MODEL_FORMATS), prepara: (file) => prepareModel(file), registra: (p, asset) => { userModels.set(`${asset}|${p.su}`, Promise.resolve(p.model)); } },
     esterni: { get cfg() { return exteriorsCfg; }, rebuild: () => buildChemistryExteriors(), materiali: PRIM_MATERIALS,
-      catalogo: Object.entries(CATALOGO).map(([k, d]) => [k, d.nome]), totemCartello: TOTEM_CARTELLO, misura: (modello, ruota) => catalogSize(modello, ruota) },
+      catalogo: Object.entries(CATALOGO).map(([k, d]) => [k, d.nome]), totemCartello: TOTEM_CARTELLO, banchettoFrasi: BANCHETTO.frasi, misura: (modello, ruota) => catalogSize(modello, ruota) },
     project: (lonLat) => { const p = project(lonLat); return new THREE.Vector3(p.x, 0, -p.n); },
     alberiVisibili: (on) => { if (on === undefined) return alberiOn; alberiOn = !!on; if (scene) scene.traverse((o) => { if (o.userData.albero) o.visible = alberiOn; }); return alberiOn; },
     alberi: { get list() { return treeData; }, rebuild: () => buildTrees(), misure: (t) => treeSize(t) },

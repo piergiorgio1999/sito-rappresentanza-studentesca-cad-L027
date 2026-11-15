@@ -179,6 +179,13 @@
 ./site/campus-3d/models/magnolia_b_tronco.wasm
 ./site/campus-3d/models/minerva-glb.json
 ./site/campus-3d/models/minerva.json
+./site/campus-3d/models/studenti.json
+./site/campus-3d/models/studenti/cappello-lontano.wasm
+./site/campus-3d/models/studenti/cappello-vicino.wasm
+./site/campus-3d/models/studenti/ragazzo-lontano.wasm
+./site/campus-3d/models/studenti/ragazzo-vicino.wasm
+./site/campus-3d/models/studenti/rosa-lontano.wasm
+./site/campus-3d/models/studenti/rosa-vicino.wasm
 ./site/campus-3d/models/tubi-glb.json
 ./site/campus-3d/models/ventilazione-glb.json
 ./site/campus-3d/rettorato-facciata.jpg
@@ -188,6 +195,8 @@
 ./site/campus-3d/tex/azoto/scheda-azoto.jpg
 ./site/campus-3d/tex/azoto/schema-impianto.jpg
 ./site/campus-3d/tex/azoto/servizio-alert.jpg
+./site/campus-3d/tex/banchetto/liberiamo-sapienza-tondo.png
+./site/campus-3d/tex/banchetto/pazienza-rettangolo.png
 ./site/campus-3d/tex/ginestra-alto-2026-10-27.jpg
 ./site/campus-3d/tex/magnolia-corteccia.jpg
 ./site/campus-3d/tex/magnolia-foglie-autunno.png
