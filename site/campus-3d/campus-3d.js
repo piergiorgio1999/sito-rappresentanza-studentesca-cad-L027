@@ -36,6 +36,8 @@
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
   const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+  const launchFocus = new URLSearchParams(location.search).get('focus')?.toLowerCase() || '';
+  let launchFocusApplied = false;
   if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
     const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
     location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
@@ -309,6 +311,17 @@
       else cameraTweenId = 0;
     };
     cameraTweenId = requestAnimationFrame(frame);
+  }
+  function applyLaunchFocus(root) {
+    if (embedded || launchFocus !== 'banchetto' || launchFocusApplied || !camera || !controls) return;
+    const object = root.getObjectByProperty('userData.primitiva', 'banchetto-liberiamo');
+    if (!object) return;
+    root.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(object);
+    if (bounds.isEmpty()) return;
+    const center = bounds.getCenter(new THREE.Vector3());
+    launchFocusApplied = true;
+    flyTo({ x: center.x, n: -center.z }, 12, 0);
   }
   function selectBuilding(code, options = {}) {
     const b = buildings.find((feature) => feature.code === code);
@@ -3071,6 +3084,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     scene.add(holder);
     updateClipMask(holder);
     if (JSON.stringify(cavediCu()) !== cavediFatti) rebuildCu014();
+    applyLaunchFocus(holder);
   }
   /* ---------- primitive aggiunte dall'editor: forma e materiale a scelta ---------- */
   const PRIM_COLORS = { intonaco: ['#e0c9a6', 0.9, 0], cemento: ['#9a9a95', 0.95, 0], bianco: ['#f2f1ec', 0.7, 0], 'metallo rosso': ['#6b1d29', 0.55, 0.4], 'ferro verde': ['#235b42', 0.55, 0.35], acciaio: ['#b9bdc0', 0.35, 0.75], legno: ['#6b4a2f', 0.8, 0], erba: ['#5f8a3e', 1, 0], asfalto: ['#4a4d50', 0.95, 0], 'intonaco arancione': ['#c98a5c', 0.9, 0], guaina: ['#28292b', 0.95, 0] };
