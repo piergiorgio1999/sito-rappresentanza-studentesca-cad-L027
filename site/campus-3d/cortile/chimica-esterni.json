@@ -459,11 +459,23 @@
   },
   {
    "tipo": "scala",
-   "specchio": "u",
    "nome": "Scala antincendio (facciata sud, accanto all'anfiteatro)",
    "lato": 6,
-   "u": 5.7,
-   "piani": 4
+   "u": -1.75,
+   "piani": 4,
+   "lunghezza": 8.4,
+   "larghezza": 4.3,
+   "distacco": 0.25,
+   "quote": [
+    2.43,
+    4.87,
+    6.7,
+    8.53,
+    10.36,
+    12.19,
+    14.02,
+    15.85
+   ]
   },
   {
    "tipo": "pergolato",
@@ -488,7 +500,7 @@
    "lato": 0,
    "u": [
     52.26,
-    78.76
+    85.05
    ],
    "v": [
     12.1,
@@ -508,15 +520,15 @@
     44.4
    ],
    "v": [
-    44.8,
-    47.4
+    12.1,
+    14.7
    ],
    "altezza": 3,
    "passo": 1.8,
    "copertura": 1,
    "fogliame_da": 1,
-   "angolo": 180,
-   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
+   "nota": "Copia riflessa rispetto all'asse del viale (riflesso 60,6: v diventa 60,6 − v, la facciata di Fisica in OSM sta a v 60,6 nel riferimento del lato 0). Posizione ricavata per simmetria, non rilevata.",
+   "riflesso": 60.6
   },
   {
    "tipo": "pergolato",
@@ -524,18 +536,18 @@
    "lato": 0,
    "u": [
     52.26,
-    78.76
+    85.05
    ],
    "v": [
-    44.8,
-    47.4
+    12.1,
+    14.7
    ],
    "altezza": 3,
    "passo": 1.8,
    "copertura": 1,
    "fogliame_da": 1,
-   "angolo": 180,
-   "nota": "Copia simmetrica rispetto all'asse del viale d'ingresso (v 29,75 nel riferimento del lato 0), richiesta dell'utente dell'11/11/2026: posizione ricavata per simmetria, non rilevata."
+   "nota": "Copia riflessa rispetto all'asse del viale (riflesso 60,6: v diventa 60,6 − v, la facciata di Fisica in OSM sta a v 60,6 nel riferimento del lato 0). Posizione ricavata per simmetria, non rilevata.",
+   "riflesso": 60.6
   },
   {
    "tipo": "lampione",
@@ -568,6 +580,268 @@
    "u": 71.26,
    "v": 18.7,
    "altezza": 4.6
+  },
+  {
+   "tipo": "area",
+   "nome": "Fisica (riflesso di Chimica): Pavimento in travertino davanti all'ingresso principale",
+   "lato": 0,
+   "poligono": [
+    [
+     0.9,
+     0
+    ],
+    [
+     53.1,
+     0
+    ],
+    [
+     53.1,
+     6
+    ],
+    [
+     0.9,
+     6
+    ]
+   ],
+   "riflesso": 60.6,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "area",
+   "nome": "Fisica (riflesso di Chimica): Vialetto in travertino dall'ingresso alla strada",
+   "lato": 0,
+   "poligono": [
+    [
+     44.6,
+     6
+    ],
+    [
+     50.6,
+     6
+    ],
+    [
+     50.6,
+     21.5
+    ],
+    [
+     44.6,
+     21.5
+    ]
+   ],
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata.",
+   "riflesso": 60.6
+  },
+  {
+   "tipo": "ingresso",
+   "nome": "Fisica (riflesso di Chimica): Ingresso principale (Istituto Fisico)",
+   "lato": 0,
+   "u": 47.63,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata.",
+   "porta": {
+    "larghezza": 2.3,
+    "altezza": 3.3
+   },
+   "rivestimento": {
+    "u": [
+     41.5,
+     54.45
+    ],
+    "altezza": 4.3
+   },
+   "scritta": [
+    "ISTITUTO",
+    "FISICO"
+   ],
+   "tattile": {
+    "v": [
+     0.3,
+     21.5
+    ],
+    "larghezza": 0.6
+   },
+   "aiuole": [
+    {
+     "u": [
+      -0.1,
+      44.55
+     ],
+     "v": [
+      6.1,
+      20.6
+     ],
+     "cordolo": 0.18
+    },
+    {
+     "u": [
+      50.6,
+      85.55
+     ],
+     "v": [
+      4.9,
+      20.6
+     ],
+     "cordolo": 0.18
+    }
+   ],
+   "ringhiere": [
+    [],
+    [
+     [
+      50.7,
+      6.6
+     ],
+     [
+      50.7,
+      20.4
+     ]
+    ]
+   ],
+   "ringhiera": {
+    "altezza": 0.9,
+    "passo": 1.3,
+    "intermedio": 0.45,
+    "larghezza": 0.08,
+    "spessore": 0.04,
+    "colore": "#6b1d29"
+   },
+   "panchine": [
+    {
+     "u": 45.0,
+     "v": 9.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 45.5,
+     "v": 11.85,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v",
+     "rimosso": true
+    },
+    {
+     "u": 45.0,
+     "v": 17.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 9.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 13.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    },
+    {
+     "u": 50.2,
+     "v": 17.0,
+     "lunghezza": 1.9,
+     "profondita": 0.5,
+     "altezza": 0.45,
+     "rientro": 0.25,
+     "orienta": "v"
+    }
+   ],
+   "palme": [
+    {
+     "u": 52.6,
+     "v": 7.7,
+     "altezza": 3.8
+    },
+    {
+     "u": 42.4,
+     "v": 7.9,
+     "altezza": 3.4,
+     "rimosso": true
+    }
+   ],
+   "totem": [
+    {
+     "u": 51.2,
+     "v": 20.9,
+     "orienta": "v",
+     "scritta": "CU013",
+     "cartello": {
+      "nome": "Edificio di Fisica\nGuglielmo\nMarconi",
+      "dipartimento": "Dipartimento di Fisica",
+      "aula": "",
+      "polo": "",
+      "museo": ""
+     },
+     "logoMuseo": false
+    }
+   ],
+   "fiori": {
+    "u": [
+     10.95,
+     44.2
+    ],
+    "v": [
+     18.8,
+     20.3
+    ],
+    "altezza": 0.4
+   },
+   "riflesso": 60.6
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Fisica (riflesso di Chimica): Lampione verde (prato 1)",
+   "lato": 0,
+   "u": 24,
+   "v": 18.7,
+   "altezza": 4.6,
+   "riflesso": 60.6,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Fisica (riflesso di Chimica): Lampione verde (prato 1, est)",
+   "lato": 0,
+   "u": 40,
+   "v": 18.7,
+   "altezza": 4.6,
+   "riflesso": 60.6,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Fisica (riflesso di Chimica): Lampione verde (prato 2)",
+   "lato": 0,
+   "u": 55.26,
+   "v": 18.7,
+   "altezza": 4.6,
+   "riflesso": 60.6,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata."
+  },
+  {
+   "tipo": "lampione",
+   "nome": "Fisica (riflesso di Chimica): Lampione verde (prato 2, est)",
+   "lato": 0,
+   "u": 71.26,
+   "v": 18.7,
+   "altezza": 4.6,
+   "riflesso": 60.6,
+   "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata."
   }
  ],
  "primitive": [
@@ -609,12 +883,12 @@
    "modello": "tuboRosso",
    "ruota": 90,
    "box": {
-    "u0": 0.32,
-    "u1": 0.42,
+    "h0": 0.735,
+    "h1": 0.825,
+    "u0": 0.275,
+    "u1": 0.365,
     "v0": -39.43,
-    "v1": -35.13,
-    "h0": 0.755,
-    "h1": 0.805
+    "v1": -35.13
    },
    "nota": "Commenti del 23/10: tubo rosso aggiunto dall'utente, portato alla quota del tubo della cassetta (0,78 m) e allungato fino al muro del cortile dell'azoto."
   },
@@ -673,28 +947,32 @@
    "coperto": 4.4,
    "poligono": [
     [
-     47.5,
-     -65.5
+     41.33,
+     -63.1
     ],
     [
-     55,
-     -65.5
+     47.6,
+     -63.1
     ],
     [
-     55,
-     -86
+     47.6,
+     -83.02
     ],
     [
-     49.5,
-     -86
+     42.99,
+     -83.02
     ],
     [
-     49.5,
-     -71.2
+     42.99,
+     -70.06
     ],
     [
-     47.5,
-     -71.2
+     42.99,
+     -68.64
+    ],
+    [
+     41.33,
+     -68.64
     ]
    ],
    "nota": "Commenti del 23/10: passaggio coperto al piano terra dal cavedio est all'uscita sulla facciata sud, dove c'è il cancello (commenti 18 e 20). Angoli modificabili con «◇ Angoli»."
@@ -835,19 +1113,19 @@
    "materiale": "edificio",
    "poligono": [
     [
-     43.3,
+     45.5,
      -60
     ],
     [
-     45.4,
+     47.6,
      -60
     ],
     [
-     45.4,
+     47.6,
      -63.9
     ],
     [
-     43.3,
+     45.5,
      -63.9
     ]
    ],
@@ -1070,8 +1348,8 @@
   },
   {
    "id": "pmvi77470sy",
-   "altezza": 0.15,
-   "base": -0.09,
+   "altezza": 0.2,
+   "base": 0,
    "discese": [
     {
      "larghezza": 1.4,
@@ -1083,40 +1361,48 @@
    "forma": "marciapiede",
    "poligono": [
     [
-     -2.95,
-     -40.8
+     -3.22,
+     -40.5
     ],
     [
-     0.45,
-     -40.85
-    ],
-    [
-     0.45,
-     20.75
-    ],
-    [
-     -6.25,
-     20.75
-    ],
-    [
-     -6.05,
-     -38.85
-    ],
-    [
-     -4.85,
+     0.57,
      -40.45
+    ],
+    [
+     0.7,
+     20.75
+    ],
+    [
+     -6.35,
+     20.75
+    ],
+    [
+     -6.16,
+     -38.61
+    ],
+    [
+     -4.89,
+     -40.2
     ]
    ],
-   "raggio": 0.3
+   "raggio": 0,
+   "raggi": [
+    null,
+    null,
+    null,
+    null,
+    3,
+    3
+   ]
   },
   {
    "id": "pmvi7i1ot6y",
    "altezza": 0.3,
-   "base": -0.09,
+   "base": 0,
    "forma": "aiuola",
    "poligono": [
     [
-     62.05,
+     67.05,
      -89.25
     ],
     [
@@ -1128,7 +1414,7 @@
      -63.55
     ],
     [
-     62.05,
+     67.05,
      -63.55
     ]
    ],
@@ -1226,12 +1512,12 @@
     "a": 1.5
    },
    "box": {
-    "u0": 23.0,
-    "u1": 31.0,
-    "v0": -83.2,
-    "v1": -80.8,
     "h0": 15.3,
-    "h1": 17.85
+    "h1": 17.85,
+    "u0": 22.1,
+    "u1": 31.55,
+    "v0": -84.1,
+    "v1": -81.35
    },
    "nota": "Foto Google Earth del 23/10 e STL: UTA verso la facciata (STL 17,7-17,9 m, v −78/−86): cappa con griglia in testa verso sud, corpo a pannelli, raccordo rastremato verso il canale a nord; lamiera del kit."
   },
@@ -1241,14 +1527,15 @@
    "modello": "cassetta",
    "ruota": 0,
    "box": {
+    "h0": 15.3,
+    "h1": 16.6,
     "u0": 28.3,
     "u1": 29.3,
-    "v0": -86.0,
-    "v1": -84.2,
-    "h0": 15.3,
-    "h1": 16.6
+    "v0": -75.7,
+    "v1": -73.9
    },
-   "nota": "Foto Google Earth del 23/10 e STL: cassetta in lamiera accanto alla testa della UTA, lato est (STL 16,6 m)."
+   "nota": "Foto Google Earth del 23/10 e STL: cassetta in lamiera accanto alla testa della UTA, lato est (STL 16,6 m).",
+   "rimosso": true
   },
   {
    "id": "cond-asse",
@@ -1257,12 +1544,12 @@
    "ruota": 0,
    "angolo": 90,
    "box": {
-    "u0": 20.685,
-    "u1": 32.685,
-    "v0": -71.91,
-    "v1": -71.29,
     "h0": 15.3,
-    "h1": 16.6
+    "h1": 16.8,
+    "u0": 20.2,
+    "u1": 33.8,
+    "v0": -72,
+    "v1": -70.7
    },
    "nota": "30/10: sono due canali affiancati (non uno solo), dalla UTA (v −77,6) al canale trasversale nord (v −65,6), zincatura del kit dell'utente."
   },
@@ -1303,14 +1590,15 @@
    "modello": "cappelloPiramide",
    "ruota": 0,
    "box": {
+    "h0": 15.42,
+    "h1": 17.5,
     "u0": 20.4,
     "u1": 21.3,
     "v0": -65.65,
-    "v1": -64.75,
-    "h0": 15.42,
-    "h1": 17.5
+    "v1": -64.75
    },
-   "nota": "30/10: bocca in alto a cappello piramidale (profilo isoscele, lati a 45°) all'estremo ovest della T."
+   "nota": "30/10: bocca in alto a cappello piramidale (profilo isoscele, lati a 45°) all'estremo ovest della T.",
+   "rimosso": true
   },
   {
    "id": "cond-curva-e",
@@ -1334,12 +1622,12 @@
    "modello": "ventilatore",
    "ruota": 0,
    "box": {
-    "u0": 28.0,
-    "u1": 29.2,
-    "v0": -77.9,
-    "v1": -75.7,
     "h0": 15.3,
-    "h1": 16.75
+    "h1": 16.75,
+    "u0": 28,
+    "u1": 29.2,
+    "v0": -79,
+    "v1": -76.8
    },
    "nota": "Foto Google Earth del 23/10 e STL: unità esterna con due ventole accanto al canale, lato est, dove comincia il raccordo della UTA (STL 16,8-16,9 m)."
   },
@@ -2856,14 +3144,15 @@
    "ruota": 0,
    "angolo": 291.29,
    "box": {
+    "h0": 1.23,
+    "h1": 3.48,
     "u0": 41.54,
     "u1": 42.74,
     "v0": -84.83,
-    "v1": -84.78,
-    "h0": 1.23,
-    "h1": 3.48
+    "v1": -84.78
    },
-   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py."
+   "nota": "Retro della Ginestra dalla scansione Scaniverse dell'utente del 23/10, seconda lettura (viste dall'alto tagliate a più quote, sezioni, media fra lato nord e sud specchiato), asse a −90° come la vista dall'alto del 27/10: misure in tools/ginestra_scale_da_scansione.py.",
+   "rimosso": true
   },
   {
    "id": "gin-ovest-muro-scala",
@@ -3477,12 +3766,12 @@
    "cornice": "lato0",
    "ruota": 0,
    "box": {
+    "h0": 4.97,
+    "h1": 7.35,
     "u0": -0.05,
     "u1": 0.53,
-    "v0": -34.35,
-    "v1": -25.15,
-    "h0": 4.97,
-    "h1": 7.35
+    "v0": -35.2,
+    "v1": -25.15
    },
    "nota": "Commento con foto del 31/10: al primo piano, verso l'angolo col cortile dell'azoto, le tre finestre delle campate 8-10 (dall'angolo nord) sono un'unica apertura rientrante con tre serrande marroni. La nicchia toglie le finestre dipinte della facciata (stencil) e ha spalle, cielino, davanzale e cornice chiara."
   },
@@ -3490,41 +3779,41 @@
    "id": "sw-marciapiede",
    "nome": "Marciapiede attorno all'angolo sud-ovest (cordolo in travertino)",
    "forma": "marciapiede",
-   "base": -0.09,
+   "base": 0,
    "altezza": 0.15,
    "raggio": 0.3,
    "raggi": [
     0,
     0.3,
-    3.0,
+    3,
     0.3,
     0,
     0
    ],
    "poligono": [
     [
-     0.75,
-     -76.0
+     0.64,
+     -70.55
     ],
     [
-     -5.2,
-     -76.0
+     -6.1,
+     -70.55
     ],
     [
-     -5.2,
+     -6.1,
      -95.3
     ],
     [
-     10.3,
-     -94.6
+     11.45,
+     -94.41
     ],
     [
-     10.3,
-     -85.27
+     11.45,
+     -82.44
     ],
     [
-     0.75,
-     -85.75
+     0.64,
+     -83.05
     ]
    ],
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): marciapiede in conglomerato grigio con cordolo di travertino che gira l'angolo con un raggio largo (foto 5517cb39, cff9065b, 072b52a8); verso est finisce dove inizia lo spazio asfaltato davanti all'ingresso CUSTODI."
@@ -3592,15 +3881,15 @@
    "nome": "Bocca di aerazione sul grigliato (ovest)",
    "forma": "oggetto",
    "modello": "bocchetta",
-   "ruota": 0,
+   "ruota": 90,
    "angolo": 2.7,
    "box": {
-    "u0": 1.57,
-    "u1": 3.47,
-    "v0": -89.77,
-    "v1": -88.77,
     "h0": 0.1,
-    "h1": 0.75
+    "h1": 0.75,
+    "u0": 0.1,
+    "u1": 1.1,
+    "v0": -91.86,
+    "v1": -89.96
    },
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): cassone intonacato rosa con piano in travertino e griglia (foto 18f516b6, 3c47dc6b, e55e325d)."
   },
@@ -3692,14 +3981,14 @@
    "nome": "Pannello con la pianta della Città universitaria",
    "forma": "oggetto",
    "modello": "mappaCampus",
-   "ruota": 0,
+   "ruota": 180,
    "box": {
+    "h0": 0.06,
+    "h1": 2.01,
     "u0": 2.85,
     "u1": 4.35,
     "v0": -95.1,
-    "v1": -94.6,
-    "h0": 0.06,
-    "h1": 2.01
+    "v1": -94.6
    },
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): pannello su zoccolo di travertino, girato verso il grigliato (foto 18f516b6, 072b52a8); posizione stimata."
   },
@@ -3708,14 +3997,14 @@
    "nome": "Leggio informativo scuro",
    "forma": "oggetto",
    "modello": "leggio",
-   "ruota": 0,
+   "ruota": 270,
    "box": {
-    "u0": -1.35,
-    "u1": -0.65,
-    "v0": -93.1,
-    "v1": -92.5,
     "h0": 0.06,
-    "h1": 1.25
+    "h1": 1.25,
+    "u0": -2.14,
+    "u1": -1.54,
+    "v0": -90.1,
+    "v1": -89.4
    },
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): leggio grigio scuro accanto al grigliato (foto 5517cb39, cff9065b, e55e325d)."
   },
@@ -3752,6 +4041,315 @@
    },
    "segnale": "destra",
    "nota": "Foto del commento all'angolo sud-ovest di CU014 (01/11, 22 foto, lato 0 u 3.15 v -86.47): segnale blu con la freccia a destra, più basso, su un secondo palo (foto cff9065b, 5517cb39); posizione stimata."
+  },
+  {
+   "id": "banchetto-liberiamo",
+   "nome": "Banchetto elettorale Liberiamo Sapienza",
+   "forma": "oggetto",
+   "modello": "banchetto",
+   "ruota": 270,
+   "box": {
+    "h0": 0,
+    "h1": 1.8,
+    "u0": 41.21,
+    "u1": 42.66,
+    "v0": 29.5,
+    "v1": 31.4
+   },
+   "nota": "Banchetto di Liberiamo Sapienza (spostato il 14/11): al centro dello stradone fra il Vecchio Edificio di Chimica e l'edificio Marconi (u a metà facciata, v a metà fra le due facciate, circa 30 m), poster verso l'ingresso di piazzale Aldo Moro. Si sposta dall'editor come gli altri oggetti.",
+   "angolo": 180
+  },
+  {
+   "id": "pmvjamz7iwe",
+   "box": {
+    "h0": 0,
+    "h1": 3.58,
+    "u0": 9.88,
+    "u1": 12.74,
+    "v0": -35.2,
+    "v1": -35.05
+   },
+   "forma": "oggetto",
+   "modello": "portaAntincendio",
+   "ruota": 0
+  },
+  {
+   "id": "pmvjc23832x",
+   "altezza": 0.2,
+   "base": 0,
+   "discese": [
+    {
+     "larghezza": 1.4,
+     "lato": 4,
+     "profondita": 0.9,
+     "t": 0.61
+    }
+   ],
+   "forma": "marciapiede",
+   "poligono": [
+    [
+     -4.47,
+     -45.64
+    ],
+    [
+     -5.67,
+     -46.79
+    ],
+    [
+     -6.1,
+     -89.4
+    ],
+    [
+     0.83,
+     -89.8
+    ],
+    [
+     0.83,
+     -45.35
+    ],
+    [
+     -2.57,
+     -45.39
+    ]
+   ],
+   "raggi": [
+    3,
+    3,
+    null,
+    null,
+    null,
+    null
+   ],
+   "raggio": 0
+  },
+  {
+   "id": "pmvji4xvuqi",
+   "box": {
+    "h0": 0.01,
+    "h1": 1.13,
+    "u0": 4.62,
+    "u1": 6.68,
+    "v0": -41.65,
+    "v1": -41.05
+   },
+   "forma": "oggetto",
+   "modello": "transennaStrisce",
+   "ruota": 0
+  },
+  {
+   "id": "pmvku4zg3bc",
+   "altezza": 0.15,
+   "base": 0,
+   "discese": [
+    {
+     "larghezza": 1.4,
+     "lato": 3,
+     "profondita": 0.9,
+     "t": 0.98
+    },
+    {
+     "larghezza": 1.4,
+     "lato": 3,
+     "profondita": 0.9,
+     "t": 0.96
+    },
+    {
+     "larghezza": 1.4,
+     "lato": 3,
+     "profondita": 0.9,
+     "t": 0.93
+    }
+   ],
+   "forma": "marciapiede",
+   "poligono": [
+    [
+     56.75,
+     -94.2
+    ],
+    [
+     117.5,
+     -94.2
+    ],
+    [
+     117.5,
+     -11.4
+    ],
+    [
+     56.75,
+     -11.4
+    ]
+   ],
+   "raggio": 0.3
+  },
+  {
+   "id": "pmvqkdy8j5q",
+   "base": 0,
+   "forma": "strada",
+   "poligono": [
+    [
+     -17.68,
+     -91.03
+    ],
+    [
+     1.22,
+     -91.03
+    ],
+    [
+     1.22,
+     18.57
+    ],
+    [
+     -17.68,
+     18.57
+    ]
+   ]
+  },
+  {
+   "id": "pmvqkgdt82i",
+   "altezza": 0.42,
+   "base": 0,
+   "cordolo": 0.16,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     -3.6,
+     -15.55
+    ],
+    [
+     -0.6,
+     -15.55
+    ],
+    [
+     -0.6,
+     -0.3
+    ],
+    [
+     -3.6,
+     -0.3
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmvqlhsi02d",
+   "altezza": 0.42,
+   "base": 0,
+   "cordolo": 0.16,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     -3.6,
+     -34.75
+    ],
+    [
+     -0.6,
+     -34.75
+    ],
+    [
+     -0.6,
+     -16.6
+    ],
+    [
+     -3.6,
+     -16.6
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmvr6au7aat",
+   "altezza": 3.2,
+   "base": 0,
+   "forma": "prisma",
+   "materiale": "edificio",
+   "poligono": [
+    [
+     41.7,
+     -60
+    ],
+    [
+     43.8,
+     -60
+    ],
+    [
+     43.8,
+     -63.9
+    ],
+    [
+     41.7,
+     -63.9
+    ]
+   ]
+  },
+  {
+   "id": "pmvugt3xbfv",
+   "altezza": 0.42,
+   "base": 0,
+   "cordolo": 0.16,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     49.2,
+     0.15
+    ],
+    [
+     50,
+     0.15
+    ],
+    [
+     50,
+     1.4
+    ],
+    [
+     49.2,
+     1.4
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmwem5avil2",
+   "altezza": 0.42,
+   "base": 0,
+   "cordolo": 0.16,
+   "forma": "aiuola",
+   "poligono": [
+    [
+     49.2,
+     1.4
+    ],
+    [
+     50,
+     1.4
+    ],
+    [
+     50,
+     2.65
+    ],
+    [
+     49.2,
+     2.65
+    ]
+   ],
+   "terreno": "prato",
+   "tipo": "squadrata"
+  },
+  {
+   "id": "pmwgkgvtmsf",
+   "box": {
+    "h0": 4.97,
+    "h1": 7.35,
+    "u0": -0.05,
+    "u1": 0.53,
+    "v0": -61.5,
+    "v1": -51.45
+   },
+   "forma": "oggetto",
+   "modello": "nicchiaSerrande",
+   "ruota": 0
   }
  ]
 }
