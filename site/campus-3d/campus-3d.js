@@ -24,6 +24,8 @@
   const $ = (id) => document.getElementById(id);
   const listNode = $('buildingList');
   const statusNode = $('status');
+  const campaignCard = $('campaignCard');
+  campaignCard?.querySelector('.campaign-close')?.addEventListener('click', () => { campaignCard.hidden = true; });
   const photoStage = $('photoStage');
   const planStage = $('planStage');
   const mapHost = $('map3dHost');
@@ -314,14 +316,17 @@
   }
   function applyLaunchFocus(root) {
     if (embedded || launchFocus !== 'banchetto' || launchFocusApplied || !camera || !controls) return;
-    const object = root.getObjectByProperty('userData.primitiva', 'banchetto-liberiamo');
+    let object = null;
+    root.traverse((child) => {
+      if (!object && child.userData?.primitiva === 'banchetto-liberiamo') object = child;
+    });
     if (!object) return;
     root.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(object);
     if (bounds.isEmpty()) return;
     const center = bounds.getCenter(new THREE.Vector3());
     launchFocusApplied = true;
-    flyTo({ x: center.x, n: -center.z }, 12, 0);
+    flyTo({ x: center.x, n: -center.z }, 28, 0);
   }
   function selectBuilding(code, options = {}) {
     const b = buildings.find((feature) => feature.code === code);
@@ -1318,7 +1323,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // aiuole a U attorno alla statua, rialzate; dentro la U una vasca ribassata con acqua
     basin: [[270.8, 535.8], [315, 535.8], [315, 555], [305.8, 555], [305.8, 540], [280, 540], [280, 555], [270.8, 555]],
     basinHeight: 0.95,
-    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.4,
+    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.04,
     statue: [292.5, 536.6],
     // scalinata: bordo inferiore, lati verso le arcate, pianerottolo davanti al corpo centrale
     stairs: { front: 518.3, left: 271.7, right: 313.3, facade: 497.5, landingLeft: 285, landingRight: 299.2, landingFront: 505.8, steps: 14, riser: 0.15 },
@@ -1492,13 +1497,13 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     extrasGroup = new THREE.Group(); extrasGroup.name = 'minerva';
     queueMicrotask(() => { if (extrasGroup) extrasGroup.visible = viewDim !== '2d'; });
     (planLayerGroup || scene).add(extrasGroup); // senza planimetria ufficiale la Minerva va direttamente nella scena
-    const stone = new THREE.MeshStandardMaterial({ color: 0xb9ae9c, roughness: 0.92, metalness: 0 });
-    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xebe4d7, roughness: 0.9, metalness: 0 });
-    const edge = new THREE.LineBasicMaterial({ color: 0x9c9282, transparent: true, opacity: 0.7 });
+    const stone = new THREE.MeshStandardMaterial({ color: 0xf8f8f6, roughness: 0.92, metalness: 0 });
+    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
+    const edge = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
     // vasca
     const basin = extrudeShape([pdfShape(MINERVA.basin)], MINERVA.basinHeight, 0);
     applyRoofUVs(basin);
-    const basinMesh = new THREE.Mesh(basin, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), stone]);
+    const basinMesh = new THREE.Mesh(basin, [stoneTop, stone]);
     basinMesh.userData.texturedTop = true;
     basinMesh.castShadow = true; basinMesh.receiveShadow = true;
     extrasGroup.add(basinMesh);
@@ -1508,11 +1513,11 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       const ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
       const pit = extrudeShape([pdfShape(ring)], d, -d);
       const hidden = new THREE.MeshBasicMaterial({ visible: false });
-      const walls = new THREE.MeshStandardMaterial({ color: 0x9e9484, roughness: 0.95, metalness: 0, side: THREE.BackSide });
+      const walls = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, side: THREE.BackSide });
       extrasGroup.add(new THREE.Mesh(pit, [hidden, walls]));
       const floor = extrudeShape([pdfShape(ring)], 0.01, -d);
-      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0x31515a, roughness: 1, metalness: 0 })));
-      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 40, 24), waterMaterial());
+      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })));
+      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 16, 10), waterMaterial());
       waterMesh.renderOrder = 2;
       extrasGroup.add(waterMesh);
       MINERVA.water = waterMesh.material;
@@ -1567,7 +1572,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       if (pedestal > 0) {
         // basamento in pietra sotto la statua (dimensioni indicative)
         const size = Number(config.pedestalSize) || 2.4;
-        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xe2d9c8, roughness: 0.9, metalness: 0 }));
+        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 }));
         block.position.set(baseX, MINERVA.world.y + pedestal / 2, baseZ);
         block.rotation.y = MINERVA.facing;
         block.castShadow = true; block.receiveShadow = true;
@@ -2457,9 +2462,10 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance', logarithmicDepthBuffer: true });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.85;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    sun.shadow.mapSize.set(1024, 1024);
     renderer.outputEncoding = THREE.sRGBEncoding;
     mapHost.replaceChildren(renderer.domElement);
     mapHost.setAttribute('aria-label', 'Scena 3D locale con ortofoto AGEA ed estrusioni indicative OpenStreetMap');
@@ -2519,6 +2525,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
+      const exteriorRoot = scene.getObjectByName('chimica-esterni');
+      const boothHit = exteriorRoot && raycaster.intersectObjects([exteriorRoot], true).some((h) => {
+        for (let o = h.object; o && o !== exteriorRoot; o = o.parent) if (o.userData?.primitiva === 'banchetto-liberiamo') return true;
+        return false;
+      });
+      if (boothHit) { if (campaignCard) campaignCard.hidden = false; return; }
       const hit = raycaster.intersectObjects(pickables, false).find((h) => !((h.object.userData.minervaPart || h.object.userData.fountainPart) && extrasGroup && !extrasGroup.visible));
       if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
       if (hit?.object.userData.fountainPart) { let h = hit.object; while (h && !h.userData.fountain) h = h.parent; const on = selectFountain(h); showGuest(false); if (embedded) notifyParent('campus-fountain', { on }); return; }
@@ -3076,6 +3088,19 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // primitive aggiunte dall'editor: nelle coordinate del lato 0, oppure in quelle di un elemento (cornice 'esterni:N');
     // quelle con cornice 'cortile' (per esempio i duplicati dei suoi oggetti) le costruisce loadCourtyardModel
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
+    // Sistemazione centrale tra i due fronti: asfalto e tre sedute colorate ispirate alle foto fornite.
+    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[24, 21.5], [70, 21.5], [70, 39.5], [24, 39.5]] });
+    g0.add(plaza);
+    const benchColors = [0xe5b92e, 0x397ec1, 0xb94d55];
+    for (const [i, u] of [31, 48, 65].entries()) {
+      const bench = new THREE.Group(); bench.name = `panchina-colorata-${i + 1}`;
+      const color = new THREE.MeshStandardMaterial({ color: benchColors[i], roughness: 0.86, metalness: 0 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.52, 0.58), color);
+      seat.position.y = 0.26; seat.castShadow = seat.receiveShadow = true; bench.add(seat);
+      const recess = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 20), new THREE.MeshStandardMaterial({ color: 0x5d5854, roughness: 1 }));
+      recess.position.set(0, 0.526, 0); bench.add(recess);
+      bench.position.set(u, 0, -30.5); bench.rotation.y = Math.PI / 2; g0.add(bench);
+    }
     for (const pr of cfg.primitive || []) {
       if (pr.rimosso || !(pr.box || pr.poligono) || pr.cornice === 'cortile') continue;
       const m = /^esterni:(\d+)$/.exec(pr.cornice || ''), f = m ? holder.children.find((x) => x.userData.elemento === Number(m[1])) : g0;
@@ -5553,10 +5578,9 @@ void main() {
   function rnd(i, k) { const s = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return s - Math.floor(s); }
   let treeData = null;
   async function addTrees() {
-    let data = null;
-    try { const response = await fetch('trees.json'); if (response.ok) data = await response.json(); } catch (_) { data = null; }
-    // id stabile dalla posizione nel file: le modifiche fatte sul posto vi si riferiscono
-    treeData = (data?.trees || []).filter((t) => Array.isArray(t.p)).map((t) => Object.assign({ id: t.id || `t${Math.round(t.p[0] * 1e6)}_${Math.round(t.p[1] * 1e6)}` }, t));
+    // Niente alberi OSM generici fuori dalle aiuole modellate: evita l'effetto chiome sparse sul viale
+    // e non scarica il dataset pesante. Gli alberi del cortile restano nei rispettivi modelli di dettaglio.
+    treeData = [];
     buildTrees();
   }
   const isPineTree = (t) => t.g === 'needleleaved' || /pinus|pino/i.test(t.g || '');
@@ -5659,9 +5683,9 @@ void main() {
     const box = new THREE.Box3(); for (const mesh of meshes) box.expandByObject(mesh);
     if (box.isEmpty()) { m.group.visible = false; return; }
     const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-    m.radius = Math.hypot(size.x, size.z) / 2 + 4;
-    m.height = Math.min(Math.max(size.y * 0.45, 6), 14);
-    m.group.position.set(center.x, box.min.y + 0.35, center.z);
+    m.radius = Math.hypot(size.x, size.z) / 2 + 1.2;
+    m.height = Math.min(Math.max(size.y * 0.5, 4), 9);
+    m.group.position.set(center.x, box.max.y + 0.6, center.z);
     m.glow.scale.set(m.radius, m.height, m.radius);
     m.ring.scale.setScalar(m.radius); m.wave.scale.setScalar(m.radius);
     m.group.visible = true;

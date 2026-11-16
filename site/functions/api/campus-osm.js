@@ -67,7 +67,7 @@ const ROAD_WIDTH = { motorway: 18, trunk: 18, primary: 16, secondary: 14, tertia
 const POI_TYPES = new Set(['drinking_water', 'cafe', 'bar', 'toilets', 'atm', 'bank', 'library', 'post_office', 'post_box', 'pharmacy', 'canteen', 'restaurant', 'fast_food', 'bicycle_parking', 'vending_machine', 'printing', 'place_of_worship', 'police', 'kindergarten', 'first_aid', 'clinic', 'doctors']);
 
 function compact(data) {
-  const out = { attribution: '© OpenStreetMap contributors, ODbL 1.0', roads: [], buildings: [], green: [], water: [], rail: [], pois: [], named: [] };
+  const out = { attribution: '© OpenStreetMap, ODbL 1.0', roads: [], buildings: [], green: [], water: [], rail: [], pois: [], named: [] };
   for (const el of data.elements || []) {
     const t = el.tags || {};
     if (el.type === 'way' && t.highway && el.geometry) {
