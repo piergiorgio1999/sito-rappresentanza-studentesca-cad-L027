@@ -3090,7 +3090,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // quelle con cornice 'cortile' (per esempio i duplicati dei suoi oggetti) le costruisce loadCourtyardModel
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
     // Sistemazione centrale tra i due fronti: asfalto e sedute colorate ispirate alle foto fornite.
-    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[27, 25], [59, 25], [59, 36], [27, 36]] });
+    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[24, 21.5], [70, 21.5], [70, 39.5], [24, 39.5]] });
     g0.add(plaza);
     const benchColors = [0xe5b92e, 0x397ec1, 0xb94d55];
     const benchPlan = [
