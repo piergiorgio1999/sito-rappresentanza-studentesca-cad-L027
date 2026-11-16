@@ -3162,8 +3162,13 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
         ['red:fiore', R, 37.3, 28.4, 0], ['red:foro', R, 39.6, 28.4, 0], // fila di due, testa a testa, dietro e a lato del banchetto (lato Chimica)
         ['blue:fiore', B, 46.2, 29.7, 0], ['yellow:foro', Y, 47.6, 30.7, 90], // L
         ['yellow:fiore', Y, 23.4, 32.6, 0], ['blue:liscia', B, 22.2, 31.4, 90], ['red:liscia', R, 24.6, 31.4, 90], // U
+        ['yellow:fiore', Y, 26.8, 29.4, 0], ['blue:liscia', B, 29.1, 29.4, 90],
+        ['red:fiore', R, 31.7, 32.0, 0], ['yellow:liscia', Y, 34.0, 32.0, 90],
         ['red:fiore', R, 57.0, 31.2, 0], ['yellow:foro', Y, 59.3, 31.2, 0], // fila di due
-        ['blue:fiore', B, 68.5, 29.4, 0] // singola parallela alla strada
+        ['red:fiore', R, 52.0, 29.4, 0], ['blue:liscia', B, 54.3, 29.4, 90],
+        ['yellow:fiore', Y, 62.0, 30.8, 0], ['red:liscia', R, 64.3, 30.8, 90],
+        ['blue:fiore', B, 68.5, 29.4, 0], ['yellow:liscia', Y, 71.0, 29.4, 90],
+        ['blue:foro', B, 73.5, 32.0, 0] // chiusura della fascia centrale, libera dai marciapiedi
       ];
       benches.forEach(([kind, color, u, v, deg], i) => {
         const bn = buildBench(kind, color); bn.name = `panchina-colorata-${i + 1}`;
