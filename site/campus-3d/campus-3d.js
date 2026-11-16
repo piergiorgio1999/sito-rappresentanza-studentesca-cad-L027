@@ -120,7 +120,7 @@
   let planMeshesByCode = new Map();
   let planOutlinesByCode = new Map();
   let planPointsByCode = new Map();
-  let planVisible = true;
+  let planVisible = false;
   let planOpacity = 0.8;
   let planColors = { lesson: '#f2b400', selected: '#2f8fd0', custom: {} };
   let parentActive = true;
@@ -421,7 +421,9 @@
     modeButton.textContent = is3d ? 'Vista ortofoto' : 'Vista 3D';
     modeButton.setAttribute('aria-pressed', String(is3d));
     modeButton.disabled = !renderer;
+    $('aerialToggle').hidden = is3d;
     tourButton.disabled = reducedMotion || !is3d;
+    setAerial(showAerial);
     if (is3d) setStatus('<b>Vista 3D locale pronta.</b> Volumi indicativi da OpenStreetMap; seleziona un edificio per consultare aule e lezioni.');
     else if (!renderer) setStatus('<b>WebGL non disponibile.</b> Ortofoto AGEA e impronte restano esplorabili.', true);
     else setStatus('<b>Ortofoto AGEA 2020.</b> Le sagome CU sono selezionabili; passa alla vista 3D quando vuoi.');
@@ -439,18 +441,19 @@
   }
   function setAerial(visible) {
     showAerial = visible;
+    const showOnScene = visible && currentView !== '3d';
     $('aerialImage').hidden = !visible;
     if (photoTexture) {
-      normalRoof.map = visible ? roofTexture : null;
-      selectedRoof.map = visible ? roofTexture : null;
+      normalRoof.map = showOnScene ? roofTexture : null;
+      selectedRoof.map = showOnScene ? roofTexture : null;
       normalRoof.needsUpdate = true;
       selectedRoof.needsUpdate = true;
     }
-    if (orthoMesh) orthoMesh.visible = visible;
-    if (cnrMesh) { cnrMesh.material[0].map = visible ? roofTexture : null; cnrMesh.material[0].needsUpdate = true; }
-    extrasGroup?.traverse((o) => { if (o.userData.texturedTop) { o.material[0].map = visible ? roofTexture : null; o.material[0].needsUpdate = true; } });
+    if (orthoMesh) orthoMesh.visible = showOnScene;
+    if (cnrMesh) { cnrMesh.material[0].map = showOnScene ? roofTexture : null; cnrMesh.material[0].needsUpdate = true; }
+    extrasGroup?.traverse((o) => { if (o.userData.texturedTop) { o.material[0].map = showOnScene ? roofTexture : null; o.material[0].needsUpdate = true; } });
     for (const mesh of planMeshesByCode.values()) {
-      mesh.material[0].map = visible ? roofTexture : null;
+      mesh.material[0].map = showOnScene ? roofTexture : null;
       mesh.material[0].needsUpdate = true;
     }
     $('aerialToggle')?.setAttribute('aria-pressed', String(visible));
@@ -724,7 +727,7 @@
     } else if (message.type === 'campus-active') { parentActive = Boolean(message.active); handleVisibility(); }
     else if (message.type === 'campus-view') {
       if (message.dim === '2d' || message.dim === '3d') viewDim = message.dim;
-      if (message.base === 'satellite' || message.base === 'carta') viewBase = message.base;
+      viewBase = 'carta';
       applyViewMode(); scheduleTiles(50);
     } else if (message.type === 'campus-rotate') { if (message.on) startTour(); else stopTour(); }
   }
@@ -754,7 +757,7 @@
   }
   /* ---------- suolo: cartina muta dei dintorni + ortofoto ritagliata sul confine CU ---------- */
   const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) < 700;
-  const BASE_COLORS = { bg: '#e9e4df', green: '#dfe5d4', water: '#cfdde6', casing: '#d8d0c7', road: '#fbfaf8', minor: '#f6f3ef', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
+  const BASE_COLORS = { bg: '#e9e4df', green: '#c6d1bc', water: '#cfdde6', casing: '#d8d0c7', road: '#969b99', minor: '#bdbbb4', building: '#dcd5cd', buildingLine: '#cec5bb', rail: '#c4bbb1' };
   function canvasMapper(area, width, height) {
     return ([lon, lat]) => [((lon - area.west) / (area.east - area.west)) * width, ((area.north - lat) / (area.north - area.south)) * height];
   }
@@ -1838,22 +1841,21 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
 
   /* ---------- modalità della vista (comandate dalla pagina principale) ---------- */
   let viewDim = '3d';
-  let viewBase = 'satellite';
+  let viewBase = 'carta';
   function setFlat(flat) {
     const s = flat ? 0.02 : 1;
     for (const group of [buildingGroup, planBuildingsGroup, extrasGroup]) if (group) group.scale.y = s;
   }
   function applyViewMode() {
     if (!renderer) return;
-    const satellite = viewBase === 'satellite';
-    setAerial(satellite);
-    planVisible = !satellite;
+    setAerial(showAerial);
+    const flat = viewDim === '2d';
+    planVisible = flat;
     planOpacity = 1;
     if (planImageMaterial) planImageMaterial.opacity = 1;
     if (planImagePlane) planImagePlane.visible = planVisible;
-    for (const tile of detailTiles.values()) if (tile.mesh) tile.mesh.visible = satellite;
+    for (const tile of detailTiles.values()) if (tile.mesh) tile.mesh.visible = false;
     updatePlanSelection();
-    const flat = viewDim === '2d';
     setFlat(flat);
     // vasca, scalinata, Minerva e fontanelle esistono solo nella vista 3D
     if (extrasGroup) extrasGroup.visible = !flat;
@@ -2523,7 +2525,9 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     sun.shadow.mapSize.set(1024, 1024);
     renderer.outputEncoding = THREE.sRGBEncoding;
     mapHost.replaceChildren(renderer.domElement);
-    mapHost.setAttribute('aria-label', 'Scena 3D locale con ortofoto AGEA ed estrusioni indicative OpenStreetMap');
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute('aria-label', 'Scena 3D. Usa W A S D per muovere la camera.');
+    mapHost.setAttribute('aria-label', 'Scena 3D locale con cartina muta ed estrusioni indicative OpenStreetMap');
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, 0);
     controls.enableDamping = true;
@@ -2569,6 +2573,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     let down = null;
+    renderer.domElement.addEventListener('pointerdown', () => renderer.domElement.focus({ preventScroll: true }));
     renderer.domElement.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
       down = { x: event.clientX, y: event.clientY };

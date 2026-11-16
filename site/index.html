@@ -1228,7 +1228,6 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
       <div class="mp-legend" title="Tocca un colore per cambiarlo"><label><span class="sw"><input type="color" id="mpColL" value="#f2b400" aria-label="Colore edifici con lezioni"></span> Lezioni triennale</label> <label><span class="sw sel"><input type="color" id="mpColS" value="#2f8fd0" aria-label="Colore edificio selezionato"></span> Selezionato</label></div>
       <div class="mp-modes" role="toolbar" aria-label="Vista della mappa">
         <div class="mp-switch dim" role="group" aria-label="2D o 3D" data-on="0"><button type="button" data-dim="2d" aria-pressed="true">2D</button><button type="button" data-dim="3d" aria-pressed="false">3D</button></div>
-        <div class="mp-switch base" role="group" aria-label="Carta o satellite" data-on="0"><button type="button" data-base="carta" aria-pressed="true">Carta</button><button type="button" data-base="satellite" aria-pressed="false">Satellite</button></div>
         <button type="button" class="mp-mbtn" id="mpRotate" aria-pressed="false" hidden>Rotazione</button>
         <button type="button" class="mp-mbtn mp-fullbtn" id="mpFull" aria-pressed="false" aria-label="Schermo intero">⛶</button>
       </div>
@@ -1240,7 +1239,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     </div>
     <details class="mp-list"><summary>Elenco edifici</summary><div class="mp-grid" id="mpGrid"></div></details>
     <p class="note" style="margin-top:12px">Planimetria e legenda: <a href="https://www.uniroma1.it/sites/default/files/field_file_allegati/citta_universitaria_map.pdf" target="_blank" rel="noopener">mappa ufficiale Sapienza (PDF)</a>. Trascina per spostarti, pizzica o usa la rotellina per lo zoom.</p>
-    <p class="note mp-src">Vista 3D e satellite: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> (ODbL 1.0) · <a href="https://geoportale.regione.lazio.it/catalogue/csw_to_extra_format/r_lazio%3A92b0f7e3-3b75-4feb-ac5e-2382/ortofoto-agea-v-2020.html" target="_blank" rel="noopener">Ortofoto AGEA 2020, Regione Lazio</a> (CC BY 4.0).</p>
+    <p class="note mp-src">Vista 3D: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> (ODbL 1.0).</p>
   </section>
 
   <!-- ===== Configurazione Eduroam ===== -->
@@ -4438,14 +4437,14 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
   const map=document.getElementById('mpMap');
   const rotate=document.getElementById('mpRotate');
   const full=document.getElementById('mpFull');
-  let active=false, loadTimer=0, dim='2d', base='carta';
+  let active=false, loadTimer=0, dim='2d';
   const send=(data)=>inlineFrame.contentWindow?.postMessage(data,location.origin);
   const colors=()=>({lesson:document.getElementById('mpColL').value,selected:document.getElementById('mpColS').value,custom:{...mpBColors}});
   const visible=()=>!document.getElementById('tab-mappa').hidden;
   function context(){
     send({type:'campus-context',selectedCode:mpSel||'',plan:{viewBox:{...MP_VB},image:document.getElementById('mpImg').src,
       features:CODES.map(code=>({code,path:MAPD.shapes[code],name:bTitle(code),lesson:LEZ_BLD.includes(code)})),colors:colors()}});
-    send({type:'campus-view',dim,base});
+    send({type:'campus-view',dim});
   }
   function viewport(){
     if(!active)return;
@@ -4453,7 +4452,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     send({type:'campus-viewport',right:open&&innerWidth>=700?Math.max(0,r.right-(innerWidth-drawer.offsetWidth)):0,
       bottom:open&&innerWidth<700?Math.max(0,r.bottom-(innerHeight-drawer.offsetHeight)):0});
   }
-  /* la vista WebGL serve per il 3D e per il satellite; carta 2D = planimetria vettoriale originale */
+  /* La vista WebGL serve solo per il 3D; la planimetria vettoriale resta la vista 2D. */
   function setActive(enabled,message=''){
     if(enabled===active){ if(enabled) send({type:'campus-view',dim,base}); return; }
     active=enabled;
@@ -4465,7 +4464,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     if(enabled){
       status.textContent='Caricamento della vista…';status.hidden=false;
       inlineFrame.src='campus-3d/index.html?embedded=1'+(mpSel?'&code='+encodeURIComponent(mpSel):'');
-      loadTimer=setTimeout(()=>{dim='2d';base='carta';sync();setActive(false,'La vista 3D e satellite non è disponibile: la mappa 2D resta utilizzabile.');},40000);
+      loadTimer=setTimeout(()=>{dim='2d';sync();setActive(false,'La vista 3D non è disponibile: la mappa 2D resta utilizzabile.');},40000);
     }else{
       inlineFrame.src='about:blank';
       if(mpSel) requestAnimationFrame(()=>mpFocus(mpSel));
@@ -4473,17 +4472,13 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
   }
   function sync(){
     map.querySelectorAll('[data-dim]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.dim===dim)));
-    map.querySelectorAll('[data-base]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.base===base)));
     map.querySelector('.mp-switch.dim').dataset.on=dim==='3d'?'1':'0';
-    map.querySelector('.mp-switch.base').dataset.on=base==='satellite'?'1':'0';
     rotate.hidden=dim!=='3d';
     if(dim!=='3d'){rotate.setAttribute('aria-pressed','false');rotate.textContent='Rotazione';}
   }
-  function apply(){ sync(); setActive(dim==='3d'||base==='satellite'); }
+  function apply(){ sync(); setActive(dim==='3d'); }
   map.querySelectorAll('[data-dim]').forEach(b=>b.addEventListener('click',()=>{dim=b.dataset.dim;apply();}));
-  map.querySelectorAll('[data-base]').forEach(b=>b.addEventListener('click',()=>{base=b.dataset.base;apply();}));
   map.querySelector('.mp-switch.dim').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){dim=dim==='3d'?'2d':'3d';apply();}});
-  map.querySelector('.mp-switch.base').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){base=base==='satellite'?'carta':'satellite';apply();}});
   rotate.addEventListener('click',()=>{const on=rotate.getAttribute('aria-pressed')!=='true';send({type:'campus-rotate',on});});
   /* schermo intero: la stessa mappa (legenda, servizi, pannello) occupa tutta la finestra */
   function setFull(on){
@@ -4507,8 +4502,8 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
     if(event.origin!==location.origin||!active||event.source!==inlineFrame.contentWindow) return;
     const data=event.data;
     if(data?.type==='campus-ready'){context();return;}
-    if(data?.type==='campus-overlay-ready'){clearTimeout(loadTimer);status.textContent=dim==='3d'?'Volumi e allineamento all’ortofoto indicativi.':'';status.hidden=!status.textContent;send({type:'campus-active',active:visible()});send({type:'campus-view',dim,base});viewport();return;}
-    if(data?.type==='campus-unavailable'){dim='2d';base='carta';sync();setActive(false,'Il browser non può mostrare il 3D: continua con la mappa vettoriale 2D.');return;}
+    if(data?.type==='campus-overlay-ready'){clearTimeout(loadTimer);status.textContent=dim==='3d'?'Volumi indicativi; fondo cartografico OpenStreetMap.':'';status.hidden=!status.textContent;send({type:'campus-active',active:visible()});send({type:'campus-view',dim});viewport();return;}
+    if(data?.type==='campus-unavailable'){dim='2d';sync();setActive(false,'Il browser non può mostrare il 3D: continua con la mappa vettoriale 2D.');return;}
     if(data?.type==='campus-rotation'){rotate.setAttribute('aria-pressed',String(!!data.on));rotate.textContent=data.on?'Ferma rotazione':'Rotazione';return;}
     if(data?.type==='campus-guest'){mpGuest();return;}
     if(data?.type==='campus-fountain'){ window.mpFountainMsg?.(data.on!==false); return; }
@@ -4520,7 +4515,7 @@ if(g)g.addEventListener('click',function(e){var x=e.target.closest('[data-font]'
   /* collegamento dalla vecchia vista autonoma: apre il 3D a schermo intero */
   if(new URLSearchParams(location.search).get('campus')==='3d-full'){
     history.replaceState(null,'',location.pathname+location.hash);
-    setTimeout(()=>{ dim='3d'; base='satellite'; apply(); setFull(true); },300);
+    setTimeout(()=>{ dim='3d'; apply(); setFull(true); },300);
   }
 })();
 </script>

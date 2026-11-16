@@ -244,7 +244,14 @@
   function enter(launch = null) {
     if (on || !C || !C.camera || !C.controls) return;
     const cam = C.camera;
-    saved = { fov: cam.fov, near: cam.near };
+    saved = {
+      position: cam.position.clone(),
+      target: C.controls.target.clone(),
+      fov: cam.fov,
+      near: cam.near,
+      rotationOrder: cam.rotation.order,
+      controlsEnabled: C.controls.enabled,
+    };
     buildSoup(C.controls.target.x, C.controls.target.z);
     const p = launch || startPoint();
     const g = groundAt(p.x, p.z, Math.max(0, C.controls.target.y) + 2);
@@ -253,6 +260,7 @@
     cam.fov = 70; cam.near = 0.1; cam.updateProjectionMatrix();
     on = true; last = performance.now();
     ui.host.classList.add('cm-on'); ui.layer.hidden = false; ui.run.setAttribute('aria-pressed', 'false');
+    ui.walk.setAttribute('aria-pressed', 'true');
     const touch = isTouch(); ui.layer.classList.toggle('cm-touch', touch);
     ui.help.textContent = touch ? HELP.touch : HELP.free;
     const fx = C.scene.getObjectByName('editor-maniglie'); if (fx) fx.visible = false;
@@ -265,13 +273,15 @@
     if (paused) resume(false);
     unlockMouse();
     on = false; C.primaPersona(null);
-    const cam = C.camera, sy = Math.sin(st.yaw), cy = Math.cos(st.yaw);
-    cam.fov = saved.fov; cam.near = saved.near; cam.updateProjectionMatrix(); cam.rotation.order = 'XYZ';
-    // la vista dall'alto riparte da dove sei arrivato, alle tue spalle
-    C.controls.target.set(st.x - sy * 4, st.feet, st.z - cy * 4);
-    cam.position.set(st.x + sy * 14, st.feet + 11, st.z + cy * 14);
+    const cam = C.camera, previous = saved;
+    cam.fov = previous.fov; cam.near = previous.near; cam.rotation.order = previous.rotationOrder; cam.updateProjectionMatrix();
+    C.controls.target.copy(previous.target);
+    cam.position.copy(previous.position);
+    C.controls.enabled = previous.controlsEnabled;
     C.controls.update();
+    saved = null;
     ui.host.classList.remove('cm-on'); ui.layer.hidden = true;
+    ui.walk.setAttribute('aria-pressed', 'false');
     const fx = C.scene.getObjectByName('editor-maniglie'); if (fx) fx.visible = true;
     st.keys.clear(); resetStick();
     ui.walk.focus({ preventScroll: true });
@@ -353,7 +363,7 @@
   function css() {
     const s = document.createElement('style');
     s.textContent = `
-    .cm-on .ed-bar,.cm-on:not(.cm-pausa) .ed-card,.cm-on:not(.cm-pausa) .ed-hint{display:none!important}
+    .cm-on .ed-bar,.cm-on .cm-walk-bar,.cm-on .mapbuttons .cm-walk,.cm-on:not(.cm-pausa) .ed-card,.cm-on:not(.cm-pausa) .ed-hint{display:none!important}
     .cm-layer.cm-pause{pointer-events:none;cursor:default}
     .cm-layer.cm-pause .cm-aim,.cm-layer.cm-pause .cm-help{display:none}
     .cm-layer.cm-pause .cm-stick{pointer-events:auto}
@@ -366,6 +376,10 @@
     .cm-top{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;pointer-events:none}
     .cm-help{max-width:440px;padding:8px 12px;border-radius:10px;background:#211d1dd9;color:#fff;font:13px/1.4 Arial,Helvetica,sans-serif}
     .cm-btn{pointer-events:auto;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #d9d0cc;background:#fffffff2;color:#3b3431;box-shadow:0 4px 14px #32201b22;font:600 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+    .cm-walk-bar{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));z-index:20;display:flex;gap:8px}
+    .cm-walk-bar[data-placement="left"]{left:12px}
+    .cm-walk-bar[data-placement="right"]{right:12px}
+    .cm-walk{white-space:nowrap}
     .cm-btn[aria-pressed="true"]{background:#822433;border-color:#822433;color:#fff}
     .cm-btn:focus-visible{outline:3px solid #822433;outline-offset:2px}
     .cm-stick{position:absolute;left:20px;bottom:20px;width:128px;height:128px;border-radius:50%;background:#ffffff38;border:2px solid #ffffffb0;box-shadow:0 4px 18px #0004;touch-action:none}
@@ -385,7 +399,7 @@
   function buildUi() {
     const host = document.querySelector('.maparea') || document.body, el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
     ui.host = host;
-    ui.walk = el('button', 'ed-btn', '🚶 Cammina'); ui.walk.type = 'button'; ui.walk.title = 'Passeggiata in prima persona';
+    ui.walk = el('button', 'cm-btn cm-walk', '🚶 Cammina'); ui.walk.type = 'button'; ui.walk.title = 'Passeggiata in prima persona'; ui.walk.setAttribute('aria-pressed', 'false');
     ui.walk.addEventListener('click', enter);
     ui.layer = el('div', 'cm-layer'); ui.layer.hidden = true; ui.layer.tabIndex = -1; ui.layer.setAttribute('role', 'application'); ui.layer.setAttribute('aria-label', 'Passeggiata in prima persona');
     const top = el('div', 'cm-top'), help = el('div', 'cm-help'); ui.help = help;
@@ -438,16 +452,15 @@
     for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) ui.layer.addEventListener(t, (e) => { if (st.look && e.pointerId === st.look.id) st.look = null; });
     window.addEventListener('keydown', onKey, { capture: true });
     window.addEventListener('keyup', onKey, { capture: true });
-    window.addEventListener('blur', () => { st.keys.clear(); resetStick(); });    // il tasto sta nella barra dell'editor quando c'è, altrimenti in una barra sua
-    let tries = 0;
-    const place = setInterval(() => {
-      const bar = host.querySelector('.ed-bar');
-      if (bar || ++tries > 25) {
-        clearInterval(place);
-        if (bar) bar.prepend(ui.walk);
-        else { const own = el('div', 'ed-bar'); own.style.cssText = 'position:absolute;z-index:20;right:12px;bottom:12px;display:flex;gap:8px;font:600 13px/1.2 Arial,Helvetica,sans-serif'; ui.walk.style.cssText = 'min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #d9d0cc;background:#fffffff2;cursor:pointer'; own.append(ui.walk); host.append(own); }
-      }
-    }, 400);
+    window.addEventListener('blur', () => { st.keys.clear(); resetStick(); });
+    const toolbar = host.querySelector('.mapbuttons');
+    const embedded = new URLSearchParams(location.search).get('embedded') === '1';
+    if (!embedded && toolbar && !document.body.classList.contains('vetrina')) toolbar.prepend(ui.walk);
+    else {
+      const own = el('div', 'cm-walk-bar');
+      own.dataset.placement = embedded ? 'left' : 'right';
+      own.append(ui.walk); host.append(own);
+    }
   }
   const wait = setInterval(() => {
     const c = window.campus3d;
