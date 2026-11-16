@@ -38,8 +38,24 @@
   const mapWidth = (bounds.east - bounds.west) * metersPerLon;
   const mapDepth = (bounds.north - bounds.south) * metersPerLat;
   const embedded = new URLSearchParams(location.search).get('embedded') === '1';
-  const launchFocus = new URLSearchParams(location.search).get('focus')?.toLowerCase() || '';
+  // vista di apertura sullo stradone: `?vista=chimica` (indirizzo breve /3d) oppure il vecchio `?focus=banchetto`
+  const launchFocus = (() => {
+    const q = new URLSearchParams(location.search), v = (q.get('vista') || q.get('focus') || '').toLowerCase();
+    return v === 'chimica' || v === 'banchetto' ? 'banchetto' : '';
+  })();
   let launchFocusApplied = false;
+  if (launchFocus && !embedded) document.body.classList.add('vetrina');
+  $('vetrinaExit')?.addEventListener('click', () => { document.body.classList.remove('vetrina'); window.dispatchEvent(new Event('resize')); });
+  // Nella vista d'apertura i modelli pesanti che da lì non si vedono (statua, fontanelle, condotte e tubi del cortile: circa 16 MB)
+  // partono solo quando chi guarda interagisce o apre il resto del campus.
+  const idleWaiters = [];
+  let idleFlushed = !launchFocus || embedded;
+  const flushIdle = () => { idleFlushed = true; idleWaiters.splice(0).forEach((fn) => fn()); };
+  const idleFetch = (url) => (idleFlushed ? fetch(url) : new Promise((resolve) => idleWaiters.push(resolve)).then(() => fetch(url)));
+  if (!idleFlushed) {
+    for (const ev of ['pointerdown', 'wheel', 'keydown', 'touchstart']) window.addEventListener(ev, flushIdle, { once: true, passive: true });
+    $('vetrinaExit')?.addEventListener('click', flushIdle);
+  }
   if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
     const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
     location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
@@ -326,8 +342,23 @@
     const bounds = new THREE.Box3().setFromObject(object);
     if (bounds.isEmpty()) return;
     const center = bounds.getCenter(new THREE.Vector3());
+    let frame = null; root.traverse((o) => { if (!frame && o.userData?.elemento === 'lato0') frame = o; });
+    if (!frame) return;
+    // assi dello stradone nel mondo: t lungo le facciate, n verso Fisica (lato pubblico del banchetto: gli studenti guardano da quella parte)
+    const phi = frame.rotation.y, t = new THREE.Vector3(Math.cos(phi), 0, -Math.sin(phi)), n = new THREE.Vector3(-Math.sin(phi), 0, -Math.cos(phi));
+    const portrait = (mapHost.clientHeight || 1) > (mapHost.clientWidth || 1);
+    const dist = portrait ? 7.2 : 5.2, side = portrait ? 0 : -1.2;
     launchFocusApplied = true;
-    flyTo({ x: center.x, n: -center.z }, 28, 0);
+    if (portrait) { // in verticale si guarda in diagonale: il banchetto davanti, la fila di panchine rossa alle sue spalle
+      controls.target.set(center.x, 0.95, center.z).addScaledVector(t, -1.5);
+      camera.position.set(center.x, 2.5, center.z).addScaledVector(n, dist * 0.55).addScaledVector(t, dist * 0.83);
+    } else {
+      controls.target.set(center.x, 0.95, center.z).addScaledVector(t, 0.3);
+      camera.position.set(center.x, 2.3, center.z).addScaledVector(n, dist).addScaledVector(t, side);
+    }
+    controls.update();
+    stopCameraFlight();
+    try { const q = new URLSearchParams(location.search); q.delete('vista'); q.delete('focus'); const s = q.toString(); history.replaceState(null, '', location.pathname + (s ? `?${s}` : '') + location.hash); } catch (_) { /* nessun history */ }
   }
   function selectBuilding(code, options = {}) {
     const b = buildings.find((feature) => feature.code === code);
@@ -1324,7 +1355,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // aiuole a U attorno alla statua, rialzate; dentro la U una vasca ribassata con acqua
     basin: [[270.8, 535.8], [315, 535.8], [315, 555], [305.8, 555], [305.8, 540], [280, 540], [280, 555], [270.8, 555]],
     basinHeight: 0.95,
-    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.04,
+    pool: [280, 540, 305.8, 555], poolDepth: 0.75, waterLevel: -0.4,
     statue: [292.5, 536.6],
     // scalinata: bordo inferiore, lati verso le arcate, pianerottolo davanti al corpo centrale
     stairs: { front: 518.3, left: 271.7, right: 313.3, facade: 497.5, landingLeft: 285, landingRight: 299.2, landingFront: 505.8, steps: 14, riser: 0.15 },
@@ -1498,13 +1529,13 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     extrasGroup = new THREE.Group(); extrasGroup.name = 'minerva';
     queueMicrotask(() => { if (extrasGroup) extrasGroup.visible = viewDim !== '2d'; });
     (planLayerGroup || scene).add(extrasGroup); // senza planimetria ufficiale la Minerva va direttamente nella scena
-    const stone = new THREE.MeshStandardMaterial({ color: 0xf8f8f6, roughness: 0.92, metalness: 0 });
-    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
-    const edge = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+    const stone = new THREE.MeshStandardMaterial({ color: 0xb9ae9c, roughness: 0.92, metalness: 0 });
+    const stoneTop = new THREE.MeshStandardMaterial({ color: 0xebe4d7, roughness: 0.9, metalness: 0 });
+    const edge = new THREE.LineBasicMaterial({ color: 0x9c9282, transparent: true, opacity: 0.7 });
     // vasca
     const basin = extrudeShape([pdfShape(MINERVA.basin)], MINERVA.basinHeight, 0);
     applyRoofUVs(basin);
-    const basinMesh = new THREE.Mesh(basin, [stoneTop, stone]);
+    const basinMesh = new THREE.Mesh(basin, [new THREE.MeshBasicMaterial({ color: 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false }), stone]);
     basinMesh.userData.texturedTop = true;
     basinMesh.castShadow = true; basinMesh.receiveShadow = true;
     extrasGroup.add(basinMesh);
@@ -1514,11 +1545,11 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       const ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
       const pit = extrudeShape([pdfShape(ring)], d, -d);
       const hidden = new THREE.MeshBasicMaterial({ visible: false });
-      const walls = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, side: THREE.BackSide });
+      const walls = new THREE.MeshStandardMaterial({ color: 0x9e9484, roughness: 0.95, metalness: 0, side: THREE.BackSide });
       extrasGroup.add(new THREE.Mesh(pit, [hidden, walls]));
       const floor = extrudeShape([pdfShape(ring)], 0.01, -d);
-      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })));
-      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 16, 10), waterMaterial());
+      extrasGroup.add(new THREE.Mesh(floor, new THREE.MeshStandardMaterial({ color: 0x31515a, roughness: 1, metalness: 0 })));
+      const waterMesh = new THREE.Mesh(waterGrid(MINERVA.pool, MINERVA.waterLevel, 40, 24), waterMaterial());
       waterMesh.renderOrder = 2;
       extrasGroup.add(waterMesh);
       MINERVA.water = waterMesh.material;
@@ -1573,7 +1604,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       if (pedestal > 0) {
         // basamento in pietra sotto la statua (dimensioni indicative)
         const size = Number(config.pedestalSize) || 2.4;
-        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 }));
+        const block = new THREE.Mesh(new THREE.BoxGeometry(size, pedestal, size), new THREE.MeshStandardMaterial({ color: 0xe2d9c8, roughness: 0.9, metalness: 0 }));
         block.position.set(baseX, MINERVA.world.y + pedestal / 2, baseZ);
         block.rotation.y = MINERVA.facing;
         block.castShadow = true; block.receiveShadow = true;
@@ -1592,7 +1623,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const fail = () => { minervaLoaded = false; };
     if (/\.json$/i.test(config.file)) {
       // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
-      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -1627,7 +1658,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     };
     const fail = () => { fountainsLoaded = false; };
     if (/\.json$/i.test(config.file)) {
-      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -2531,7 +2562,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
         for (let o = h.object; o && o !== exteriorRoot; o = o.parent) if (o.userData?.primitiva === 'banchetto-liberiamo') return true;
         return false;
       });
-      if (boothHit) { if (campaignCard) campaignCard.hidden = false; return; }
+      if (boothHit) { if (campaignCard && !document.body.classList.contains('vetrina')) campaignCard.hidden = false; return; }
       const hit = raycaster.intersectObjects(pickables, false).find((h) => !((h.object.userData.minervaPart || h.object.userData.fountainPart) && extrasGroup && !extrasGroup.visible));
       if (hit?.object.userData.minervaPart) { bounceMinerva(); return; }
       if (hit?.object.userData.fountainPart) { let h = hit.object; while (h && !h.userData.fountain) h = h.parent; const on = selectFountain(h); showGuest(false); if (embedded) notifyParent('campus-fountain', { on }); return; }
@@ -3089,23 +3120,24 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // primitive aggiunte dall'editor: nelle coordinate del lato 0, oppure in quelle di un elemento (cornice 'esterni:N');
     // quelle con cornice 'cortile' (per esempio i duplicati dei suoi oggetti) le costruisce loadCourtyardModel
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
-    // Sistemazione centrale tra i due fronti: asfalto e sedute colorate ispirate alle foto fornite.
-    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[24, 21.5], [70, 21.5], [70, 39.5], [24, 39.5]] });
-    g0.add(plaza);
-    const benchColors = [0xe5b92e, 0x397ec1, 0xb94d55];
-    const benchPlan = [
-      [30, 26.5, 90], [38, 26.5, 180], [47, 26.5, 90], [55, 26.5, 180],
-      [30, 33.8, 180], [38, 33.8, 90], [47, 33.8, 180], [55, 33.8, 90],
-      [34, 29.2, 90], [38, 31.2, 180], [50, 29.2, 90], [55, 30.5, 180]
-    ];
-    for (const [i, [u, v, angle]] of benchPlan.entries()) {
-      const bench = new THREE.Group(); bench.name = `panchina-colorata-${i + 1}`;
-      const color = new THREE.MeshStandardMaterial({ color: benchColors[i % benchColors.length], roughness: 0.86, metalness: 0 });
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.6, 0.72), color);
-      seat.position.y = 0.3; seat.castShadow = seat.receiveShadow = true; bench.add(seat);
-      const recess = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.012, 20), new THREE.MeshStandardMaterial({ color: 0x5d5854, roughness: 1 }));
-      recess.position.set(0, 0.606, 0); bench.add(recess);
-      bench.position.set(u, 0, -v); bench.rotation.y = angle * Math.PI / 180; g0.add(bench);
+    // Stradone tra i due fronti: asfalto disegnato con segnaletica e panchine di cemento colorato (foto del proprietario)
+    g0.add(buildAvenue());
+    {
+      const R = '#d8493f', Y = '#f1c420', B = '#6f9fe0';
+      const benches = [ // [tipo:decoro, colore, u, v, gradi]: SOLO 0° (parallela alla strada) o 90° (perpendicolare); tutte nella fascia centrale v 27.8-33.2, fuori dalle strisce pedonali (u 44.8-50.4, v < 28.8) e dallo spazio del banchetto (u 37.8-44.6)
+        ['red:fiore', R, 37.3, 28.4, 0], ['red:foro', R, 39.6, 28.4, 0], // fila di due, testa a testa, dietro e a lato del banchetto (lato Chimica)
+        ['blue:fiore', B, 46.2, 29.7, 0], ['yellow:foro', Y, 47.6, 30.7, 90], // L
+        ['yellow:fiore', Y, 23.4, 32.6, 0], ['blue:liscia', B, 22.2, 31.4, 90], ['red:liscia', R, 24.6, 31.4, 90], // U
+        ['red:fiore', R, 57.0, 31.2, 0], ['yellow:foro', Y, 59.3, 31.2, 0], // fila di due
+        ['blue:fiore', B, 68.5, 29.4, 0] // singola parallela alla strada
+      ];
+      benches.forEach(([kind, color, u, v, deg], i) => {
+        const bn = buildBench(kind, color); bn.name = `panchina-colorata-${i + 1}`;
+        bn.position.set(u, 0, -v); bn.rotation.y = deg * Math.PI / 180; g0.add(bn);
+      });
+      const co = Math.cos(g0.rotation.y), si = Math.sin(g0.rotation.y), toW = (u, v) => [g0.position.x + u * co - v * si, g0.position.z - u * si - v * co];
+      avenueWorld = [toW(AVENUE.u0, AVENUE.v0), toW(AVENUE.u1, AVENUE.v0), toW(AVENUE.u1, AVENUE.v1), toW(AVENUE.u0, AVENUE.v1)];
+      if (treeData) buildTrees();
     }
     for (const pr of cfg.primitive || []) {
       if (pr.rimosso || !(pr.box || pr.poligono) || pr.cornice === 'cortile') continue;
@@ -3373,7 +3405,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
   function loadVentKit() {
     if (!ventKitPromise) ventKitPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await fetch('models/ventilazione-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
+      const data = await idleFetch('models/ventilazione-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
       const bin = atob(data.glb_base64), bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bytes.buffer, 'models/', resolve, reject));
@@ -4415,6 +4447,81 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     m.renderOrder = 3 + Math.min(100, Math.max(-10, base)) * 0.01 + k * 1e-5;
     m.userData.primitiva = pr.id;
     return m;
+  }
+  /* ---------- stradone tra Chimica e Fisica: asfalto disegnato e panchine di cemento colorato (foto del 15/11/2026) ---------- */
+  const AVENUE = { u0: -8, u1: 92, v0: 20.75, v1: 39.85 };
+  let avenueWorld = null; // angoli dell'asfalto in coordinate mondo [x, z]: gli alberi OSM non ci finiscono sopra
+  function avenueTexture() {
+    const PX = 18, w = Math.round((AVENUE.u1 - AVENUE.u0) * PX), h = Math.round((AVENUE.v1 - AVENUE.v0) * PX);
+    const X = (u) => (u - AVENUE.u0) * PX, Y = (v) => (AVENUE.v1 - v) * PX; // riga 0 = v massimo (verso Fisica)
+    const t = canvasTex(w, h, (ctx) => {
+      noiseFill(ctx, w, h, '#58595b', '#47484a', 90000);
+      for (let i = 0; i < 160000; i += 1) { ctx.fillStyle = hash01(i, 91) > 0.5 ? 'rgba(205,203,196,.30)' : 'rgba(20,20,20,.30)'; ctx.fillRect(hash01(i, 92) * w, hash01(i, 93) * h, 1.3, 1.3); }
+      for (let i = 0; i < 46; i += 1) { ctx.fillStyle = hash01(i, 94) > 0.5 ? 'rgba(40,41,43,.20)' : 'rgba(110,111,112,.16)'; ctx.fillRect(hash01(i, 95) * w, hash01(i, 96) * h, 40 + 220 * hash01(i, 97), 20 + 90 * hash01(i, 98)); } // rappezzi
+      ctx.fillStyle = 'rgba(30,31,32,.17)'; // tracce dei pneumatici
+      for (const v of [24.4, 25.9, 34.6, 36.1]) ctx.fillRect(0, Y(v), w, 0.5 * PX);
+      ctx.strokeStyle = 'rgba(20,20,20,.55)'; ctx.lineWidth = 1.2; // crepe
+      for (let i = 0; i < 20; i += 1) { let x = hash01(i, 101) * w, y = hash01(i, 102) * h; ctx.beginPath(); ctx.moveTo(x, y); for (let k = 0; k < 14; k += 1) { x += (hash01(i * 20 + k, 103) - 0.35) * 22; y += (hash01(i * 20 + k, 104) - 0.5) * 16; ctx.lineTo(x, y); } ctx.stroke(); }
+      const paint = (fn, col) => { ctx.fillStyle = col; fn(); };
+      paint(() => { for (const v of [22.35, 38.25]) ctx.fillRect(0, Y(v + 0.1), w, 0.2 * PX); }, 'rgba(226,190,52,.88)'); // gialle di bordo, continue
+      paint(() => { for (let k = 0; k < 9; k += 1) { ctx.beginPath(); ctx.moveTo(X(60 + k * 0.9), Y(23.3)); ctx.lineTo(X(61.3 + k * 0.9), Y(23.3)); ctx.lineTo(X(62.1 + k * 0.9), Y(21.2)); ctx.lineTo(X(60.8 + k * 0.9), Y(21.2)); ctx.fill(); } }, 'rgba(226,190,52,.85)'); // campitura gialla a righe oblique
+      paint(() => { for (let k = 0; k < 8; k += 1) ctx.fillRect(X(44.8 + k * 0.78), Y(25.6), 0.4 * PX, 3.2 * PX); }, 'rgba(232,232,226,.8)'); // strisce di attraversamento in asse al vialetto
+      for (let i = 0; i < 26000; i += 1) { ctx.fillStyle = `rgba(${hash01(i, 110) > 0.5 ? '88,89,91' : '70,71,73'},${0.35 + 0.5 * hash01(i, 105)})`; ctx.fillRect(hash01(i, 106) * w, hash01(i, 107) * h, 1 + 3 * hash01(i, 108), 1 + 2 * hash01(i, 109)); } // vernice consumata
+    }, 1, 1, true);
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.sRGBEncoding;
+    return t;
+  }
+  function buildAvenue() {
+    const g = new THREE.Group(); g.name = 'stradone';
+    const W = AVENUE.u1 - AVENUE.u0, H = AVENUE.v1 - AVENUE.v0;
+    const geo = new THREE.PlaneGeometry(W, H); geo.rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshStandardMaterial({ map: avenueTexture(), roughness: 0.97, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const m = new THREE.Mesh(geo, mat); m.position.set(AVENUE.u0 + W / 2, 0.005, -(AVENUE.v0 + H / 2)); m.receiveShadow = true; m.renderOrder = 4; m.userData.primitiva = 'asfalto-stradone';
+    g.add(m);
+    return g;
+  }
+  const BENCH = { L: 2.2, Wb: 0.62, Wt: 0.46, Hh: 0.45 };
+  let benchGeo = null;
+  const benchTex = new Map();
+  function benchTopTexture(kind) {
+    if (benchTex.has(kind)) return benchTex.get(kind);
+    const w = 144, h = 704, base = { red: '#d2493f', blue: '#6f9fe0', yellow: '#f0c521' }[kind.split(':')[0]], what = kind.split(':')[1];
+    const t = canvasTex(w, h, (ctx) => {
+      noiseFill(ctx, w, h, base, 'rgba(0,0,0,.5)', 5000);
+      ctx.globalAlpha = 1; const flower = (cx, cy, R, line, fill, petals) => {
+        ctx.save(); ctx.translate(cx, cy); ctx.lineWidth = Math.max(1.6, R * 0.04); ctx.strokeStyle = line; ctx.fillStyle = fill;
+        for (let i = 0; i < petals; i += 1) { ctx.save(); ctx.rotate((i / petals) * Math.PI * 2 + 0.3); ctx.beginPath(); ctx.ellipse(R * 0.52, 0, R * 0.5, R * 0.3, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(R * 0.15, 0); ctx.lineTo(R * 0.85, 0); ctx.stroke(); ctx.restore(); }
+        ctx.beginPath(); ctx.arc(0, 0, R * 0.26, 0, Math.PI * 2); ctx.fillStyle = line; ctx.fill();
+        ctx.fillStyle = fill; for (let i = 0; i < 26; i += 1) { const a = i * 2.4, r = R * 0.2 * Math.sqrt(i / 26); ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 2.2, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore(); };
+      if (what === 'fiore') {
+        if (kind.startsWith('red')) flower(w / 2, 250, 62, 'rgba(255,232,230,.95)', 'rgba(255,255,255,.12)', 6);
+        else if (kind.startsWith('blue')) { flower(w / 2, 470, 64, '#17306a', 'rgba(255,255,255,.06)', 5);
+          ctx.fillStyle = '#9fd0f2'; ctx.strokeStyle = '#2f6aa8'; ctx.lineWidth = 2; ctx.save(); ctx.translate(w / 2, 150);
+          for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(s * 20, -10, 20, 28, s * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.ellipse(s * 14, 26, 12, 17, -s * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } ctx.restore(); }
+        else flower(w / 2, 480, 58, '#1a1a1a', 'rgba(255,255,255,0)', 12);
+      } else if (what === 'foro') {
+        const g = ctx.createRadialGradient(w / 2, 260, 6, w / 2, 260, 74); g.addColorStop(0, '#0d0c0b'); g.addColorStop(0.82, '#2b2724'); g.addColorStop(1, 'rgba(70,60,40,.9)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(w / 2, 260, 74, 0, Math.PI * 2); ctx.fill();
+      }
+    }, 1, 1);
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; benchTex.set(kind, t); return t;
+  }
+  function buildBench(kind, color) {
+    const [name, what] = kind.split(':');
+    if (!benchGeo) {
+      const { L, Wb, Wt, Hh } = BENCH, sh = new THREE.Shape(); // sezione trapezoidale: un fianco verticale, l'altro inclinato
+      sh.moveTo(-Wb / 2, 0); sh.lineTo(Wb / 2, 0); sh.lineTo(Wb / 2, Hh); sh.lineTo(Wb / 2 - Wt, Hh); sh.closePath();
+      benchGeo = new THREE.ExtrudeGeometry(sh, { depth: L, bevelEnabled: false }); benchGeo.translate(0, 0, -L / 2); benchGeo.rotateY(Math.PI / 2); // asse lungo X
+      benchGeo.computeVertexNormals();
+    }
+    const g = new THREE.Group(); g.name = `panchina-${name}`;
+    const col = new THREE.Color(color).convertSRGBToLinear();
+    const body = new THREE.Mesh(benchGeo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.95, metalness: 0 })); body.castShadow = body.receiveShadow = true; g.add(body);
+    const tg = new THREE.PlaneGeometry(BENCH.Wt - 0.04, BENCH.L - 0.04); tg.rotateX(-Math.PI / 2); tg.rotateY(Math.PI / 2); // lato lungo della texture lungo X
+    const top = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ map: benchTopTexture(kind), roughness: 0.95, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    top.position.set(0, BENCH.Hh + 0.003, -(BENCH.Wb - BENCH.Wt) / 2); top.receiveShadow = true; g.add(top);
+    return g;
   }
   /* modelli 3D caricati dall'editor (forma 'file3d', campo modello3d { asset, formato, nome, su, misure }): il file sta negli asset
      dell'artifact come JSON { tipo: 'modello3d', formato, nome, compresso: 'gzip', dati: base64 } (gli asset non accettano binari 3D).
@@ -5537,7 +5644,7 @@ void main() {
   function loadTubiModel() {
     if (!tubiPromise) tubiPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await fetch('models/tubi-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
+      const data = await idleFetch('models/tubi-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
       const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bin.buffer, 'models/', resolve, reject));
       const model = gltf.scene, box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
@@ -5584,9 +5691,10 @@ void main() {
   function rnd(i, k) { const s = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return s - Math.floor(s); }
   let treeData = null;
   async function addTrees() {
-    // Niente alberi OSM generici fuori dalle aiuole modellate: evita l'effetto chiome sparse sul viale
-    // e non scarica il dataset pesante. Gli alberi del cortile restano nei rispettivi modelli di dettaglio.
-    treeData = [];
+    let data = null;
+    try { const response = await fetch('trees.json'); if (response.ok) data = await response.json(); } catch (_) { data = null; }
+    // id stabile dalla posizione nel file: le modifiche fatte sul posto vi si riferiscono
+    treeData = (data?.trees || []).filter((t) => Array.isArray(t.p)).map((t) => Object.assign({ id: t.id || `t${Math.round(t.p[0] * 1e6)}_${Math.round(t.p[1] * 1e6)}` }, t));
     buildTrees();
   }
   const isPineTree = (t) => t.g === 'needleleaved' || /pinus|pino/i.test(t.g || '');
@@ -5594,7 +5702,23 @@ void main() {
   function buildTrees() {
     if (!scene || !treeData) return;
     if (treeGroup) { scene.remove(treeGroup); disposeTree(treeGroup); treeGroup = null; }
-    const list = treeData.filter((t) => !t.rimosso && insideMap(t.p));
+    // alberi OSM: nessuno sull'asfalto dello stradone; vicino a Chimica/Fisica e alla Minerva restano tutti, lontano se ne disegna solo una parte
+    const near = [];
+    try { const c = focusCentroid(); near.push([c.x, -c.n, 140]); } catch (_) { /* senza Chimica */ }
+    try { const m = pdfToWorld(...MINERVA.statue); near.push([m.x, m.z, 85]); } catch (_) { /* senza planimetria */ }
+    const onAsphalt = (x, z, pad) => {
+      if (!avenueWorld) return false;
+      const [a0, a1, , a3] = avenueWorld, ux = a1[0] - a0[0], uz = a1[1] - a0[1], vx = a3[0] - a0[0], vz = a3[1] - a0[1];
+      const du = ((x - a0[0]) * ux + (z - a0[1]) * uz) / Math.hypot(ux, uz), dv = ((x - a0[0]) * vx + (z - a0[1]) * vz) / Math.hypot(vx, vz);
+      return du > -pad && du < Math.hypot(ux, uz) + pad && dv > -pad && dv < Math.hypot(vx, vz) + pad;
+    };
+    const list = treeData.filter((t, idx) => {
+      if (t.rimosso || !insideMap(t.p)) return false;
+      const w = project(t.p), x = w.x, z = -w.n;
+      if (onAsphalt(x, z, 1.5)) return false;
+      if (!near.length || near.some(([nx, nz, r]) => Math.hypot(x - nx, z - nz) <= r)) return true;
+      return rnd(idx, 17) < 0.3;
+    });
     if (!list.length) return;
     const isPine = isPineTree;
     const pines = list.filter(isPine), broad = list.filter((t) => !isPine(t)), all = broad.concat(pines);

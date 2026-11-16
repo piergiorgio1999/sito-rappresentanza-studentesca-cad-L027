@@ -47,3 +47,10 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 - Banchetto di Liberiamo Sapienza nel viale (primitiva `banchetto-liberiamo`, modello «banchetto» del catalogo): modelli degli studenti in `models/studenti.json` e `models/studenti/*.wasm`, immagini in `tex/banchetto/`.
 - Edificio di Fisica (CU013): impronta dalla relazione OSM 5457573 (© OpenStreetMap contributors, ODbL), aggiunta a `campus-context.geojson` e a `campus-buildings.json` (39 schede); facciata «giallo» in `facciate.json` come prima versione, da verificare sul posto.
 - Nuovo campo `riflesso` (metri) sugli elementi di `cortile/chimica-esterni.json`: l’elemento è costruito riflesso rispetto all’asse v = riflesso / 2 del lato 0 (v diventa riflesso − v). Con riflesso 60,6 (la facciata di Fisica sta a v 60,6) sono copiati sul lato di Fisica pavimento, vialetto, ingresso con prati, fiori, panchine, ringhiera, palma, totem «CU013» e quattro lampioni; i due pergolati specchiati usano lo stesso campo. Posizioni ricavate per simmetria, non rilevate; le scritte dell’ingresso e del totem vengono raddrizzate dal codice.
+
+## Aggiornamento del 16/11/2026: vista d'apertura sullo stradone
+
+- `?vista=chimica` (indirizzo breve `/3d`, regola in `site/_redirects`; vale ancora il vecchio `?focus=banchetto`) apre la scena a quota d'uomo sullo stradone tra Chimica e Fisica, senza barra laterale né pulsanti (resta «Esplora il campus»); dopo l'apertura il parametro viene tolto dall'indirizzo.
+- Nella vista d'apertura i modelli pesanti non visibili da lì (statua, fontanelle, condotte, tubi: circa 16 MB) si scaricano alla prima interazione.
+- Stradone: asfalto disegnato (u da −8 a 92, v da 20,75 a 39,85 del lato 0) con linee gialle di bordo e strisce pedonali; panchine di cemento colorato (sezione trapezoidale, fiore dipinto sul piano) solo a 0° o 90° rispetto all'asse, in gruppi nella fascia centrale. Posizioni e disegni indicativi, ricavati dalle foto.
+- Alberi OSM (`trees.json`): nessuno sull'asfalto; lontano da Chimica/Fisica (140 m) e dalla Minerva (85 m) se ne disegna circa il 30%.

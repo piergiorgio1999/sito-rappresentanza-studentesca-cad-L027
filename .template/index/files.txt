@@ -153,6 +153,7 @@
 ./scripts/verify-template.sh
 ./site/HANDOFF.md
 ./site/_headers
+./site/_redirects
 ./site/apple-touch-icon.png
 ./site/artifact.html
 ./site/aule-data.json
