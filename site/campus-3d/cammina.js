@@ -465,7 +465,7 @@
           C.scene.updateMatrixWorld(true);
           const bounds = new T.Box3().setFromObject(stand);
           if (bounds.isEmpty()) return;
-          const center = bounds.getCenter(new T.Vector3()), forward = stand.getWorldDirection(new T.Vector3()).negate();
+          const center = bounds.getCenter(new T.Vector3()), forward = stand.getWorldDirection(new T.Vector3());
           forward.y = 0; forward.normalize();
           const x = center.x + forward.x * 3.2, z = center.z + forward.z * 3.2;
           launchWalkApplied = true; clearInterval(launch);
