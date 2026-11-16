@@ -21,7 +21,7 @@
   let C = null, T = null, on = false, paused = false, saved = null, last = 0, tilesAt = 0;
   const ui = {};
   const st = { x: 0, feet: 0, z: 0, eye: 0, vy: 0, yaw: 0, pitch: 0, grounded: true, keys: new Set(), stick: { x: 0, y: 0, id: null }, look: null, jump: false, run: false, speed: SPEED0 };
-  const launchWalk = new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'banchetto';
+  const launchWalk = new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'banchetto' || new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'chimica';
   let launchWalkApplied = false;
 
   /* ---------- triangoli vicini, in celle ---------- */
