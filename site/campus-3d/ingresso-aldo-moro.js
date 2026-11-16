@@ -18,13 +18,13 @@
   const V_FRONT = 5.1;             // fronte dell'attico e dei pilastri
   const V_BACK = -2.9;             // retro dell'attico
   const BLOCK_FRONT = 4.4, BLOCK_BACK = -6.1;
-  /* Aiuole del piazzale: disegno simmetrico rispetto all'asse del colonnato (u = 0), con le aiuole che partono dal
-     filo dei pilastri. Proporzioni stimate dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo:
-     un'isola centrale a goccia con il tondo, e due nastri curvi per lato che accompagnano le corsie d'ingresso. */
-  const LAWN_V0 = V_FRONT + 0.6;   // le aiuole partono dal filo del colonnato
-  const ISLAND = { w: 7.6, len: 26 };
-  const RIBBONS = [{ u0: 15.6, u1: 19.2, u2: 24.4, len: 24, w: 2.4 }, { u0: 25.4, u1: 30.2, u2: 35.6, len: 19, w: 2.2 }];
-  const DISC = [0, LAWN_V0 + 10.4]; // tondo in asse, come nella foto aerea
+  /* Aiuole del piazzale: isola centrale a goccia e due nastri curvi per lato, simmetrici rispetto all'asse dell'isola
+     (CU, che nel vero non coincide col centro del colonnato) e attaccati al filo dei pilastri. Proporzioni stimate
+     dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo. */
+  const CU = -5;                   // asse dell'isola centrale e della simmetria delle aiuole
+  const SL = V_FRONT + 0.6, EL = V_FRONT + 26; // dal filo dei pilastri fino al piazzale
+  const RIBBONS = [{ d: 12.3, p1: [13.0, 12], p2: [15.4, 19.5], w: 2.2 }, { d: 19, p1: [20, 13], p2: [25.5, 20], w: 2.4 }];
+  const DISC = [CU, V_FRONT + 13.5];
 
   function whenReady(fn) {
     const c = window.campus3d;
@@ -137,35 +137,34 @@
     // aiuole davanti all'ingresso
     const lawnY = 0.06, curbH = 0.22;
     // isola centrale a goccia: lato dritto contro il colonnato, fianchi simmetrici, punta arrotondata verso il piazzale
-    const island = (grow) => {
-      const W = ISLAND.w + grow, Lg = ISLAND.len + grow, half = (t) => W * Math.pow(Math.max(0, 1 - Math.pow(t, 2.1)), 0.5);
-      const tip = 0.93, right = [], left = [];
-      for (let i = 0; i <= 22; i += 1) { const t = (i / 22) * tip, v = LAWN_V0 - grow + Lg * t, h = half(t); right.push([h, v]); left.push([-h, v]); }
-      const rc = half(tip), vc = LAWN_V0 - grow + Lg * tip, cap = [];
-      for (let i = 1; i < 12; i += 1) { const a = (i / 12) * Math.PI; cap.push([Math.cos(a) * rc, vc + Math.sin(a) * rc]); }
-      return right.concat(cap, left.reverse());
-    };
-    // nastro curvo: linea di mezzeria su una Bézier quadratica dal colonnato verso l'esterno, poi allargata di mezza larghezza
-    const ribbon = (r, side, grow) => {
-      const w = r.w / 2 + grow, p0 = [side * r.u0, LAWN_V0 - grow], p1 = [side * r.u1, LAWN_V0 + r.len * 0.55], p2 = [side * r.u2, LAWN_V0 + r.len];
-      const mid = [], nrm = [];
-      for (let i = 0; i <= 18; i += 1) {
-        const t = i / 18, k = 1 - t;
-        mid.push([k * k * p0[0] + 2 * k * t * p1[0] + t * t * p2[0], k * k * p0[1] + 2 * k * t * p1[1] + t * t * p2[1]]);
-        const du = 2 * k * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]), dv = 2 * k * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]), m = Math.hypot(du, dv) || 1;
-        nrm.push([dv / m, -du / m]);
+    const prof = (t) => 8.6 - 3.8 * Math.pow(t, 0.8); // semilarghezza, si stringe verso la strada
+    const drop = [], vEnd = EL - prof(1);
+    for (let i = 0; i <= 12; i += 1) { const t = i / 12; drop.push([CU + prof(t), SL + (vEnd - SL) * t]); }
+    for (let i = 1; i < 10; i += 1) { const a = (i / 10) * Math.PI; drop.push([CU + Math.cos(a) * prof(1), vEnd + Math.sin(a) * prof(1)]); }
+    for (let i = 12; i >= 0; i -= 1) { const t = i / 12; drop.push([CU - prof(t), SL + (vEnd - SL) * t]); }
+    flat(drop, 0, curbMat, curbH);
+    const inset = drop.map(([u, v]) => { const cv = (SL + EL) / 2, k = 0.92; return [CU + (u - CU) * k, cv + (v - cv) * k]; });
+    flat(inset, curbH, lawnMat, 0.04);
+    // nastri curvi ai lati delle corsie: Bézier quadratica, larghezza che si assottiglia alle due estremità
+    const ribbonPts = (p0, p1, p2, w) => {
+      const left = [], right = [];
+      for (let i = 0; i <= 16; i += 1) {
+        const t = i / 16, mt = 1 - t;
+        const x = mt * mt * p0[0] + 2 * mt * t * p1[0] + t * t * p2[0], z = mt * mt * p0[1] + 2 * mt * t * p1[1] + t * t * p2[1];
+        const dx = 2 * mt * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]), dz = 2 * mt * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
+        const l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, ww = w * (0.6 + 0.4 * Math.sin(Math.PI * Math.min(1, t * 1.1 + 0.15)));
+        left.push([x + nx * ww / 2, z + nz * ww / 2]); right.push([x - nx * ww / 2, z - nz * ww / 2]);
       }
-      const a = mid.map(([u, v], i) => [u + nrm[i][0] * w, v + nrm[i][1] * w]);
-      const b = mid.map(([u, v], i) => [u - nrm[i][0] * w, v - nrm[i][1] * w]).reverse();
-      return a.concat(b);
+      return left.concat(right.reverse());
     };
-    const lawns = [island(0)], curbs = [island(0.5)];
-    RIBBONS.forEach((r) => [1, -1].forEach((side) => { lawns.push(ribbon(r, side, 0)); curbs.push(ribbon(r, side, 0.5)); }));
-    lawns.forEach((p, i) => { flat(curbs[i], 0, curbMat, curbH); flat(p, curbH, lawnMat, 0.04); });
+    const ribbon = (p0, p1, p2, w) => { flat(ribbonPts(p0, p1, p2, w), 0, curbMat, curbH); flat(ribbonPts(p0, p1, p2, w * 0.72), curbH, lawnMat, 0.04); };
+    RIBBONS.forEach((r) => [1, -1].forEach((side) => {
+      ribbon([CU + side * r.d, V_FRONT + 0.8], [CU + side * r.p1[0], V_FRONT + r.p1[1]], [CU + side * r.p2[0], V_FRONT + r.p2[1]], r.w);
+    }));
     // tondo in terracotta con lo stemma
-    const stem = new THREE.Mesh(new THREE.CircleGeometry(3.5, 48), new THREE.MeshStandardMaterial({ map: stemmaTexture(), roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+    const stem = new THREE.Mesh(new THREE.CircleGeometry(3.7, 48), new THREE.MeshStandardMaterial({ map: stemmaTexture(), roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     stem.rotation.x = -Math.PI / 2; stem.position.set(DISC[0], curbH + 0.07, DISC[1]); stem.name = 'stemma'; group.add(stem);
-    const ring = new THREE.Mesh(new THREE.RingGeometry(3.5, 4.1, 48), curbMat); ring.rotation.x = -Math.PI / 2; ring.position.set(DISC[0], curbH + 0.06, DISC[1]); group.add(ring);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(3.7, 4.3, 48), curbMat); ring.rotation.x = -Math.PI / 2; ring.position.set(DISC[0], curbH + 0.06, DISC[1]); group.add(ring);
     // scritte a terra
     const label = (lines, u, v, w, h, rot) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: groundText(lines, w, h), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }));
