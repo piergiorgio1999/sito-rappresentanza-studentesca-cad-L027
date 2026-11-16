@@ -3090,13 +3090,13 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // quelle con cornice 'cortile' (per esempio i duplicati dei suoi oggetti) le costruisce loadCourtyardModel
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
     // Sistemazione centrale tra i due fronti: asfalto e sedute colorate ispirate alle foto fornite.
-    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[24, 21.5], [70, 21.5], [70, 39.5], [24, 39.5]] });
+    const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[27, 25], [59, 25], [59, 36], [27, 36]] });
     g0.add(plaza);
     const benchColors = [0xe5b92e, 0x397ec1, 0xb94d55];
     const benchPlan = [
-      [26, 23, 112], [32, 34, 158], [37, 27, 94], [43, 38, 145],
-      [49, 23, 171], [54, 34, 102], [60, 27, 133], [66, 37, 179],
-      [29, 39, 126], [35, 22, 166], [52, 29, 91], [69, 24, 151]
+      [30, 26.5, 90], [38, 26.5, 180], [47, 26.5, 90], [55, 26.5, 180],
+      [30, 33.8, 180], [38, 33.8, 90], [47, 33.8, 180], [55, 33.8, 90],
+      [34, 29.2, 90], [38, 31.2, 180], [50, 29.2, 90], [55, 30.5, 180]
     ];
     for (const [i, [u, v, angle]] of benchPlan.entries()) {
       const bench = new THREE.Group(); bench.name = `panchina-colorata-${i + 1}`;
