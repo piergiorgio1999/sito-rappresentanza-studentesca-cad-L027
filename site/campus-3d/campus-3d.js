@@ -50,10 +50,26 @@
   // partono solo quando chi guarda interagisce o apre il resto del campus.
   const idleWaiters = [];
   let idleFlushed = !launchFocus || embedded;
-  const flushIdle = () => { idleFlushed = true; idleWaiters.splice(0).forEach((fn) => fn()); };
-  const idleFetch = (url) => (idleFlushed ? fetch(url) : new Promise((resolve) => idleWaiters.push(resolve)).then(() => fetch(url)));
+  const walkLaunch = new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'banchetto' || new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'chimica';
+  const flushIdle = () => { idleFlushed = true; idleWaiters.splice(0).forEach((w) => w.resolve()); };
+  const idleFetch = (url, points = null) => (idleFlushed ? fetch(url) : new Promise((resolve) => idleWaiters.push({ resolve, points })) .then(() => fetch(url)));
+  const chemistryPoint = () => {
+    const b = buildings.find((x) => String(x.code).toUpperCase() === 'CU014');
+    if (!b?.rings?.[0]) return null;
+    const p = polygonCentroid(b.rings[0]), w = project(p);
+    return { x: w.x, z: -w.n };
+  };
+  const flushIdleNearby = () => {
+    if (idleFlushed || !camera) return;
+    for (let i = idleWaiters.length - 1; i >= 0; i -= 1) {
+      const w = idleWaiters[i], pts = Array.isArray(w.points) ? w.points : [];
+      if (!pts.length || pts.some((p) => camera.position.distanceTo(new THREE.Vector3(p.x, camera.position.y, p.z)) <= 150)) {
+        idleWaiters.splice(i, 1); w.resolve();
+      }
+    }
+  };
   if (!idleFlushed) {
-    for (const ev of ['pointerdown', 'wheel', 'keydown', 'touchstart']) window.addEventListener(ev, flushIdle, { once: true, passive: true });
+    if (!walkLaunch) for (const ev of ['pointerdown', 'wheel', 'keydown', 'touchstart']) window.addEventListener(ev, flushIdle, { once: true, passive: true });
     $('vetrinaExit')?.addEventListener('click', flushIdle);
   }
   if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
@@ -1623,7 +1639,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const fail = () => { minervaLoaded = false; };
     if (/\.json$/i.test(config.file)) {
       // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
-      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`, [MINERVA.world]).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -1649,7 +1665,10 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       config.points.forEach(([x, y], i) => {
         const w = pdfToWorld(x, y), holder = new THREE.Group();
         holder.add(i ? model.clone(true) : model);
-        holder.position.set(w.x, 0, w.z);
+        // Le fontanelle 3 e 4 sono quelle che ricadono sui nuovi marciapiedi
+        // (coordinate PDF verificate sul lato 0 di CU014): restano nello stesso
+        // punto geografico, ma la base si appoggia alla quota superiore del piano.
+        holder.position.set(w.x, (i === 3 || i === 4) ? 0.15 : 0, w.z);
         holder.rotation.y = (Number(config.rotationDeg) || 0) * Math.PI / 180 + i * 1.3;
         holder.userData.fountain = true;
         holder.traverse((o) => { if (o.isMesh) { o.userData.fountainPart = true; pickables.push(o); } });
@@ -1658,7 +1677,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     };
     const fail = () => { fountainsLoaded = false; };
     if (/\.json$/i.test(config.file)) {
-      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`, config.points.map(([x, y]) => pdfToWorld(x, y))).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -1768,14 +1787,15 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const mat = new THREE.PointsMaterial({ size: Number(item.pointSize) || 0.05, sizeAttenuation: true, vertexColors: true });
     return new THREE.Points(geo, mat);
   }
-  function loadGltfFile(file, done, fail) {
+  function loadGltfFile(file, done, fail, points = null) {
     loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function').then(() => {
-      if (/\.json$/i.test(file)) {
-        fetch(`models/${file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${file}`, points).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((buf) => {
+        if (/\.json$/i.test(file)) {
+          const data = JSON.parse(new TextDecoder().decode(buf));
           const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
           new THREE.GLTFLoader().parse(bin.buffer, 'models/', done, fail);
-        }).catch(fail);
-      } else new THREE.GLTFLoader().load(`models/${file}`, done, undefined, fail);
+        } else new THREE.GLTFLoader().parse(buf, 'models/', done, fail);
+      }).catch(fail);
     }).catch(fail);
   }
   async function loadScan3d() {
@@ -1795,6 +1815,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     for (const item of config.items) {
       if (!item || !/^[\w.-]+\.(glb|json|ply|xyz|txt|csv)$/i.test(item.file || '')) continue;
       if (item.type === 'model') {
+        const anchor = Array.isArray(item.anchor) && item.anchor.length === 2 ? pdfToWorld(item.anchor[0], item.anchor[1]) : null;
         loadGltfFile(item.file, (gltf) => {
           const model = gltf.scene, size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
           if (Number(item.height)) model.scale.setScalar(Number(item.height) / Math.max(0.001, size.y)); else if (Number(item.scale)) model.scale.setScalar(Number(item.scale));
@@ -1802,9 +1823,10 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
           model.position.set(-c.x, -box.min.y, -c.z);
           model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
           const holder = new THREE.Group(); holder.add(model); place(holder, item);
-        }, () => console.warn('scan-3d: modello non caricato', item.file));
+        }, () => console.warn('scan-3d: modello non caricato', item.file), anchor ? [anchor] : null);
       } else {
-        fetch(`models/${item.file}`).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((buf) => {
+        const anchor = Array.isArray(item.anchor) && item.anchor.length === 2 ? pdfToWorld(item.anchor[0], item.anchor[1]) : null;
+        idleFetch(`models/${item.file}`, anchor ? [anchor] : null).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((buf) => {
           const cloud = parsePointCloud(buf, item.file, Number(item.maxPoints) || 1500000);
           if (!cloud.count) throw new Error('nessun punto');
           const holder = new THREE.Group(); holder.add(buildPointCloud(cloud, item)); place(holder, item);
@@ -3122,6 +3144,18 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
     // Stradone tra i due fronti: asfalto disegnato con segnaletica e panchine di cemento colorato (foto del proprietario)
     g0.add(buildAvenue());
+    // Marciapiedi continui sui due bordi dello stradone. `buildPrimitive` applica
+    // la stessa maschera aiuole usata dall'editor, inclusi gli eventuali raccordi.
+    // Le fontanelle PDF (300,582) e (285.6,582) trasformano in (u,v)≈
+    // (83.41,21.83) e (83.55,36.87) sul lato 0: entrambe restano sopra la
+    // fascia continua; il modello viene rialzato di 15 cm in loadFountains.
+    for (const [id, v0, v1] of [
+      ['marciapiede-stradone-chimica', 21.35, 23.35],
+      ['marciapiede-stradone-fisica', 36.6, 39.25]
+    ]) g0.add(buildPrimitive({
+      id, base: 0, altezza: 0.15, cordolo: 0.16, forma: 'marciapiede',
+      poligono: [[AVENUE.u0, v0], [AVENUE.u1, v0], [AVENUE.u1, v1], [AVENUE.u0, v1]]
+    }));
     {
       const R = '#d8493f', Y = '#f1c420', B = '#6f9fe0';
       const benches = [ // [tipo:decoro, colore, u, v, gradi]: SOLO 0° (parallela alla strada) o 90° (perpendicolare); tutte nella fascia centrale v 27.8-33.2, fuori dalle strisce pedonali (u 44.8-50.4, v < 28.8) e dallo spazio del banchetto (u 37.8-44.6)
@@ -3405,7 +3439,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
   function loadVentKit() {
     if (!ventKitPromise) ventKitPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await idleFetch('models/ventilazione-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
+      const data = await idleFetch('models/ventilazione-glb.json', [chemistryPoint()].filter(Boolean)).then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
       const bin = atob(data.glb_base64), bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bytes.buffer, 'models/', resolve, reject));
@@ -4463,7 +4497,6 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       ctx.strokeStyle = 'rgba(20,20,20,.55)'; ctx.lineWidth = 1.2; // crepe
       for (let i = 0; i < 20; i += 1) { let x = hash01(i, 101) * w, y = hash01(i, 102) * h; ctx.beginPath(); ctx.moveTo(x, y); for (let k = 0; k < 14; k += 1) { x += (hash01(i * 20 + k, 103) - 0.35) * 22; y += (hash01(i * 20 + k, 104) - 0.5) * 16; ctx.lineTo(x, y); } ctx.stroke(); }
       const paint = (fn, col) => { ctx.fillStyle = col; fn(); };
-      paint(() => { for (const v of [22.35, 38.25]) ctx.fillRect(0, Y(v + 0.1), w, 0.2 * PX); }, 'rgba(226,190,52,.88)'); // gialle di bordo, continue
       paint(() => { for (let k = 0; k < 9; k += 1) { ctx.beginPath(); ctx.moveTo(X(60 + k * 0.9), Y(23.3)); ctx.lineTo(X(61.3 + k * 0.9), Y(23.3)); ctx.lineTo(X(62.1 + k * 0.9), Y(21.2)); ctx.lineTo(X(60.8 + k * 0.9), Y(21.2)); ctx.fill(); } }, 'rgba(226,190,52,.85)'); // campitura gialla a righe oblique
       paint(() => { for (let k = 0; k < 8; k += 1) ctx.fillRect(X(44.8 + k * 0.78), Y(25.6), 0.4 * PX, 3.2 * PX); }, 'rgba(232,232,226,.8)'); // strisce di attraversamento in asse al vialetto
       for (let i = 0; i < 26000; i += 1) { ctx.fillStyle = `rgba(${hash01(i, 110) > 0.5 ? '88,89,91' : '70,71,73'},${0.35 + 0.5 * hash01(i, 105)})`; ctx.fillRect(hash01(i, 106) * w, hash01(i, 107) * h, 1 + 3 * hash01(i, 108), 1 + 2 * hash01(i, 109)); } // vernice consumata
@@ -5644,7 +5677,7 @@ void main() {
   function loadTubiModel() {
     if (!tubiPromise) tubiPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await idleFetch('models/tubi-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
+      const data = await idleFetch('models/tubi-glb.json', [chemistryPoint()].filter(Boolean)).then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
       const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bin.buffer, 'models/', resolve, reject));
       const model = gltf.scene, box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
@@ -5951,6 +5984,7 @@ void main() {
     }
   }
   function renderFrame() {
+    flushIdleNearby();
     if (!renderer || !scene || !camera || document.hidden || !parentActive || currentView !== '3d') return;
     updateMinerva(performance.now());
     animateSelectionMarker(performance.now());
