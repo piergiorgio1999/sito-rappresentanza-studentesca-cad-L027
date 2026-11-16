@@ -4,6 +4,12 @@ Template Copier per repository GitHub-native orientati agli agenti di coding.
 Fornisce governance, scope isolation, CI deterministica, controlli di
 sicurezza e un digest read-only dello stato GitHub.
 
+## Accessi rapidi
+
+- **[Sito Orari Chimica](https://orari-chimica.pages.dev/)** — pagina principale del sito.
+- **[Presentazione del progetto](https://orari-chimica.pages.dev/presentazione/)** — accesso diretto alla presentazione.
+- **[Mappa 3D: cammina davanti al banchetto](https://orari-chimica.pages.dev/campus-3d/?walk=banchetto)** — apre la mappa avviando la passeggiata davanti al banchetto.
+
 La specifica vincolante è [`SPEC-V1.md`](SPEC-V1.md). Le istruzioni operative
 per gli agenti sono in [`AGENTS.md`](AGENTS.md); le decisioni permanenti sono in
 [`DECISIONS.md`](DECISIONS.md).
