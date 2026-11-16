@@ -634,6 +634,7 @@
   {
    "tipo": "ingresso",
    "nome": "Fisica (riflesso di Chimica): Ingresso principale (Istituto Fisico)",
+   "rimosso": true,
    "lato": 0,
    "u": 47.63,
    "nota": "Copia riflessa di Chimica sul lato di Fisica (richiesta del 15/11/2026): ricavata per simmetria, non rilevata.",
@@ -4336,6 +4337,27 @@
    ],
    "terreno": "prato",
    "tipo": "squadrata"
+  },
+  {
+   "id": "fisica-balconata-indicativa-pedana",
+   "box": { "h0": 3.35, "h1": 3.55, "u0": 18, "u1": 52, "v0": 57.1, "v1": 59.0 },
+   "forma": "box",
+   "materiale": "travertino",
+   "nota": "Balconata indicativa continua sul fronte di Fisica, senza pretesa di fedeltà architettonica."
+  },
+  {
+   "id": "fisica-balconata-indicativa-parapetto",
+   "box": { "h0": 3.55, "h1": 4.65, "u0": 18, "u1": 52, "v0": 56.75, "v1": 57.0 },
+   "forma": "oggetto",
+   "modello": "ringhiera",
+   "nota": "Parapetto semplice della balconata indicativa di Fisica."
+  },
+  {
+   "id": "fisica-balconata-indicativa-copertura",
+   "box": { "h0": 4.65, "h1": 4.82, "u0": 18, "u1": 52, "v0": 56.75, "v1": 59.0 },
+   "forma": "box",
+   "materiale": "travertino",
+   "nota": "Corrimano superiore della balconata indicativa di Fisica."
   },
   {
    "id": "pmwgkgvtmsf",
