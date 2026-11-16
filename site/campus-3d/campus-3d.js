@@ -113,6 +113,7 @@
   const setStatus = (html, error = false) => {
     statusNode.innerHTML = html;
     statusNode.classList.toggle('error', error);
+    statusNode.hidden = !error;
   };
   const getName = (b) => b.name || 'Edificio senza nome in OSM';
   const getType = (b) => b.building && b.building !== 'yes' ? b.building : 'edificio';
@@ -3088,18 +3089,23 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     // primitive aggiunte dall'editor: nelle coordinate del lato 0, oppure in quelle di un elemento (cornice 'esterni:N');
     // quelle con cornice 'cortile' (per esempio i duplicati dei suoi oggetti) le costruisce loadCourtyardModel
     const g0 = sideFrame(ring, 0); g0.userData.elemento = 'lato0'; holder.add(g0);
-    // Sistemazione centrale tra i due fronti: asfalto e tre sedute colorate ispirate alle foto fornite.
+    // Sistemazione centrale tra i due fronti: asfalto e sedute colorate ispirate alle foto fornite.
     const plaza = buildRoad({ id: 'pavimento-centro-chimica-fisica', base: 0, poligono: [[24, 21.5], [70, 21.5], [70, 39.5], [24, 39.5]] });
     g0.add(plaza);
     const benchColors = [0xe5b92e, 0x397ec1, 0xb94d55];
-    for (const [i, u] of [31, 48, 65].entries()) {
+    const benchPlan = [
+      [26, 23, 112], [32, 34, 158], [37, 27, 94], [43, 38, 145],
+      [49, 23, 171], [54, 34, 102], [60, 27, 133], [66, 37, 179],
+      [29, 39, 126], [35, 22, 166], [52, 29, 91], [69, 24, 151]
+    ];
+    for (const [i, [u, v, angle]] of benchPlan.entries()) {
       const bench = new THREE.Group(); bench.name = `panchina-colorata-${i + 1}`;
-      const color = new THREE.MeshStandardMaterial({ color: benchColors[i], roughness: 0.86, metalness: 0 });
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.52, 0.58), color);
-      seat.position.y = 0.26; seat.castShadow = seat.receiveShadow = true; bench.add(seat);
-      const recess = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 20), new THREE.MeshStandardMaterial({ color: 0x5d5854, roughness: 1 }));
-      recess.position.set(0, 0.526, 0); bench.add(recess);
-      bench.position.set(u, 0, -30.5); bench.rotation.y = Math.PI / 2; g0.add(bench);
+      const color = new THREE.MeshStandardMaterial({ color: benchColors[i % benchColors.length], roughness: 0.86, metalness: 0 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.6, 0.72), color);
+      seat.position.y = 0.3; seat.castShadow = seat.receiveShadow = true; bench.add(seat);
+      const recess = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.012, 20), new THREE.MeshStandardMaterial({ color: 0x5d5854, roughness: 1 }));
+      recess.position.set(0, 0.606, 0); bench.add(recess);
+      bench.position.set(u, 0, -v); bench.rotation.y = angle * Math.PI / 180; g0.add(bench);
     }
     for (const pr of cfg.primitive || []) {
       if (pr.rimosso || !(pr.box || pr.poligono) || pr.cornice === 'cortile') continue;
