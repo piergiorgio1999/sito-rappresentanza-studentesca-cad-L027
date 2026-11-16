@@ -46,6 +46,16 @@
   let launchFocusApplied = false;
   if (launchFocus && !embedded) document.body.classList.add('vetrina');
   $('vetrinaExit')?.addEventListener('click', () => { document.body.classList.remove('vetrina'); window.dispatchEvent(new Event('resize')); });
+  // Nella vista d'apertura i modelli pesanti che da lì non si vedono (statua, fontanelle, condotte e tubi del cortile: circa 16 MB)
+  // partono solo quando chi guarda interagisce o apre il resto del campus.
+  const idleWaiters = [];
+  let idleFlushed = !launchFocus || embedded;
+  const flushIdle = () => { idleFlushed = true; idleWaiters.splice(0).forEach((fn) => fn()); };
+  const idleFetch = (url) => (idleFlushed ? fetch(url) : new Promise((resolve) => idleWaiters.push(resolve)).then(() => fetch(url)));
+  if (!idleFlushed) {
+    for (const ev of ['pointerdown', 'wheel', 'keydown', 'touchstart']) window.addEventListener(ev, flushIdle, { once: true, passive: true });
+    $('vetrinaExit')?.addEventListener('click', flushIdle);
+  }
   if (!embedded && window.parent === window && !new URLSearchParams(location.search).has('standalone')) {
     const code = (new URLSearchParams(location.search).get('code') || '').replace(/[^A-Za-z0-9]/g, '');
     location.replace(`../index.html?campus=3d-full#mappa${code ? '/' + code : ''}`);
@@ -337,11 +347,15 @@
     // assi dello stradone nel mondo: t lungo le facciate, n verso Fisica (lato pubblico del banchetto: gli studenti guardano da quella parte)
     const phi = frame.rotation.y, t = new THREE.Vector3(Math.cos(phi), 0, -Math.sin(phi)), n = new THREE.Vector3(-Math.sin(phi), 0, -Math.cos(phi));
     const portrait = (mapHost.clientHeight || 1) > (mapHost.clientWidth || 1);
-    const dist = portrait ? 7.4 : 5.2, side = portrait ? -1.0 : -1.2;
+    const dist = portrait ? 7.2 : 5.2, side = portrait ? 0 : -1.2;
     launchFocusApplied = true;
-    const look = new THREE.Vector3(center.x, 0.95, center.z).addScaledVector(t, 0.3);
-    controls.target.copy(look);
-    camera.position.set(center.x, portrait ? 2.5 : 2.3, center.z).addScaledVector(n, dist).addScaledVector(t, side);
+    if (portrait) { // in verticale si guarda in diagonale: il banchetto davanti, la fila di panchine rossa alle sue spalle
+      controls.target.set(center.x, 0.95, center.z).addScaledVector(t, -1.5);
+      camera.position.set(center.x, 2.5, center.z).addScaledVector(n, dist * 0.55).addScaledVector(t, dist * 0.83);
+    } else {
+      controls.target.set(center.x, 0.95, center.z).addScaledVector(t, 0.3);
+      camera.position.set(center.x, 2.3, center.z).addScaledVector(n, dist).addScaledVector(t, side);
+    }
     controls.update();
     stopCameraFlight();
     try { const q = new URLSearchParams(location.search); q.delete('vista'); q.delete('focus'); const s = q.toString(); history.replaceState(null, '', location.pathname + (s ? `?${s}` : '') + location.hash); } catch (_) { /* nessun history */ }
@@ -1609,7 +1623,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     const fail = () => { minervaLoaded = false; };
     if (/\.json$/i.test(config.file)) {
       // variante per hosting che non serve file .glb: il GLB è codificato in base64 dentro un JSON
-      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (c) => c.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -1644,7 +1658,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     };
     const fail = () => { fountainsLoaded = false; };
     if (/\.json$/i.test(config.file)) {
-      fetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
+      idleFetch(`models/${config.file}`).then((r) => (r.ok ? r.json() : Promise.reject())).then((data) => {
         const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
         new THREE.GLTFLoader().parse(bin.buffer, 'models/', onModel, fail);
       }).catch(fail);
@@ -3111,8 +3125,8 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     {
       const R = '#d8493f', Y = '#f1c420', B = '#6f9fe0';
       const benches = [ // [tipo:decoro, colore, u, v, gradi]: SOLO 0° (parallela alla strada) o 90° (perpendicolare); tutte nella fascia centrale v 27.8-33.2, fuori dalle strisce pedonali (u 44.8-50.4, v < 28.8) e dallo spazio del banchetto (u 37.8-44.6)
-        ['red:fiore', R, 34.2, 28.6, 0], ['red:foro', R, 36.5, 28.6, 0], // fila di due, testa a testa
-        ['blue:fiore', B, 46.0, 29.7, 0], ['yellow:foro', Y, 47.4, 30.7, 90], // L
+        ['red:fiore', R, 37.3, 28.4, 0], ['red:foro', R, 39.6, 28.4, 0], // fila di due, testa a testa, dietro e a lato del banchetto (lato Chimica)
+        ['blue:fiore', B, 46.2, 29.7, 0], ['yellow:foro', Y, 47.6, 30.7, 90], // L
         ['yellow:fiore', Y, 23.4, 32.6, 0], ['blue:liscia', B, 22.2, 31.4, 90], ['red:liscia', R, 24.6, 31.4, 90], // U
         ['red:fiore', R, 57.0, 31.2, 0], ['yellow:foro', Y, 59.3, 31.2, 0], // fila di due
         ['blue:fiore', B, 68.5, 29.4, 0] // singola parallela alla strada
@@ -3391,7 +3405,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
   function loadVentKit() {
     if (!ventKitPromise) ventKitPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await fetch('models/ventilazione-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
+      const data = await idleFetch('models/ventilazione-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('kit condotte'))));
       const bin = atob(data.glb_base64), bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bytes.buffer, 'models/', resolve, reject));
@@ -5630,7 +5644,7 @@ void main() {
   function loadTubiModel() {
     if (!tubiPromise) tubiPromise = (async () => {
       await loadDependency('vendor/GLTFLoader.js', () => typeof THREE.GLTFLoader === 'function');
-      const data = await fetch('models/tubi-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
+      const data = await idleFetch('models/tubi-glb.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('tubi'))));
       const bin = Uint8Array.from(atob(data.glb_base64), (ch) => ch.charCodeAt(0));
       const gltf = await new Promise((resolve, reject) => new THREE.GLTFLoader().parse(bin.buffer, 'models/', resolve, reject));
       const model = gltf.scene, box = new THREE.Box3().setFromObject(model), c = box.getCenter(new THREE.Vector3());
