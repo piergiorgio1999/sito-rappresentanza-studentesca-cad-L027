@@ -22,9 +22,11 @@
      (CU, che nel vero non coincide col centro del colonnato) e attaccati al filo dei pilastri. Proporzioni stimate
      dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo. */
   const CU = -5;                   // asse dell'isola centrale e della simmetria delle aiuole
-  const SL = V_FRONT + 0.6, EL = V_FRONT + 26; // dal filo dei pilastri fino al piazzale
-  const RIBBONS = [{ d: 12.3, p1: [13.0, 12], p2: [15.4, 19.5], w: 2.2 }, { d: 19, p1: [20, 13], p2: [25.5, 20], w: 2.4 }];
-  const DISC = [CU, V_FRONT + 13.5];
+  const SL = V_FRONT + 0.6, PROF = 25; // dal filo dei pilastri fino al piazzale
+  // nastri laterali: partono dritti dal colonnato, curvano verso l'esterno e finiscono con la punta tonda; larghezza quasi costante
+  const RIBBONS = [{ d: 12.8, p1: [14.0, 13], p2: [24.5, 22.8], w0: 2.7, w1: 2.2 },
+    { d: 20.0, p1: [22.0, 11], p2: [37.0, 19.6], w0: 2.7, w1: 2.2 }];
+  const DISC = [CU, SL + 15];
 
   function whenReady(fn) {
     const c = window.campus3d;
@@ -136,30 +138,42 @@
 
     // aiuole davanti all'ingresso
     const lawnY = 0.06, curbH = 0.22;
-    // isola centrale a goccia: lato dritto contro il colonnato, fianchi simmetrici, punta arrotondata verso il piazzale
-    const prof = (t) => 8.6 - 3.8 * Math.pow(t, 0.8); // semilarghezza, si stringe verso la strada
-    const drop = [], vEnd = EL - prof(1);
-    for (let i = 0; i <= 12; i += 1) { const t = i / 12; drop.push([CU + prof(t), SL + (vEnd - SL) * t]); }
-    for (let i = 1; i < 10; i += 1) { const a = (i / 10) * Math.PI; drop.push([CU + Math.cos(a) * prof(1), vEnd + Math.sin(a) * prof(1)]); }
-    for (let i = 12; i >= 0; i -= 1) { const t = i / 12; drop.push([CU - prof(t), SL + (vEnd - SL) * t]); }
-    flat(drop, 0, curbMat, curbH);
-    const inset = drop.map(([u, v]) => { const cv = (SL + EL) / 2, k = 0.92; return [CU + (u - CU) * k, cv + (v - cv) * k]; });
-    flat(inset, curbH, lawnMat, 0.04);
-    // nastri curvi ai lati delle corsie: Bézier quadratica, larghezza che si assottiglia alle due estremità
-    const ribbonPts = (p0, p1, p2, w) => {
-      const left = [], right = [];
-      for (let i = 0; i <= 16; i += 1) {
-        const t = i / 16, mt = 1 - t;
+    // isola centrale: dal colonnato si allarga verso il piazzale, con gli angoli di fondo arrotondati (foto aerea)
+    const island = (grow) => {
+      const W = (t) => 6.5 + 3.6 * Math.pow(t, 1.25) + grow, V0 = SL - grow, V1 = SL + PROF + grow, r = 3;
+      const right = [], left = [];
+      for (let i = 0; i <= 16; i += 1) { const t = i / 16, v = V0 + (V1 - r - V0) * t; right.push([CU + W(t), v]); left.push([CU - W(t), v]); }
+      const we = W(1), cr = [], cl = [];
+      for (let i = 1; i <= 6; i += 1) {
+        const a = (i / 6) * (Math.PI / 2);
+        cr.push([CU + we - r + r * Math.cos(a), V1 - r + r * Math.sin(a)]);
+        cl.push([CU - we + r - r * Math.cos(a), V1 - r + r * Math.sin(a)]);
+      }
+      return right.concat(cr, cl.reverse(), left.reverse());
+    };
+    flat(island(0.5), 0, curbMat, curbH); flat(island(0), curbH, lawnMat, 0.04);
+    // nastri curvi: linea di mezzeria su una Bézier, bordi paralleli e calotta tonda in punta
+    const ribbonPts = (p0, p1, p2, w0, w1) => {
+      const Lp = [], Rp = []; let end = null;
+      for (let i = 0; i <= 20; i += 1) {
+        const t = i / 20, mt = 1 - t;
         const x = mt * mt * p0[0] + 2 * mt * t * p1[0] + t * t * p2[0], z = mt * mt * p0[1] + 2 * mt * t * p1[1] + t * t * p2[1];
         const dx = 2 * mt * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]), dz = 2 * mt * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
-        const l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, ww = w * (0.6 + 0.4 * Math.sin(Math.PI * Math.min(1, t * 1.1 + 0.15)));
-        left.push([x + nx * ww / 2, z + nz * ww / 2]); right.push([x - nx * ww / 2, z - nz * ww / 2]);
+        const l = Math.hypot(dx, dz) || 1, nx = -dz / l, nz = dx / l, w = (w0 + (w1 - w0) * t) / 2;
+        Lp.push([x + nx * w, z + nz * w]); Rp.push([x - nx * w, z - nz * w]);
+        end = { x, z, nx, nz, dx: dx / l, dz: dz / l, w };
       }
-      return left.concat(right.reverse());
+      const cap = [];
+      for (let i = 1; i < 10; i += 1) {
+        const a = (i / 10) * Math.PI;
+        cap.push([end.x + (end.nx * Math.cos(a) + end.dx * Math.sin(a)) * end.w, end.z + (end.nz * Math.cos(a) + end.dz * Math.sin(a)) * end.w]);
+      }
+      return Lp.concat(cap, Rp.reverse());
     };
-    const ribbon = (p0, p1, p2, w) => { flat(ribbonPts(p0, p1, p2, w), 0, curbMat, curbH); flat(ribbonPts(p0, p1, p2, w * 0.72), curbH, lawnMat, 0.04); };
     RIBBONS.forEach((r) => [1, -1].forEach((side) => {
-      ribbon([CU + side * r.d, V_FRONT + 0.8], [CU + side * r.p1[0], V_FRONT + r.p1[1]], [CU + side * r.p2[0], V_FRONT + r.p2[1]], r.w);
+      const p0 = [CU + side * r.d, SL], p1 = [CU + side * r.p1[0], SL + r.p1[1]], p2 = [CU + side * r.p2[0], SL + r.p2[1]];
+      flat(ribbonPts(p0, p1, p2, r.w0 + 1, r.w1 + 1), 0, curbMat, curbH);
+      flat(ribbonPts(p0, p1, p2, r.w0, r.w1), curbH, lawnMat, 0.04);
     }));
     // tondo in terracotta con lo stemma
     const stem = new THREE.Mesh(new THREE.CircleGeometry(3.7, 48), new THREE.MeshStandardMaterial({ map: stemmaTexture(), roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
