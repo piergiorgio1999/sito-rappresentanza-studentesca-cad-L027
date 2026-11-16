@@ -171,6 +171,7 @@
 ./site/campus-3d/courtyards.json
 ./site/campus-3d/cu014-solido.json
 ./site/campus-3d/index.html
+./site/campus-3d/ingresso-aldo-moro.js
 ./site/campus-3d/models/fontanella-glb.json
 ./site/campus-3d/models/fontanelle.json
 ./site/campus-3d/models/magnolia.json

@@ -2039,6 +2039,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     return c;
   }
   function addContextPolygon(shape, props) {
+    if (String(props.osm_id) === '222784447') return; // Colonnato d'ingresso: sostituito dal modello di ingresso-aldo-moro.js
     const levels = Number(String(props['building:levels'] ?? '').replace(',', '.'));
     let height = heightInfo({ height: props.height, levels: props['building:levels'] }).value;
     const area = Math.abs(THREE.ShapeUtils.area(shape.getPoints()));
