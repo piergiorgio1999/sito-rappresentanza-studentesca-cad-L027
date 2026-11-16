@@ -22,7 +22,7 @@
   const ui = {};
   const st = { x: 0, feet: 0, z: 0, eye: 0, vy: 0, yaw: 0, pitch: 0, grounded: true, keys: new Set(), stick: { x: 0, y: 0, id: null }, look: null, jump: false, run: false, speed: SPEED0 };
   const launchWalk = new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'banchetto' || new URLSearchParams(location.search).get('walk')?.toLowerCase() === 'chimica';
-  let launchWalkApplied = false;
+  let waitingForBanchetto = null;
 
   /* ---------- triangoli vicini, in celle ---------- */
   const soup = { cx: 0, cz: 0, tris: null, cells: null, sig: '', checked: 0 };
@@ -232,6 +232,35 @@
   }
 
   /* ---------- entrata e uscita ---------- */
+  function banchettoPoint() {
+    let stand = null;
+    C.scene.traverse((o) => { if (!stand && o.userData?.primitiva === 'banchetto-liberiamo') stand = o; });
+    if (!stand) return null;
+    C.scene.updateMatrixWorld(true);
+    const bounds = new T.Box3().setFromObject(stand);
+    if (bounds.isEmpty()) return null;
+    const center = bounds.getCenter(new T.Vector3()), publicSide = stand.children[0]?.children[0] || stand;
+    const forward = publicSide.getWorldDirection(new T.Vector3());
+    forward.y = 0; forward.normalize();
+    const x = center.x + forward.x * 3.2, z = center.z + forward.z * 3.2;
+    return { x, z, yaw: Math.atan2(x - center.x, z - center.z) };
+  }
+  function startAtBanchetto() {
+    if (on || waitingForBanchetto) return;
+    const point = banchettoPoint();
+    if (point) { enter(point); return; }
+    ui.walk.disabled = true;
+    waitingForBanchetto = setInterval(() => {
+      if (on) {
+        clearInterval(waitingForBanchetto); waitingForBanchetto = null; ui.walk.disabled = false;
+        return;
+      }
+      const start = banchettoPoint();
+      if (!start) return;
+      clearInterval(waitingForBanchetto); waitingForBanchetto = null; ui.walk.disabled = false;
+      enter(start);
+    }, 250);
+  }
   // punto di partenza: il centro della vista a terra; se lì c'è un edificio, il primo punto libero verso la camera
   function startPoint() {
     const cam = C.camera, tg = C.controls.target, dx = cam.position.x - tg.x, dz = cam.position.z - tg.z, l = Math.hypot(dx, dz) || 1;
@@ -400,7 +429,7 @@
     const host = document.querySelector('.maparea') || document.body, el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
     ui.host = host;
     ui.walk = el('button', 'cm-btn cm-walk', '🚶 Cammina'); ui.walk.type = 'button'; ui.walk.title = 'Passeggiata in prima persona'; ui.walk.setAttribute('aria-pressed', 'false');
-    ui.walk.addEventListener('click', enter);
+    ui.walk.addEventListener('click', startAtBanchetto);
     ui.layer = el('div', 'cm-layer'); ui.layer.hidden = true; ui.layer.tabIndex = -1; ui.layer.setAttribute('role', 'application'); ui.layer.setAttribute('aria-label', 'Passeggiata in prima persona');
     const top = el('div', 'cm-top'), help = el('div', 'cm-help'); ui.help = help;
     ui.speed = el('div', 'cm-speed'); ui.speed.setAttribute('role', 'status'); ui.speed.setAttribute('aria-live', 'polite');
@@ -469,23 +498,7 @@
       // per le prove: prova(secondi, tasti) fa avanzare la passeggiata a passi fissi di 1/60 s
       const prova = (sec, keys = []) => { st.keys = new Set(keys); let t = last; for (let i = 0; i < sec * 60; i += 1) { t += 1000 / 60; step(t); } st.keys = new Set(); last = performance.now(); };
       window.campus3dCammina = { entra: enter, esci: exit, prova, salta: () => { st.jump = true; }, get attivo() { return on; }, velocita: (n) => setSpeed(n), mira: (k) => aim(k), riprendi: () => resume(false), get pausa() { return paused; }, get stato() { return { x: st.x, piedi: st.feet, z: st.z, yaw: st.yaw, aTerra: st.grounded, velocita: st.speed }; } };
-      if (launchWalk) {
-        const launch = setInterval(() => {
-          if (launchWalkApplied || on) { clearInterval(launch); return; }
-          let stand = null;
-          C.scene.traverse((o) => { if (!stand && o.userData?.primitiva === 'banchetto-liberiamo') stand = o; });
-          if (!stand) return;
-          C.scene.updateMatrixWorld(true);
-          const bounds = new T.Box3().setFromObject(stand);
-          if (bounds.isEmpty()) return;
-          const center = bounds.getCenter(new T.Vector3()), publicSide = stand.children[0]?.children[0] || stand;
-          const forward = publicSide.getWorldDirection(new T.Vector3());
-          forward.y = 0; forward.normalize();
-          const x = center.x + forward.x * 3.2, z = center.z + forward.z * 3.2;
-          launchWalkApplied = true; clearInterval(launch);
-          enter({ x, z, yaw: Math.atan2(x - center.x, z - center.z) });
-        }, 250);
-      }
+      if (launchWalk) startAtBanchetto();
     }
   }, 400);
 })();
