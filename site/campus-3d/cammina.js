@@ -465,11 +465,12 @@
           C.scene.updateMatrixWorld(true);
           const bounds = new T.Box3().setFromObject(stand);
           if (bounds.isEmpty()) return;
-          const center = bounds.getCenter(new T.Vector3()), forward = stand.getWorldDirection(new T.Vector3());
+          const center = bounds.getCenter(new T.Vector3()), publicSide = stand.children[0]?.children[0] || stand;
+          const forward = publicSide.getWorldDirection(new T.Vector3());
           forward.y = 0; forward.normalize();
           const x = center.x + forward.x * 3.2, z = center.z + forward.z * 3.2;
           launchWalkApplied = true; clearInterval(launch);
-          enter({ x, z, yaw: Math.atan2(center.x - x, center.z - z) });
+          enter({ x, z, yaw: Math.atan2(x - center.x, z - center.z) });
         }, 250);
       }
     }
