@@ -18,12 +18,13 @@
   const V_FRONT = 5.1;             // fronte dell'attico e dei pilastri
   const V_BACK = -2.9;             // retro dell'attico
   const BLOCK_FRONT = 4.4, BLOCK_BACK = -6.1;
-  // Aiuole estratte dall'ortofoto AGEA 2020 (campus-agea-2020.png, ≈1 m/px): maschera del verde (ExG), apertura/chiusura morfologica,
-  // approxPolyDP (0,4 m) e smussatura Chaikin; coordinate locali [u, v] in metri (u lungo il colonnato verso sud, v verso Piazzale Aldo Moro).
-  const DISC = [-1.0, 18.4]; // tondo: non risolvibile nell'ortofoto, messo al 56 % della lunghezza dell'aiuola centrale, come nella foto aerea
-  // LAWNS = prato rilevato; CURBS = cordolo (prato + 0,5 m). Il tratto sotto l'ombra del ponte (v < 9,8) è stato esteso fino al fronte.
-  const LAWNS = [[[-17.0,9.9],[-17.2,9.9],[-17.4,9.9],[-17.6,10.1],[-17.6,10.2],[-17.6,10.5],[-17.7,10.7],[-17.8,11.0],[-18.0,11.2],[-18.2,11.3],[-18.4,11.9],[-18.6,12.8],[-18.6,14.2],[-18.6,15.8],[-18.8,17.3],[-19.2,18.5],[-19.8,19.4],[-20.5,20.1],[-21.0,20.7],[-21.3,21.1],[-21.3,21.5],[-21.2,21.8],[-20.9,21.9],[-20.6,21.9],[-20.3,21.8],[-19.9,21.7],[-19.5,21.3],[-19.1,20.8],[-18.6,20.1],[-18.1,19.2],[-17.7,18.1],[-17.2,16.8],[-16.8,15.2],[-16.4,13.5],[-16.2,12.1],[-16.1,11.1],[-16.2,10.5],[-16.3,10.2],[-16.5,10.1],[-16.8,9.9]],[[-10.4,6.6],[-10.9,6.6],[-11.3,7.1],[-11.5,8.2],[-11.7,9.9],[-11.8,12.1],[-11.9,13.8],[-12.1,15.2],[-12.4,16.0],[-12.8,16.5],[-13.1,17.0],[-13.4,17.7],[-13.6,18.4],[-13.7,19.3],[-13.8,20.0],[-14.0,20.6],[-14.2,21.1],[-14.3,21.4],[-14.5,21.8],[-14.5,22.2],[-14.5,22.7],[-14.5,23.3],[-14.3,23.7],[-14.1,23.9],[-13.8,23.9],[-13.4,23.8],[-13.0,23.3],[-12.4,22.3],[-11.8,20.9],[-11.0,19.1],[-10.4,17.1],[-10.0,15.0],[-9.8,12.7],[-9.7,10.3],[-9.8,8.4],[-10.0,7.2]],[[-5.6,10.8],[-5.7,13.6],[-5.9,16.2],[-6.2,18.4],[-6.5,20.3],[-7.0,21.9],[-7.2,23.3],[-7.4,24.3],[-7.3,25.1],[-7.2,25.6],[-6.8,26.0],[-6.4,26.2],[-5.8,26.4],[-5.2,26.4],[-4.5,26.4],[-4.0,26.6],[-3.6,26.8],[-3.2,27.0],[-2.4,27.2],[-1.3,27.2],[0.3,27.2],[2.2,27.1],[3.8,26.9],[4.9,26.7],[5.6,26.5],[5.9,26.2],[6.1,26.0],[6.3,25.7],[6.4,25.4],[6.4,25.1],[6.2,24.5],[6.0,23.5],[5.6,22.3],[5.1,20.7],[4.8,19.0],[4.5,17.2],[4.4,15.3],[4.4,13.2],[3.8,11.5],[2.5,10.0],[0.7,8.8],[-1.7,7.9],[-3.6,8.0],[-4.9,8.9]],[[9.2,14.5],[9.3,17.0],[9.5,19.2],[9.8,21.1],[10.2,22.6],[10.8,23.7],[11.2,24.5],[11.6,25.1],[11.9,25.5],[12.1,25.5],[12.3,25.5],[12.5,25.5],[12.8,25.4],[13.0,25.3],[13.2,25.2],[13.3,25.0],[13.4,24.8],[13.4,24.5],[13.2,24.0],[12.9,23.1],[12.4,22.0],[11.8,20.5],[11.3,19.0],[11.0,17.3],[10.9,15.6],[10.9,13.7],[10.8,12.3],[10.5,11.3],[10.2,10.8],[9.8,10.7],[9.5,11.3],[9.3,12.6]],[[16.6,11.7],[16.4,11.8],[16.2,11.9],[16.1,12.1],[15.9,12.3],[15.8,12.7],[15.8,13.3],[15.9,14.2],[16.1,15.4],[16.4,16.9],[16.6,18.2],[16.8,19.5],[16.9,20.5],[16.9,21.5],[17.1,22.3],[17.4,23.0],[18.0,23.5],[18.8,24.0],[19.3,24.2],[19.6,24.1],[19.8,23.8],[19.7,23.2],[19.6,22.8],[19.5,22.5],[19.3,22.3],[19.2,22.2],[18.9,22.0],[18.7,21.6],[18.4,21.1],[18.1,20.4],[17.9,19.4],[17.7,18.1],[17.6,16.6],[17.6,14.7],[17.6,13.3],[17.5,12.3],[17.3,11.8],[17.2,11.7],[17.0,11.7],[16.8,11.7]]];
-  const CURBS = [[[-17.2,6.6],[-17.6,6.6],[-17.8,6.9],[-18.0,7.4],[-18.1,8.1],[-18.1,9.1],[-18.2,9.9],[-18.3,10.5],[-18.5,10.9],[-18.8,11.1],[-18.9,11.7],[-19.1,12.6],[-19.1,13.9],[-19.1,15.6],[-19.3,17.0],[-19.7,18.2],[-20.2,19.2],[-21.0,19.8],[-21.6,20.4],[-21.9,20.9],[-22.1,21.2],[-22.1,21.5],[-22.0,21.7],[-21.9,22.0],[-21.7,22.2],[-21.3,22.3],[-21.0,22.4],[-20.6,22.4],[-20.1,22.2],[-19.6,22.0],[-19.1,21.6],[-18.6,21.0],[-18.1,20.3],[-17.6,19.4],[-17.2,18.3],[-16.7,16.8],[-16.3,15.1],[-15.9,13.1],[-15.7,11.4],[-15.7,10.0],[-15.8,8.8],[-16.2,7.9],[-16.5,7.3],[-16.8,6.8]],[[-11.9,7.8],[-12.1,8.6],[-12.2,9.6],[-12.3,10.7],[-12.4,11.8],[-12.4,13.2],[-12.5,14.2],[-12.7,15.1],[-12.9,15.8],[-13.3,16.2],[-13.6,16.8],[-13.9,17.4],[-14.1,18.2],[-14.2,19.1],[-14.3,19.8],[-14.5,20.4],[-14.7,20.8],[-14.8,21.2],[-15.0,21.5],[-15.1,21.9],[-15.1,22.3],[-15.1,22.7],[-15.1,23.1],[-15.0,23.5],[-14.8,23.8],[-14.7,24.2],[-14.4,24.3],[-14.0,24.4],[-13.6,24.3],[-13.1,24.2],[-12.6,23.6],[-11.9,22.6],[-11.2,21.2],[-10.5,19.3],[-9.9,17.4],[-9.5,15.2],[-9.3,12.9],[-9.2,10.4],[-9.3,8.5],[-9.6,7.2],[-10.1,6.6],[-10.7,6.6],[-11.2,6.8],[-11.6,7.2]],[[-6.1,10.7],[-6.2,13.5],[-6.4,16.0],[-6.7,18.2],[-7.0,20.1],[-7.5,21.7],[-7.8,23.1],[-7.9,24.2],[-7.8,25.1],[-7.7,25.7],[-7.3,26.2],[-6.8,26.5],[-6.2,26.7],[-5.3,26.8],[-4.6,26.9],[-4.0,27.0],[-3.6,27.2],[-3.2,27.5],[-2.4,27.6],[-1.2,27.7],[0.5,27.6],[2.5,27.4],[4.2,27.2],[5.3,27.0],[6.1,26.8],[6.4,26.5],[6.6,26.2],[6.8,25.9],[6.9,25.5],[6.9,25.0],[6.8,24.3],[6.5,23.3],[6.1,22.0],[5.6,20.5],[5.2,18.8],[5.0,17.0],[4.9,15.0],[4.9,13.0],[4.7,11.2],[4.3,9.8],[3.8,8.6],[3.0,7.8],[2.0,7.2],[0.6,6.8],[-1.0,6.6],[-3.0,6.6],[-4.5,7.3],[-5.5,8.7]],[[8.8,10.3],[8.7,10.4],[8.5,11.2],[8.5,12.6],[8.6,14.6],[8.7,17.2],[8.9,19.4],[9.3,21.3],[9.7,22.8],[10.3,23.9],[10.8,24.8],[11.2,25.4],[11.6,25.8],[11.9,25.9],[12.2,26.0],[12.6,26.0],[12.9,25.8],[13.3,25.7],[13.6,25.4],[13.8,25.1],[13.9,24.8],[13.9,24.4],[13.7,23.8],[13.4,22.9],[12.9,21.7],[12.3,20.3],[11.8,18.7],[11.5,17.1],[11.4,15.3],[11.4,13.4],[11.2,12.0],[11.0,11.0],[10.5,10.4],[10.0,10.3],[9.5,10.2],[9.1,10.2]],[[16.4,11.3],[16.1,11.4],[15.8,11.6],[15.6,11.8],[15.4,12.1],[15.3,12.4],[15.3,13.0],[15.4,14.0],[15.6,15.3],[15.9,16.9],[16.1,18.4],[16.3,19.7],[16.4,20.8],[16.4,21.7],[16.5,22.5],[16.8,23.2],[17.2,23.8],[17.8,24.2],[18.3,24.6],[18.7,24.8],[19.1,25.0],[19.4,25.0],[19.7,25.1],[19.9,25.1],[20.1,25.0],[20.2,25.0],[20.3,24.8],[20.3,24.4],[20.3,23.8],[20.2,23.2],[20.0,22.5],[19.8,21.7],[19.4,21.0],[18.9,20.2],[18.5,19.2],[18.2,17.9],[18.1,16.3],[18.1,14.4],[18.0,13.0],[17.9,12.0],[17.7,11.4],[17.3,11.3],[17.0,11.2],[16.7,11.2]]];
+  /* Aiuole del piazzale: disegno simmetrico rispetto all'asse del colonnato (u = 0), con le aiuole che partono dal
+     filo dei pilastri. Proporzioni stimate dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo:
+     un'isola centrale a goccia con il tondo, e due nastri curvi per lato che accompagnano le corsie d'ingresso. */
+  const LAWN_V0 = V_FRONT + 0.6;   // le aiuole partono dal filo del colonnato
+  const ISLAND = { w: 7.6, len: 26 };
+  const RIBBONS = [{ u0: 15.6, u1: 19.2, u2: 24.4, len: 24, w: 2.4 }, { u0: 25.4, u1: 30.2, u2: 35.6, len: 19, w: 2.2 }];
+  const DISC = [0, LAWN_V0 + 10.4]; // tondo in asse, come nella foto aerea
 
   function whenReady(fn) {
     const c = window.campus3d;
@@ -48,28 +49,20 @@
     return tex;
   }
 
+  /* Tondo dell'aiuola centrale: nel vero porta l'emblema Sapienza (il cherubino), che è il marchio dell'ateneo:
+     qui resta un tondo in terracotta con la cornice chiara, senza emblema. Per metterci quello ufficiale serve il file
+     del manuale di identità visiva: basta pubblicarlo accanto a questo script e passarlo a una texture al posto del disegno. */
   function stemmaTexture() {
     const S = 512, cv = document.createElement('canvas'); cv.width = cv.height = S;
     const g = cv.getContext('2d'), c = S / 2;
     g.fillStyle = '#a9502f'; g.beginPath(); g.arc(c, c, c, 0, 7); g.fill();
     g.strokeStyle = '#d9a58a'; g.lineWidth = 10; g.beginPath(); g.arc(c, c, c * 0.93, 0, 7); g.stroke();
     g.fillStyle = '#c4714f'; g.beginPath(); g.arc(c, c, c * 0.84, 0, 7); g.fill();
-    // motivo chiaro generico: corona di foglie, due ali a ventaglio, scudo centrale
-    g.fillStyle = g.strokeStyle = '#f1e6d4';
-    for (let i = 0; i < 18; i++) {
-      const a = Math.PI * 0.62 + (i / 17) * Math.PI * 1.76;
-      g.save(); g.translate(c + Math.cos(a) * c * 0.70, c + Math.sin(a) * c * 0.70); g.rotate(a + Math.PI / 2);
-      g.beginPath(); g.ellipse(0, 0, 9, 24, 0, 0, 7); g.fill(); g.restore();
+    for (let i = 0; i < 1400; i += 1) { // ghiaia di cotto, niente emblema finto
+      const a = Math.random() * 7, r = Math.sqrt(Math.random()) * c * 0.82;
+      g.fillStyle = `rgba(${170 + Math.random() * 40 | 0},${90 + Math.random() * 35 | 0},${60 + Math.random() * 30 | 0},.5)`;
+      g.fillRect(c + Math.cos(a) * r, c + Math.sin(a) * r, 3, 3);
     }
-    for (const s of [-1, 1]) {
-      for (let i = 0; i < 6; i++) {
-        g.save(); g.translate(c + s * 22, c - 40 + i * 6); g.rotate(s * (0.35 + i * 0.16) - Math.PI / 2 * 0 );
-        g.beginPath(); g.ellipse(s * 62, -10, 66 - i * 5, 12, s * (-0.35 + i * 0.1), 0, 7); g.fill(); g.restore();
-      }
-    }
-    g.beginPath(); g.moveTo(c - 34, c - 28); g.lineTo(c + 34, c - 28); g.lineTo(c + 34, c + 20); g.quadraticCurveTo(c + 34, c + 62, c, c + 80); g.quadraticCurveTo(c - 34, c + 62, c - 34, c + 20); g.closePath(); g.fill();
-    g.fillStyle = '#a9502f'; g.fillRect(c - 5, c - 18, 10, 70); g.fillRect(c - 22, c, 44, 9);
-    g.fillStyle = '#f1e6d4'; g.beginPath(); g.arc(c, c - 50, 17, 0, 7); g.fill();
     const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4; return tex;
   }
 
@@ -143,7 +136,32 @@
 
     // aiuole davanti all'ingresso
     const lawnY = 0.06, curbH = 0.22;
-    LAWNS.forEach((p, i) => { flat(CURBS[i], 0, curbMat, curbH); flat(p, curbH, lawnMat, 0.04); });
+    // isola centrale a goccia: lato dritto contro il colonnato, fianchi simmetrici, punta arrotondata verso il piazzale
+    const island = (grow) => {
+      const W = ISLAND.w + grow, Lg = ISLAND.len + grow, half = (t) => W * Math.pow(Math.max(0, 1 - Math.pow(t, 2.1)), 0.5);
+      const tip = 0.93, right = [], left = [];
+      for (let i = 0; i <= 22; i += 1) { const t = (i / 22) * tip, v = LAWN_V0 - grow + Lg * t, h = half(t); right.push([h, v]); left.push([-h, v]); }
+      const rc = half(tip), vc = LAWN_V0 - grow + Lg * tip, cap = [];
+      for (let i = 1; i < 12; i += 1) { const a = (i / 12) * Math.PI; cap.push([Math.cos(a) * rc, vc + Math.sin(a) * rc]); }
+      return right.concat(cap, left.reverse());
+    };
+    // nastro curvo: linea di mezzeria su una Bézier quadratica dal colonnato verso l'esterno, poi allargata di mezza larghezza
+    const ribbon = (r, side, grow) => {
+      const w = r.w / 2 + grow, p0 = [side * r.u0, LAWN_V0 - grow], p1 = [side * r.u1, LAWN_V0 + r.len * 0.55], p2 = [side * r.u2, LAWN_V0 + r.len];
+      const mid = [], nrm = [];
+      for (let i = 0; i <= 18; i += 1) {
+        const t = i / 18, k = 1 - t;
+        mid.push([k * k * p0[0] + 2 * k * t * p1[0] + t * t * p2[0], k * k * p0[1] + 2 * k * t * p1[1] + t * t * p2[1]]);
+        const du = 2 * k * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]), dv = 2 * k * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]), m = Math.hypot(du, dv) || 1;
+        nrm.push([dv / m, -du / m]);
+      }
+      const a = mid.map(([u, v], i) => [u + nrm[i][0] * w, v + nrm[i][1] * w]);
+      const b = mid.map(([u, v], i) => [u - nrm[i][0] * w, v - nrm[i][1] * w]).reverse();
+      return a.concat(b);
+    };
+    const lawns = [island(0)], curbs = [island(0.5)];
+    RIBBONS.forEach((r) => [1, -1].forEach((side) => { lawns.push(ribbon(r, side, 0)); curbs.push(ribbon(r, side, 0.5)); }));
+    lawns.forEach((p, i) => { flat(curbs[i], 0, curbMat, curbH); flat(p, curbH, lawnMat, 0.04); });
     // tondo in terracotta con lo stemma
     const stem = new THREE.Mesh(new THREE.CircleGeometry(3.5, 48), new THREE.MeshStandardMaterial({ map: stemmaTexture(), roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     stem.rotation.x = -Math.PI / 2; stem.position.set(DISC[0], curbH + 0.07, DISC[1]); stem.name = 'stemma'; group.add(stem);

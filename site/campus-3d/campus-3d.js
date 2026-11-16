@@ -5755,10 +5755,25 @@ void main() {
       const du = ((x - a0[0]) * ux + (z - a0[1]) * uz) / Math.hypot(ux, uz), dv = ((x - a0[0]) * vx + (z - a0[1]) * vz) / Math.hypot(vx, vz);
       return du > -pad && du < Math.hypot(ux, uz) + pad && dv > -pad && dv < Math.hypot(vx, vz) + pad;
     };
+    // piazzale dell'ingresso di Piazzale Aldo Moro: le aiuole le disegna ingresso-aldo-moro.js, nessun albero OSM sopra
+    const ING = { ref: [12.5122, 41.9021], c: [10.005, 18.489], a: [0.37442, -0.92726], n: [-0.92726, -0.37442] };
+    let ingFrame = null;
+    try {
+      const mLon = 111320 * Math.cos(ING.ref[1] * Math.PI / 180), mLat = 111320;
+      const at = (de, dn) => { const w = project([ING.ref[0] + (ING.c[0] + de) / mLon, ING.ref[1] + (ING.c[1] + dn) / mLat]); return [w.x, -w.n]; };
+      const o = at(0, 0), pa = at(ING.a[0], ING.a[1]), pn = at(ING.n[0], ING.n[1]);
+      ingFrame = { o, ea: [pa[0] - o[0], pa[1] - o[1]], en: [pn[0] - o[0], pn[1] - o[1]] };
+    } catch (_) { /* senza planimetria restano tutti */ }
+    const inForecourt = (x, z) => {
+      if (!ingFrame) return false;
+      const dx = x - ingFrame.o[0], dz = z - ingFrame.o[1];
+      const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
+      return u > -46 && u < 46 && v > 2 && v < 36;
+    };
     const list = treeData.filter((t, idx) => {
       if (t.rimosso || !insideMap(t.p)) return false;
       const w = project(t.p), x = w.x, z = -w.n;
-      if (onAsphalt(x, z, 1.5)) return false;
+      if (onAsphalt(x, z, 1.5) || inForecourt(x, z)) return false;
       if (!near.length || near.some(([nx, nz, r]) => Math.hypot(x - nx, z - nz) <= r)) return true;
       return rnd(idx, 17) < 0.3;
     });
