@@ -9,20 +9,45 @@
   const CENTER_EN = [10.005, 18.489];
   const A = [0.37442, -0.92726]; // (est, nord)
   const N = [-0.92726, -0.37442];
-  const U_MID = 2.1, V_MID = -0.6;
-
-  const V_NEAR = -6.1, V_FAR = -78;  // dal retro del colonnato alla fine dell'area modellata (oltre c'è già il viale del modello)
-  const U_MAX = 46;                  // semilarghezza dell'area
-  const ROAD_L = 15.7, ROAD_R = -16; // cordoli della carreggiata centrale (u)
-  const FACADE_L = 32.5, FACADE_R = -30.5; // filo delle facciate dei due palazzi
-  const BLD_V0 = -8.5, BLD_V1 = -67, BLD_H = 23.4, ZOC = 1.2;
-  const STALL_D = 5.2;
-  const BLOCKS = [{ v: -38.9, u0: -10, n: 8, w: 2.4 }, { v: -57.4, u0: -9.5, n: 7, w: 2.6 }]; // v di inizio (lato interno), primo stallo, numero e larghezza degli stalli
-  const ROW3 = { u0: -4.9, u1: 4.9, v0: -18.4, v1: -13.5 }; // tre stalli sopra la prima aiuola
+  /* Parametri sovrascrivibili senza push su git: window.MAPPA3D_OVERRIDES.interno
+     (vedi MAPPA-3D-API.md). Si leggono in readParams(), chiamata da build(): overrides.js
+     riempie l'oggetto in modo asincrono, quindi leggerli al caricamento dello script
+     sarebbe troppo presto. Con overrides vuoti i valori sono quelli originali. */
+  let P = {};
+  let U_MID, V_MID,
+    V_NEAR, V_FAR,        // dal retro del colonnato alla fine dell'area modellata (oltre c'è già il viale del modello)
+    U_MAX,                // semilarghezza dell'area
+    ROAD_L, ROAD_R,       // cordoli della carreggiata centrale (u)
+    FACADE_L, FACADE_R,   // filo delle facciate dei due palazzi
+    WALK_L, WALK_R,       // filo interno dei marciapiedi: oltre c'e' asfalto, dove sta il filare di alberi
+    BLD_V0, BLD_V1, BLD_H, ZOC,
+    STALL_D,
+    BLOCKS,               // blocchi di stalli: v di inizio (lato interno), primo stallo, numero e larghezza
+    ROW3;                 // tre stalli sopra la prima aiuola
+  function readParams() {
+    P = (window.MAPPA3D_OVERRIDES && window.MAPPA3D_OVERRIDES.interno) || {};
+    U_MID = P.U_MID ?? 2.1; V_MID = P.V_MID ?? -0.6;
+    V_NEAR = P.V_NEAR ?? -6.1; V_FAR = P.V_FAR ?? -78;
+    U_MAX = P.U_MAX ?? 46;
+    ROAD_L = P.ROAD_L ?? 15.7; ROAD_R = P.ROAD_R ?? -16;
+    FACADE_L = P.FACADE_L ?? 32.5; FACADE_R = P.FACADE_R ?? -30.5;
+    WALK_L = P.WALK_L ?? FACADE_L - 7; WALK_R = P.WALK_R ?? FACADE_R + 7;
+    BLD_V0 = P.BLD_V0 ?? -8.5; BLD_V1 = P.BLD_V1 ?? -67; BLD_H = P.BLD_H ?? 23.4; ZOC = P.ZOC ?? 1.2;
+    STALL_D = P.STALL_D ?? 5.2;
+    /* BLOCKS si sovrascrive con un array piatto di numeri, 4 per blocco: v, u0, n, w
+       (l'API non ammette oggetti annidati). */
+    BLOCKS = Array.isArray(P.BLOCKS) && P.BLOCKS.length >= 4
+      ? Array.from({ length: Math.floor(P.BLOCKS.length / 4) }, (_, i) => {
+        const b = P.BLOCKS.slice(i * 4, i * 4 + 4);
+        return { v: b[0], u0: b[1], n: b[2], w: b[3] };
+      })
+      : [{ v: -38.9, u0: -10, n: 8, w: 2.4 }, { v: -57.4, u0: -9.5, n: 7, w: 2.6 }];
+    ROW3 = { u0: P.ROW3_U0 ?? -4.9, u1: P.ROW3_U1 ?? 4.9, v0: P.ROW3_V0 ?? -18.4, v1: P.ROW3_V1 ?? -13.5 };
+  }
 
   function whenReady(fn) {
     const c = window.campus3d;
-    if (typeof THREE !== 'undefined' && c && c.scene && typeof c.project === 'function' && c.scene.getObjectByName('edifici')) fn(c);
+    if (window.MAPPA3D_READY === true && typeof THREE !== 'undefined' && c && c.scene && typeof c.project === 'function' && c.scene.getObjectByName('edifici')) fn(c);
     else setTimeout(() => whenReady(fn), 500);
   }
 
@@ -73,6 +98,7 @@
   }
 
   function build(c) {
+    readParams();
     const scene = c.scene;
     const rand = rng(20261117);
     const loader = new THREE.TextureLoader();
@@ -117,12 +143,12 @@
 
     // asfalto su tutta l'area e marciapiedi rialzati sotto i due palazzi
     flat([[-U_MAX, V_NEAR], [U_MAX, V_NEAR], [U_MAX, V_FAR], [-U_MAX, V_FAR]], 0.02, asphaltMat, 0).name = 'asfalto';
-    box(ROAD_L, FACADE_L, 0, 0.12, V_FAR, BLD_V0, sideMat, 'marciapiede-sx');
-    box(FACADE_R, ROAD_R, 0, 0.12, V_FAR, BLD_V0, sideMat, 'marciapiede-dx');
-    box(ROAD_L, U_MAX, 0, 0.12, BLD_V1, V_FAR, sideMat, 'marciapiede-fondo-sx');
-    box(-U_MAX, ROAD_R, 0, 0.12, BLD_V1, V_FAR, sideMat, 'marciapiede-fondo-dx');
-    box(ROAD_L, FACADE_L, 0, 0.12, V_NEAR, BLD_V0, sideMat, 'marciapiede-bar');
-    box(FACADE_R, ROAD_R, 0, 0.12, V_NEAR, BLD_V0, sideMat, 'marciapiede-guardiola');
+    box(WALK_L, FACADE_L, 0, 0.12, V_FAR, BLD_V0, sideMat, 'marciapiede-sx');
+    box(FACADE_R, WALK_R, 0, 0.12, V_FAR, BLD_V0, sideMat, 'marciapiede-dx');
+    box(WALK_L, U_MAX, 0, 0.12, BLD_V1, V_FAR, sideMat, 'marciapiede-fondo-sx');
+    box(-U_MAX, WALK_R, 0, 0.12, BLD_V1, V_FAR, sideMat, 'marciapiede-fondo-dx');
+    box(WALK_L, FACADE_L, 0, 0.12, V_NEAR, BLD_V0, sideMat, 'marciapiede-bar');
+    box(FACADE_R, WALK_R, 0, 0.12, V_NEAR, BLD_V0, sideMat, 'marciapiede-guardiola');
 
     // segnaletica generale: cordoli gialli, corsie tratteggiate, frecce, scritte
     const arrow = (g, X, Y, ppm, u, v, du, dv) => {
@@ -256,8 +282,8 @@
     });
 
     // guardiola: piccolo volume a tetto piano con vetrate, e due barriere a sbarra bianche e rosse
-    const gu0 = -30.2, gu1 = -26.6, gv0 = -12.4, gv1 = -8.2;
-    box(gu0, gu1, 0.12, 3.1, gv0, gv1, std(0xd7d4cc), 'guardiola');
+    const gu1 = WALK_R, gu0 = gu1 - 3.6, gv0 = -12.7, gv1 = -8.5; // a fine marciapiede, sul filo verso la carreggiata
+    box(gu0, gu1, 0.12, 3.1, gv0, gv1, std(0x7a211c), 'guardiola'); // rossa come dal vero
     box(gu0 - 0.02, gu1 + 0.02, 0.9 + 0.12, 2.6 + 0.12, gv0 - 0.02, gv1 + 0.02, glassMat, 'guardiola-vetrate');
     box(gu0 - 0.5, gu1 + 0.5, 3.1, 3.35, gv0 - 0.5, gv1 + 0.5, std(0x55565a), 'guardiola-tetto');
     const barrier = (pu, dir, v) => {

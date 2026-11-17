@@ -10,28 +10,56 @@
   const CENTER_EN = [10.005, 18.489];
   const A = [0.37442, -0.92726]; // (est, nord)
   const N = [-0.92726, -0.37442];
-  const U_MID = 2.1, V_MID = -0.6; // il centro del rettangolo che contiene il poligono rispetto al baricentro dei vertici
-  const L = 87.6;                  // lunghezza totale lungo l'asse (estensione del poligono OSM)
-  const END = 15;                  // lunghezza dei due corpi pieni in mattoni
-  const BAYS = 7;                  // campate aperte tra i corpi
-  const H_PILLAR = 12.4, H_TOT = 15.6, H_BLOCK = 15.6;
-  const V_FRONT = 5.1;             // fronte dell'attico e dei pilastri
-  const V_BACK = -2.9;             // retro dell'attico
-  const BLOCK_FRONT = 4.4, BLOCK_BACK = -6.1;
-  /* Aiuole del piazzale: isola centrale a goccia e due nastri curvi per lato, simmetrici rispetto all'asse dell'isola
-     (CU, che nel vero non coincide col centro del colonnato) e attaccati al filo dei pilastri. Proporzioni stimate
-     dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo. */
-  const CU = 0;                    // asse dell'isola centrale e della simmetria delle aiuole
-  const SL = V_FRONT + 0.6, PROF = 25; // dal filo dei pilastri fino al piazzale
-  // nastri laterali: partono dritti dal colonnato, curvano verso l'esterno e finiscono con la punta tonda; larghezza quasi costante
-  const CC = 0;                    // asse del colonnato: le aiuole laterali partono dalle colonne, non dall'isola
-  const RIBBONS = [{ d: 12.34, p1: [14.0, 13], p2: [24.5, 22.8], w0: 2.7, w1: 2.2 },
-    { d: 20.57, p1: [22.0, 11], p2: [37.0, 19.6], w0: 2.7, w1: 2.2 }];
-  const DISC = [CU, SL + 15];
+  /* Parametri sovrascrivibili senza push su git: window.MAPPA3D_OVERRIDES.ingresso
+     (vedi MAPPA-3D-API.md). Si leggono in readParams(), chiamata da build(): overrides.js
+     riempie l'oggetto in modo asincrono, quindi leggerli al caricamento dello script
+     sarebbe troppo presto. Con overrides vuoti i valori sono quelli originali e il
+     render è identico. */
+  let P = {};
+  let U_MID, V_MID,       // il centro del rettangolo che contiene il poligono rispetto al baricentro dei vertici
+    L,                    // lunghezza totale lungo l'asse (estensione del poligono OSM)
+    END,                  // lunghezza dei due corpi pieni in mattoni
+    BAYS,                 // campate aperte tra i corpi
+    H_PILLAR, H_TOT, H_BLOCK,
+    V_FRONT,              // fronte dell'attico e dei pilastri
+    V_BACK,               // retro dell'attico
+    BLOCK_FRONT, BLOCK_BACK,
+    /* Aiuole del piazzale: isola centrale a goccia e due nastri curvi per lato, simmetrici rispetto all'asse dell'isola
+       (CU, che nel vero non coincide col centro del colonnato) e attaccati al filo dei pilastri. Proporzioni stimate
+       dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo. */
+    CU,                   // asse dell'isola centrale e della simmetria delle aiuole
+    SL, PROF,             // dal filo dei pilastri fino al piazzale
+    CC,                   // asse del colonnato: le aiuole laterali partono dalle colonne, non dall'isola
+    RIBBONS,              // nastri laterali: dritti dal colonnato, poi curvi verso l'esterno, punta tonda
+    DISC;
+  function readParams() {
+    P = (window.MAPPA3D_OVERRIDES && window.MAPPA3D_OVERRIDES.ingresso) || {};
+    U_MID = P.U_MID ?? 2.1; V_MID = P.V_MID ?? -0.6;
+    L = P.L ?? 87.6;
+    END = P.END ?? 15;
+    BAYS = P.BAYS ?? 7;
+    H_PILLAR = P.H_PILLAR ?? 12.4; H_TOT = P.H_TOT ?? 15.6; H_BLOCK = P.H_BLOCK ?? 15.6;
+    V_FRONT = P.V_FRONT ?? 5.1;
+    V_BACK = P.V_BACK ?? -2.9;
+    BLOCK_FRONT = P.BLOCK_FRONT ?? 4.4; BLOCK_BACK = P.BLOCK_BACK ?? -6.1;
+    CU = P.CU ?? 0;
+    SL = P.SL ?? (V_FRONT + 0.6); PROF = P.PROF ?? 25;
+    CC = P.CC ?? 0;
+    /* RIBBONS si sovrascrive con un array piatto di numeri, 7 per nastro:
+       d, p1u, p1v, p2u, p2v, w0, w1 (l'API non ammette oggetti annidati). */
+    RIBBONS = Array.isArray(P.RIBBONS) && P.RIBBONS.length >= 7
+      ? Array.from({ length: Math.floor(P.RIBBONS.length / 7) }, (_, i) => {
+        const r = P.RIBBONS.slice(i * 7, i * 7 + 7);
+        return { d: r[0], p1: [r[1], r[2]], p2: [r[3], r[4]], w0: r[5], w1: r[6] };
+      })
+      : [{ d: 12.34, p1: [14.0, 13], p2: [24.5, 22.8], w0: 2.7, w1: 2.2 },
+        { d: 20.57, p1: [22.0, 11], p2: [37.0, 19.6], w0: 2.7, w1: 2.2 }];
+    DISC = Array.isArray(P.DISC) && P.DISC.length === 2 ? P.DISC.slice() : [CU, SL + 15];
+  }
 
   function whenReady(fn) {
     const c = window.campus3d;
-    if (typeof THREE !== 'undefined' && c && c.scene && typeof c.project === 'function' && c.scene.getObjectByName('edifici')) fn(c);
+    if (window.MAPPA3D_READY === true && typeof THREE !== 'undefined' && c && c.scene && typeof c.project === 'function' && c.scene.getObjectByName('edifici')) fn(c);
     else setTimeout(() => whenReady(fn), 500);
   }
 
@@ -79,6 +107,7 @@
   }
 
   function build(c) {
+    readParams();
     const scene = c.scene;
     const loader = new THREE.TextureLoader();
     const trTex = loader.load('tex/travertino_COL_1k.jpg', (t) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.25, 0.25); t.anisotropy = 4; trMat.map = t; trMat.needsUpdate = true; });
@@ -146,7 +175,7 @@
     /* Balconate con parapetto nelle campate, all'altezza del solaio: lastra sporgente in travertino e ringhiera
        a montanti e corrimano scuri, come nella foto del proprietario. */
     const ringMat = new THREE.MeshStandardMaterial({ color: 0x4a3a30, roughness: 0.6, metalness: 0.3 });
-    const BAL = { y: 5.8, v: V_FRONT - 0.35, h: 1.05 };
+    const BAL = { y: P.BAL_Y ?? 5.8, v: P.BAL_V ?? (V_FRONT - 0.35), h: P.BAL_H ?? 1.05 };
     for (let i = 0; i < BAYS; i += 1) {
       const a0 = x0 + END + pitch * i + 1.3, b0 = a0 + pitch - 2.6;
       box(a0, b0, BAL.y, BAL.y + 0.22, BAL.v - 0.5, BAL.v + 0.5, trMat, 'balconata');
@@ -162,7 +191,7 @@
        Il telo è il drappo vero e proprio; l'emblema ci finisce sopra solo se nel sito c'è tex/cherubino.png. */
     const drappoR = new THREE.MeshStandardMaterial({ color: 0x2d0a13, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
     const drappoB = new THREE.MeshStandardMaterial({ color: 0xf3f1ec, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
-    const DRAPPO = { w: 2.6, h: 4.2, top: H_PILLAR - 0.8, v: V_FRONT - 2.3 };
+    const DRAPPO = { w: P.DRAPPO_W ?? 2.6, h: P.DRAPPO_H ?? 4.2, top: P.DRAPPO_TOP ?? (H_PILLAR - 0.8), v: P.DRAPPO_V ?? (V_FRONT - 2.3) };
     for (let i = 1; i <= 5; i += 1) {
       const cx = x0 + END + pitch * (i + 0.5), rosso = i % 2 === 1;
       const d = new THREE.Mesh(new THREE.PlaneGeometry(DRAPPO.w, DRAPPO.h), rosso ? drappoR : drappoB);

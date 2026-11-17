@@ -1671,7 +1671,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
         // Le fontanelle 3 e 4 sono quelle che ricadono sui nuovi marciapiedi
         // (coordinate PDF verificate sul lato 0 di CU014): restano nello stesso
         // punto geografico, ma la base si appoggia alla quota superiore del piano.
-        holder.position.set(w.x, (i === 3 || i === 4) ? 0.15 : 0, w.z);
+        // La fontanella 8 cadeva sotto il colonnato di Aldo Moro per l'errore di
+        // registrazione dell'affine (residui fino a 15 m): sta invece al limite
+        // interno del marciapiede, verso la guardiola. Spostamento in metri nel
+        // sistema locale dell'ingresso (u +5,0; v -7,2), convertito in mondo.
+        const dx = i === 8 ? 8.55 : 0, dz = i === 8 ? 1.94 : 0;
+        holder.position.set(w.x + dx, (i === 3 || i === 4) ? 0.15 : 0, w.z + dz);
         holder.rotation.y = (Number(config.rotationDeg) || 0) * Math.PI / 180 + i * 1.3;
         holder.userData.fountain = true;
         holder.traverse((o) => { if (o.isMesh) { o.userData.fountainPart = true; pickables.push(o); } });

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#822433">
+<title>Editor parametri · Mappa 3D del campus</title>
+<style>
+  :root{--red:#822433;--red-dark:#641b27;--ink:#211d1d;--muted:#6f6866;--line:#e6dfdc;--paper:#fff;--soft:#f8f5f3}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);background:#f1ece9;font:15px/1.5 "Palatino Linotype",Palatino,Times,serif}
+  button,input,textarea,select{font:inherit}
+  button{cursor:pointer}
+  a{color:var(--red)}
+  button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+  header{padding:18px 22px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .eyebrow{font:700 10px/1.2 Arial,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--red)}
+  h1{font:600 25px/1.1 "Palatino Linotype",Palatino,serif;margin:7px 0 4px}
+  header p{margin:0;font:13px/1.45 Arial,sans-serif;color:#605957;max-width:70ch}
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px 22px 30px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  section{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:15px 16px}
+  h2{font:600 17px/1.2 "Palatino Linotype",Palatino,serif;margin:0 0 10px}
+  h3{font:700 10px Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#766e6a;margin:16px 0 7px}
+  label{display:block;font:11px Arial,sans-serif;color:var(--muted);margin-bottom:3px}
+  input[type=password],input[type=number],input[type=text],textarea{width:100%;padding:8px 10px;border:1px solid #d6cfcc;border-radius:7px;background:#fff;color:var(--ink);font:13px/1.4 "SFMono-Regular",Consolas,monospace}
+  textarea{min-height:330px;resize:vertical;white-space:pre}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0 0}
+  .btn{min-height:36px;padding:8px 13px;border:1px solid #d8d0cd;border-radius:7px;background:#fff;color:#413a38;font:700 11px Arial,sans-serif}
+  .btn:hover{border-color:var(--red);color:var(--red)}
+  .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.primary:hover{background:var(--red-dark)}
+  .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+  .fields .hint{font:10px Arial,sans-serif;color:#9a918d}
+  .msg{margin:11px 0 0;padding:9px 11px;border-radius:7px;font:12px/1.45 Arial,sans-serif;background:var(--soft);border:1px solid var(--line);color:#4b4441;white-space:pre-wrap;overflow-wrap:anywhere}
+  .msg.err{background:#fbf2f3;border-color:#dcb3b9;color:#8b1e2e}
+  .msg.ok{background:#f3f7f1;border-color:#c3d6bd;color:#2f5a28}
+  .note{font:12px/1.5 Arial,sans-serif;color:var(--muted)}
+  iframe{width:100%;height:62vh;min-height:340px;border:1px solid var(--line);border-radius:8px;background:#e9e4df}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Sapienza · Rappresentanza Scienze Chimiche</div>
+  <h1>Editor parametri · Mappa 3D del campus</h1>
+  <p>Modifica i parametri geometrici della scena 3D senza passare da git. I valori finiscono nell'endpoint <code>/api/mappa-3d</code> e il sito li legge al caricamento. L'elenco completo dei parametri e il loro significato sono in <a href="MAPPA-3D-API.md">MAPPA-3D-API.md</a>.</p>
+</header>
+<main>
+  <section aria-labelledby="h-param">
+    <h2 id="h-param">Parametri</h2>
+    <label for="token">Token di scrittura (resta solo in questo browser)</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token — chiedilo al proprietario del sito">
+    <p class="note">Il token è salvato in <code>localStorage</code> di questo browser e non viene mai mostrato in chiaro né messo nell'indirizzo della pagina.</p>
+    <div class="row">
+      <button id="load" class="btn" type="button">Carica</button>
+      <button id="save" class="btn primary" type="button">Salva</button>
+      <button id="reset" class="btn" type="button">Azzera tutto</button>
+      <button id="forget" class="btn" type="button">Dimentica token</button>
+    </div>
+    <p id="msg" class="msg" role="status" aria-live="polite">Premi «Carica» per leggere i parametri attuali.</p>
+    <h3>JSON</h3>
+    <label for="json">Oggetto <code>overrides</code>: una chiave per modulo (<code>ingresso</code>, <code>interno</code>)</label>
+    <textarea id="json" spellcheck="false" aria-describedby="msg">{}</textarea>
+    <div class="row"><button id="fromJson" class="btn" type="button">Aggiorna i campi dal JSON</button></div>
+    <h3>Campi</h3>
+    <p class="note">Generati dai valori presenti nel JSON. Modificali e premi «Aggiorna il JSON dai campi», poi «Salva». Gli array (per esempio <code>RIBBONS</code>, <code>BLOCKS</code>, <code>DISC</code>) si scrivono come numeri separati da virgola.</p>
+    <div id="fields" class="fields"></div>
+    <div class="row"><button id="toJson" class="btn" type="button">Aggiorna il JSON dai campi</button></div>
+  </section>
+  <section aria-labelledby="h-prev">
+    <h2 id="h-prev">Anteprima</h2>
+    <div class="row" style="margin:0 0 10px"><button id="reloadPreview" class="btn" type="button">Ricarica anteprima</button></div>
+    <iframe id="preview" title="Anteprima della mappa 3D" src="/campus-3d/?standalone=1"></iframe>
+    <p class="note">L'anteprima legge l'API come il sito pubblico: ricaricala dopo aver salvato.</p>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/mappa-3d', KEY = 'mappa3d-token';
+  var $ = function (id) { return document.getElementById(id); };
+  var msg = $('msg');
+  function say(text, kind) {
+    msg.textContent = text;
+    msg.className = 'msg' + (kind ? ' ' + kind : '');
+  }
+  function token() { return $('token').value.trim(); }
+  try { $('token').value = localStorage.getItem(KEY) || ''; } catch (e) { /* storage non disponibile */ }
+  $('token').addEventListener('change', function () {
+    try { localStorage.setItem(KEY, token()); } catch (e) { /* ignora */ }
+  });
+  $('forget').addEventListener('click', function () {
+    $('token').value = '';
+    try { localStorage.removeItem(KEY); } catch (e) { /* ignora */ }
+    say('Token dimenticato in questo browser.');
+  });
+
+  function parseJson() {
+    var o = JSON.parse($('json').value || '{}');
+    if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('il JSON deve essere un oggetto');
+    return o;
+  }
+  function setJson(o) { $('json').value = JSON.stringify(o, null, 2); buildFields(o); }
+
+  function buildFields(o) {
+    var host = $('fields');
+    host.textContent = '';
+    var mods = Object.keys(o);
+    if (!mods.length) {
+      var p = document.createElement('p');
+      p.className = 'note';
+      p.textContent = 'Nessun parametro impostato: la scena usa i valori di default. Aggiungi le chiavi nel JSON per vederle qui.';
+      host.appendChild(p);
+      return;
+    }
+    mods.forEach(function (mod) {
+      var params = o[mod];
+      if (!params || typeof params !== 'object' || Array.isArray(params)) return;
+      Object.keys(params).forEach(function (name) {
+        var v = params[name], wrap = document.createElement('div');
+        var lab = document.createElement('label');
+        lab.textContent = mod + ' · ' + name;
+        lab.setAttribute('for', 'f-' + mod + '-' + name);
+        var inp = document.createElement('input');
+        inp.id = 'f-' + mod + '-' + name;
+        inp.dataset.mod = mod;
+        inp.dataset.name = name;
+        if (typeof v === 'number') { inp.type = 'number'; inp.step = 'any'; inp.value = String(v); inp.dataset.kind = 'number'; }
+        else if (Array.isArray(v)) { inp.type = 'text'; inp.value = v.join(', '); inp.dataset.kind = 'array'; }
+        else if (typeof v === 'boolean') { inp.type = 'text'; inp.value = String(v); inp.dataset.kind = 'boolean'; }
+        else { inp.type = 'text'; inp.value = String(v); inp.dataset.kind = 'string'; }
+        wrap.appendChild(lab);
+        wrap.appendChild(inp);
+        if (inp.dataset.kind === 'array') {
+          var h = document.createElement('span');
+          h.className = 'hint';
+          h.textContent = 'numeri separati da virgola';
+          wrap.appendChild(h);
+        }
+        host.appendChild(wrap);
+      });
+    });
+  }
+
+  function fieldsToJson() {
+    var o = parseJson();
+    var inputs = $('fields').querySelectorAll('input[data-mod]');
+    for (var i = 0; i < inputs.length; i++) {
+      var inp = inputs[i], mod = inp.dataset.mod, name = inp.dataset.name, raw = inp.value.trim(), v;
+      if (inp.dataset.kind === 'number') {
+        v = Number(raw);
+        if (raw === '' || !isFinite(v)) throw new Error(mod + ' · ' + name + ': numero non valido');
+      } else if (inp.dataset.kind === 'array') {
+        v = raw === '' ? [] : raw.split(',').map(function (s) {
+          var n = Number(s.trim());
+          if (!isFinite(n)) throw new Error(mod + ' · ' + name + ': «' + s.trim() + '» non è un numero');
+          return n;
+        });
+      } else if (inp.dataset.kind === 'boolean') {
+        v = raw === 'true';
+      } else { v = raw; }
+      if (!o[mod] || typeof o[mod] !== 'object') o[mod] = {};
+      o[mod][name] = v;
+    }
+    return o;
+  }
+
+  function apiError(r, d) {
+    var base = 'Errore ' + r.status + (r.statusText ? ' ' + r.statusText : '');
+    if (r.status === 401) return base + ' — token non accettato dall’API.';
+    return base + (d && d.error ? ': ' + d.error : '');
+  }
+  function stamp(sec) {
+    if (!sec) return 'mai salvato';
+    return new Date(sec * 1000).toLocaleString('it-IT');
+  }
+
+  $('load').addEventListener('click', function () {
+    say('Caricamento…');
+    fetch(API, { cache: 'no-store' }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (d) {
+        if (!r.ok) throw new Error(apiError(r, d));
+        return d;
+      });
+    }).then(function (d) {
+      setJson((d && d.overrides) || {});
+      say('Caricato. Ultimo salvataggio: ' + stamp(d && d.updated_at) + '.', 'ok');
+    }).catch(function (e) { say('Caricamento non riuscito. ' + e.message, 'err'); });
+  });
+
+  function put(overrides, what) {
+    if (!token()) { say('Serve il token di scrittura: chiedilo al proprietario del sito.', 'err'); return; }
+    say('Salvataggio…');
+    fetch(API, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token() },
+      body: JSON.stringify({ overrides: overrides })
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (d) {
+        if (!r.ok) throw new Error(apiError(r, d));
+        return d;
+      });
+    }).then(function (d) {
+      setJson((d && d.overrides) || {});
+      say(what + ' Ultimo salvataggio: ' + stamp(d && d.updated_at) + '. Ricarica l’anteprima per vedere l’effetto.', 'ok');
+    }).catch(function (e) { say('Salvataggio non riuscito. ' + e.message, 'err'); });
+  }
+
+  $('save').addEventListener('click', function () {
+    var o;
+    try { o = parseJson(); } catch (e) { say('JSON non valido: ' + e.message, 'err'); return; }
+    put(o, 'Salvato.');
+  });
+  $('reset').addEventListener('click', function () {
+    if (!window.confirm('Azzerare tutti i parametri? La scena torna ai valori di default.')) return;
+    put({}, 'Parametri azzerati.');
+  });
+  $('toJson').addEventListener('click', function () {
+    try { setJson(fieldsToJson()); say('JSON aggiornato dai campi. Premi «Salva» per pubblicare.'); }
+    catch (e) { say(e.message, 'err'); }
+  });
+  $('fromJson').addEventListener('click', function () {
+    try { buildFields(parseJson()); say('Campi rigenerati dal JSON.'); }
+    catch (e) { say('JSON non valido: ' + e.message, 'err'); }
+  });
+  $('reloadPreview').addEventListener('click', function () {
+    var f = $('preview');
+    f.src = '/campus-3d/?standalone=1&t=' + Date.now();
+  });
+  buildFields({});
+})();
+</script>
+</body>
+</html>
