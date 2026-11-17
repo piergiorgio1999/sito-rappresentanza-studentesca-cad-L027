@@ -21,7 +21,7 @@
   /* Aiuole del piazzale: isola centrale a goccia e due nastri curvi per lato, simmetrici rispetto all'asse dell'isola
      (CU, che nel vero non coincide col centro del colonnato) e attaccati al filo dei pilastri. Proporzioni stimate
      dalla foto aerea del proprietario e dall'ortofoto AGEA 2020, non da un rilievo. */
-  const CU = -5;                   // asse dell'isola centrale e della simmetria delle aiuole
+  const CU = 0;                    // asse dell'isola centrale e della simmetria delle aiuole
   const SL = V_FRONT + 0.6, PROF = 25; // dal filo dei pilastri fino al piazzale
   // nastri laterali: partono dritti dal colonnato, curvano verso l'esterno e finiscono con la punta tonda; larghezza quasi costante
   const CC = 0;                    // asse del colonnato: le aiuole laterali partono dalle colonne, non dall'isola
@@ -160,15 +160,15 @@
     }
     /* Drappi Sapienza nelle cinque campate centrali, alternati bordeaux e bianchi come nella foto del proprietario.
        Il telo è il drappo vero e proprio; l'emblema ci finisce sopra solo se nel sito c'è tex/cherubino.png. */
-    const drappoR = new THREE.MeshStandardMaterial({ color: 0x5e1422, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
+    const drappoR = new THREE.MeshStandardMaterial({ color: 0x2d0a13, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
     const drappoB = new THREE.MeshStandardMaterial({ color: 0xf3f1ec, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
-    const DRAPPO = { w: 2.8, h: 6, top: H_PILLAR - 1, v: V_FRONT - 2.3 };
+    const DRAPPO = { w: 2.6, h: 4.2, top: H_PILLAR - 0.8, v: V_FRONT - 2.3 };
     for (let i = 1; i <= 5; i += 1) {
       const cx = x0 + END + pitch * (i + 0.5), rosso = i % 2 === 1;
       const d = new THREE.Mesh(new THREE.PlaneGeometry(DRAPPO.w, DRAPPO.h), rosso ? drappoR : drappoB);
       d.position.set(cx, DRAPPO.top - DRAPPO.h / 2, DRAPPO.v); d.name = 'drappo'; d.raycast = () => {}; group.add(d);
       box(cx - DRAPPO.w / 2 - 0.1, cx + DRAPPO.w / 2 + 0.1, DRAPPO.top, DRAPPO.top + 0.12, DRAPPO.v - 0.07, DRAPPO.v + 0.07, trDark, 'asta-drappo');
-      if (rosso) drappiRossi.push([cx, DRAPPO.top - 1.9, DRAPPO.v]);
+      if (rosso) drappiRossi.push([cx, DRAPPO.top - 1.6, DRAPPO.v]);
     }
     // fascia di lucernari sul tetto (lato sud), come nella foto
     box(x1 - END - 14, x1 - END - 2, H_TOT + 0.35, H_TOT + 0.95, V_BACK + 1.5, V_FRONT - 2.2, new THREE.MeshStandardMaterial({ color: 0xcfe0e6, roughness: 0.4 }), 'lucernari');
