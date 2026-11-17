@@ -5768,7 +5768,7 @@ void main() {
       if (!ingFrame) return false;
       const dx = x - ingFrame.o[0], dz = z - ingFrame.o[1];
       const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
-      return u > -46 && u < 46 && v > 2 && v < 36;
+      return u > -46 && u < 46 && v > -82 && v < 36;
     };
     const list = treeData.filter((t, idx) => {
       if (t.rimosso || !insideMap(t.p)) return false;
