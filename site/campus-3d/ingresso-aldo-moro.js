@@ -24,8 +24,9 @@
   const CU = -5;                   // asse dell'isola centrale e della simmetria delle aiuole
   const SL = V_FRONT + 0.6, PROF = 25; // dal filo dei pilastri fino al piazzale
   // nastri laterali: partono dritti dal colonnato, curvano verso l'esterno e finiscono con la punta tonda; larghezza quasi costante
-  const RIBBONS = [{ d: 12.8, p1: [14.0, 13], p2: [24.5, 22.8], w0: 2.7, w1: 2.2 },
-    { d: 20.0, p1: [22.0, 11], p2: [37.0, 19.6], w0: 2.7, w1: 2.2 }];
+  const CC = 0;                    // asse del colonnato: le aiuole laterali partono dalle colonne, non dall'isola
+  const RIBBONS = [{ d: 12.34, p1: [14.0, 13], p2: [24.5, 22.8], w0: 2.7, w1: 2.2 },
+    { d: 20.57, p1: [22.0, 11], p2: [37.0, 19.6], w0: 2.7, w1: 2.2 }];
   const DISC = [CU, SL + 15];
 
   function whenReady(fn) {
@@ -142,6 +143,21 @@
     }
     // solaio intermedio arretrato (si intravede tra le campate)
     box(x0 + END, x1 - END, 5.3, 5.8, V_BACK, V_BACK + 2.2, trDark, 'solaio');
+    /* Balconate con parapetto nelle campate, all'altezza del solaio: lastra sporgente in travertino e ringhiera
+       a montanti e corrimano scuri, come nella foto del proprietario. */
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0x4a3a30, roughness: 0.6, metalness: 0.3 });
+    const BAL = { y: 5.8, v: V_FRONT - 0.35, h: 1.05 };
+    for (let i = 0; i < BAYS; i += 1) {
+      const a0 = x0 + END + pitch * i + 1.3, b0 = a0 + pitch - 2.6;
+      box(a0, b0, BAL.y, BAL.y + 0.22, BAL.v - 0.5, BAL.v + 0.5, trMat, 'balconata');
+      box(a0, b0, BAL.y + BAL.h, BAL.y + BAL.h + 0.11, BAL.v + 0.3, BAL.v + 0.52, ringMat, 'corrimano');
+      box(a0, b0, BAL.y + BAL.h * 0.55, BAL.y + BAL.h * 0.55 + 0.07, BAL.v + 0.36, BAL.v + 0.48, ringMat, 'traverso');
+      const n = Math.max(2, Math.round((b0 - a0) / 1.15));
+      for (let k = 0; k <= n; k += 1) {
+        const px = a0 + (b0 - a0) * (k / n);
+        box(px - 0.045, px + 0.045, BAL.y + 0.22, BAL.y + BAL.h, BAL.v + 0.38, BAL.v + 0.46, ringMat, 'montante');
+      }
+    }
     /* Drappi Sapienza nelle cinque campate centrali, alternati bordeaux e bianchi come nella foto del proprietario.
        Il telo è il drappo vero e proprio; l'emblema ci finisce sopra solo se nel sito c'è tex/cherubino.png. */
     const drappoR = new THREE.MeshStandardMaterial({ color: 0x5e1422, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
@@ -192,7 +208,7 @@
       return Lp.concat(cap, Rp.reverse());
     };
     RIBBONS.forEach((r) => [1, -1].forEach((side) => {
-      const p0 = [CU + side * r.d, SL], p1 = [CU + side * r.p1[0], SL + r.p1[1]], p2 = [CU + side * r.p2[0], SL + r.p2[1]];
+      const p0 = [CC + side * r.d, SL], p1 = [CC + side * r.p1[0], SL + r.p1[1]], p2 = [CC + side * r.p2[0], SL + r.p2[1]];
       flat(ribbonPts(p0, p1, p2, r.w0 + 1, r.w1 + 1), 0, curbMat, curbH);
       flat(ribbonPts(p0, p1, p2, r.w0, r.w1), curbH, lawnMat, 0.04);
     }));
