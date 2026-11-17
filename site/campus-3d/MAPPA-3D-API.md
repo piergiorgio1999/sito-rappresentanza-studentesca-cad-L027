@@ -36,7 +36,7 @@ validi, oltre 64 KB), `401` (token assente o sbagliato), `405`, `500`/`503`.
 
 Regole:
 
-- `overrides` è un oggetto; le sue chiavi sono i **moduli**: `ingresso` e `interno`.
+- `overrides` è un oggetto; le sue chiavi sono i **moduli**: `ingresso`, `interno` e `raccordo`.
 - ogni modulo è un oggetto `NOME_PARAMETRO → valore`.
 - un valore può essere solo: numero, booleano, stringa (max 200 caratteri) o array di
   numeri (max 400 elementi). **Niente oggetti annidati, niente funzioni.**
@@ -112,6 +112,40 @@ File: `site/campus-3d/interno-aldo-moro.js` (viale e parcheggi dietro il colonna
 
 `BLOCKS` e `ROW3` nel codice sono oggetti: qui sono un array piatto di numeri e quattro
 parametri scalari, perché l'API non accetta oggetti annidati.
+
+## Parametri del modulo `raccordo`
+
+File: `site/campus-3d/raccordo-asfalto.js` (asfalto che riempie i vuoti fra il piazzale
+interno, lo stradone Chimica–Fisica e il piazzale della vasca della Minerva).
+
+Stesso riferimento locale del modulo `interno`: `u` lungo l'asse del colonnato, `v`
+negativa verso l'interno della Città Universitaria. Il piano sta sotto tutte le altre
+superfici, quindi si vede solo dove non c'è già nulla: allargare un riquadro non copre
+prati, marciapiedi, aiuole o vasca, ma può far comparire asfalto dove c'era il terreno.
+
+| Parametro | Significato | Default |
+| --- | --- | --- |
+| `U_MID` | scorrimento del riferimento lungo l'asse (come nel modulo `interno`) | `2.1` |
+| `V_MID` | scorrimento del riferimento perpendicolare all'asse | `-0.6` |
+| `Y` | quota del piano, sotto le altre pavimentazioni | `0.004` |
+| `V_A0` | inizio del riquadro di giunzione col piazzale interno (sotto il suo asfalto) | `-74` |
+| `V_A1` | fine dello stesso riquadro, verso lo stradone | `-98` |
+| `W_A` | semilarghezza dello stesso riquadro | `46` |
+| `V_B1` | fine in `v` delle due fasce laterali lungo lo stradone | `-156` |
+| `B_U0` | bordo interno delle due fasce (entra sotto i prati dello stradone) | `22` |
+| `B_U1` | bordo esterno delle due fasce | `46` |
+| `V_C1` | fronte della vasca della Minerva: fine del riquadro a tutta larghezza | `-188` |
+| `V_C2` | fine delle due ali di fianco alla vasca | `-206` |
+| `W_C` | semilarghezza del piazzale della Minerva | `42` |
+| `C_USX` | bordo destro dell'ala sinistra: oltre c'è la vasca con l'acqua | `-19` |
+| `C_UDX` | bordo sinistro dell'ala destra | `26` |
+| `TILE` | lato in metri della piastrella di texture dell'asfalto | `32` |
+| `COL_1` | colore di fondo dell'asfalto | `"#55565a"` |
+| `COL_2` | colore dei granuli scuri | `"#45464a"` |
+
+La zona di rispetto degli alberi OSM corrispondente è nei riquadri `RACCORDO` di
+`buildTrees()` in `campus-3d.js`: se si spostano molto questi parametri va aggiornata
+anche quella, altrimenti ricompaiono alberi sull'asfalto.
 
 ## Esempi
 

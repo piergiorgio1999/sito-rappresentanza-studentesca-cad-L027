@@ -5775,10 +5775,19 @@ void main() {
       const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
       return u > -46 && u < 46 && v > -82 && v < 36;
     };
+    // asfalto di raccordo verso lo stradone e la Minerva (raccordo-asfalto.js): stesso
+    // riferimento del piazzale, riquadri [u0, u1, v0, v1]; nemmeno lì crescono alberi OSM
+    const RACCORDO = [[-46, 46, -98, -74], [-46, -22, -156, -98], [22, 46, -156, -98], [-42, 42, -188, -156], [-42, -19, -206, -188], [26, 42, -206, -188]];
+    const inRaccordo = (x, z) => {
+      if (!ingFrame) return false;
+      const dx = x - ingFrame.o[0], dz = z - ingFrame.o[1];
+      const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
+      return RACCORDO.some(([u0, u1, v0, v1]) => u > u0 && u < u1 && v > v0 && v < v1);
+    };
     const list = treeData.filter((t, idx) => {
       if (t.rimosso || !insideMap(t.p)) return false;
       const w = project(t.p), x = w.x, z = -w.n;
-      if (onAsphalt(x, z, 1.5) || inForecourt(x, z)) return false;
+      if (onAsphalt(x, z, 1.5) || inForecourt(x, z) || inRaccordo(x, z)) return false;
       if (!near.length || near.some(([nx, nz, r]) => Math.hypot(x - nx, z - nz) <= r)) return true;
       return rnd(idx, 17) < 0.3;
     });

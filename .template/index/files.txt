@@ -194,6 +194,7 @@
 ./site/campus-3d/models/tubi-glb.json
 ./site/campus-3d/models/ventilazione-glb.json
 ./site/campus-3d/overrides.js
+./site/campus-3d/raccordo-asfalto.js
 ./site/campus-3d/rettorato-facciata.jpg
 ./site/campus-3d/scan/scan-georef.json
 ./site/campus-3d/tex/azoto/avvertenze-travaso.jpg
