@@ -178,6 +178,14 @@
     // tondo in terracotta con lo stemma
     const stem = new THREE.Mesh(new THREE.CircleGeometry(3.7, 48), new THREE.MeshStandardMaterial({ map: stemmaTexture(), roughness: 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     stem.rotation.x = -Math.PI / 2; stem.position.set(DISC[0], curbH + 0.07, DISC[1]); stem.name = 'stemma'; group.add(stem);
+    /* Emblema al centro del tondo: nel vero è il cherubino, il marchio dell'ateneo, e va messo con il file ufficiale
+       del manuale di identità visiva Sapienza, non ridisegnato. Basta salvarlo come tex/cherubino.png (sfondo
+       trasparente, quadrato, almeno 512 px): se c'è, viene applicato da solo sopra il cotto; se manca, resta il tondo liscio. */
+    new THREE.TextureLoader().load('tex/cherubino.png', (tx) => {
+      tx.anisotropy = 4; tx.colorSpace = THREE.SRGBColorSpace || tx.colorSpace;
+      const em = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.2), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }));
+      em.rotation.x = -Math.PI / 2; em.position.set(DISC[0], curbH + 0.09, DISC[1]); em.name = 'cherubino'; em.raycast = () => {}; group.add(em);
+    }, undefined, () => { /* senza il file ufficiale il tondo resta liscio */ });
     const ring = new THREE.Mesh(new THREE.RingGeometry(3.7, 4.3, 48), curbMat); ring.rotation.x = -Math.PI / 2; ring.position.set(DISC[0], curbH + 0.06, DISC[1]); group.add(ring);
     // scritte a terra
     const label = (lines, u, v, w, h, rot) => {
