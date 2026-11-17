@@ -87,6 +87,9 @@
     brickTex.repeat.set(5, 3);
     const brickMat = new THREE.MeshStandardMaterial({ color: 0xd08a52, map: brickTex, roughness: 0.95, metalness: 0 });
     const ceilMat = new THREE.MeshStandardMaterial({ color: 0x77716a, roughness: 1, metalness: 0 });
+    const drappiRossi = []; // dove mettere l'emblema sui drappi, se arriva il file ufficiale
+    const pavMat = new THREE.MeshStandardMaterial({ color: 0xcfc8ba, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x6f9fb5, roughness: 0.18, metalness: 0.1, transparent: true, opacity: 0.86 });
     const lawnMat = new THREE.MeshStandardMaterial({ color: 0x3f7a2c, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     const curbMat = new THREE.MeshStandardMaterial({ color: 0xdcd6c6, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     const group = new THREE.Group(); group.name = 'ingresso-aldo-moro';
@@ -115,9 +118,15 @@
       box(a, b, 0, H_BLOCK - 0.9, BLOCK_BACK, BLOCK_FRONT, brickMat, 'corpo-mattoni');
       box(a - 0.15, b + 0.15, H_BLOCK - 0.9, H_BLOCK, BLOCK_BACK - 0.2, V_FRONT, trMat, 'cornice-corpo');
       box(a - 0.1, b + 0.1, 0, 0.7, BLOCK_BACK - 0.1, BLOCK_FRONT + 0.1, trDark, 'zoccolo');
-      // basamento a gradoni davanti al corpo
-      const cx = (a + b) / 2;
-      for (let k = 0; k < 3; k++) box(cx - 6.5 - (2 - k) * 0.4, cx + 6.5 + (2 - k) * 0.4, 0, 0.3 * (3 - k) + 0.1, BLOCK_FRONT, BLOCK_FRONT + 1.5 * (3 - k) - 0.3, trMat, 'gradone');
+      /* Davanti a ogni corpo in mattoni: una piazzola lastricata a mezzaluna e, centrata sul muro, una fontana
+         rettangolare con la vasca rettangolare (foto zenitale del proprietario). */
+      const cx = (a + b) / 2, R = 22, piazza = [];
+      for (let i = 0; i <= 28; i += 1) { const ang = (i / 28) * Math.PI; piazza.push([cx + R * Math.cos(ang), BLOCK_FRONT + R * Math.sin(ang)]); }
+      flat(piazza, 0.015, pavMat, 0).receiveShadow = true;
+      const fw = 6.6, fd = 2.1, fv = BLOCK_FRONT + 3.4, rim = 0.45; // semilarghezza, semiprofondità, distanza dal muro
+      box(cx - fw, cx + fw, 0, rim, fv - fd, fv + fd, trMat, 'fontana-bordo');
+      box(cx - fw + 0.55, cx + fw - 0.55, rim - 0.12, rim - 0.06, fv - fd + 0.55, fv + fd - 0.55, waterMat, 'fontana-acqua');
+      box(cx - 0.45, cx + 0.45, rim, rim + 0.9, fv - 0.45, fv + 0.45, trMat, 'fontana-zampillo');
     }
     // attico-ponte in travertino
     box(x0, x1, H_PILLAR, H_TOT, V_BACK, V_FRONT, trMat, 'attico');
@@ -133,6 +142,18 @@
     }
     // solaio intermedio arretrato (si intravede tra le campate)
     box(x0 + END, x1 - END, 5.3, 5.8, V_BACK, V_BACK + 2.2, trDark, 'solaio');
+    /* Drappi Sapienza nelle cinque campate centrali, alternati bordeaux e bianchi come nella foto del proprietario.
+       Il telo è il drappo vero e proprio; l'emblema ci finisce sopra solo se nel sito c'è tex/cherubino.png. */
+    const drappoR = new THREE.MeshStandardMaterial({ color: 0x5e1422, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
+    const drappoB = new THREE.MeshStandardMaterial({ color: 0xf3f1ec, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
+    const DRAPPO = { w: 2.8, h: 6, top: H_PILLAR - 1, v: V_FRONT - 2.3 };
+    for (let i = 1; i <= 5; i += 1) {
+      const cx = x0 + END + pitch * (i + 0.5), rosso = i % 2 === 1;
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(DRAPPO.w, DRAPPO.h), rosso ? drappoR : drappoB);
+      d.position.set(cx, DRAPPO.top - DRAPPO.h / 2, DRAPPO.v); d.name = 'drappo'; d.raycast = () => {}; group.add(d);
+      box(cx - DRAPPO.w / 2 - 0.1, cx + DRAPPO.w / 2 + 0.1, DRAPPO.top, DRAPPO.top + 0.12, DRAPPO.v - 0.07, DRAPPO.v + 0.07, trDark, 'asta-drappo');
+      if (rosso) drappiRossi.push([cx, DRAPPO.top - 1.9, DRAPPO.v]);
+    }
     // fascia di lucernari sul tetto (lato sud), come nella foto
     box(x1 - END - 14, x1 - END - 2, H_TOT + 0.35, H_TOT + 0.95, V_BACK + 1.5, V_FRONT - 2.2, new THREE.MeshStandardMaterial({ color: 0xcfe0e6, roughness: 0.4 }), 'lucernari');
 
@@ -185,6 +206,10 @@
       tx.anisotropy = 4; tx.colorSpace = THREE.SRGBColorSpace || tx.colorSpace;
       const em = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.2), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }));
       em.rotation.x = -Math.PI / 2; em.position.set(DISC[0], curbH + 0.09, DISC[1]); em.name = 'cherubino'; em.raycast = () => {}; group.add(em);
+      drappiRossi.forEach(([dx, dy, dv]) => {
+        const e = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.9), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false }));
+        e.position.set(dx, dy, dv + 0.02); e.name = 'cherubino-drappo'; e.raycast = () => {}; group.add(e);
+      });
     }, undefined, () => { /* senza il file ufficiale il tondo resta liscio */ });
     const ring = new THREE.Mesh(new THREE.RingGeometry(3.7, 4.3, 48), curbMat); ring.rotation.x = -Math.PI / 2; ring.position.set(DISC[0], curbH + 0.06, DISC[1]); group.add(ring);
     // scritte a terra
