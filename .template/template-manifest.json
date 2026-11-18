@@ -1,6 +1,6 @@
 {
   "name": "agent-template",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "schemaVersion": 1,
   "bootstrap": "tools/bootstrap/bootstrap.sh",
   "customTools": [

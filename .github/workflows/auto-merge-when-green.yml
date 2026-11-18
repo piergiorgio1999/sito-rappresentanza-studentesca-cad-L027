@@ -1,0 +1,127 @@
+name: Auto Merge When Green
+
+# Auto-merge IN OPT-IN: agisce solo sulle PR che portano l'etichetta `automerge`.
+# Senza quell'etichetta questo workflow non fa assolutamente nulla.
+#
+# La scelta dell'opt-in è voluta e non va cambiata: serve a tenere una persona
+# nel giro, che decide quali PR possono fondersi da sole mettendo l'etichetta.
+#
+# Sul repository `allow_auto_merge` è false, quindi l'auto-merge nativo di
+# GitHub non è disponibile: il merge viene eseguito via API REST
+# `PUT /repos/{owner}/{repo}/pulls/{n}/merge` con `merge_method: squash`.
+#
+# Sicurezza: gira su workflow_run, quindi con il token del repository di base.
+# Non esegue mai codice proveniente dal branch della PR: niente checkout, solo API.
+
+on:
+  # Il workflow non fa checkout né esegue codice della PR: usa solo le API
+  # GitHub, quindi questo trigger è sicuro qui.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Squash merge if labelled and green
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge when all gates are green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER_HINT: ${{ github.event.workflow_run.pull_requests[0].number || '' }}
+        run: |
+          set -Eeuo pipefail
+
+          pr_number="$PR_NUMBER_HINT"
+          if [[ -z "$pr_number" ]]; then
+            pr_number="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA/pulls" \
+              --jq 'map(select(.state == "open")) | first | .number // empty' 2>/dev/null || true)"
+          fi
+          if [[ -z "$pr_number" ]]; then
+            echo "Nessuna PR associata a $HEAD_SHA: niente da fare."
+            exit 0
+          fi
+
+          pr_json="$(gh api "repos/$REPOSITORY/pulls/$pr_number")"
+
+          # Opt-in: senza l'etichetta `automerge` ci si ferma qui.
+          if [[ "$(jq -r '[.labels[].name] | index("automerge") != null' <<<"$pr_json")" != "true" ]]; then
+            echo "PR #$pr_number senza etichetta 'automerge': nessun merge automatico (opt-in)."
+            exit 0
+          fi
+
+          state="$(jq -r '.state' <<<"$pr_json")"
+          if [[ "$state" != "open" ]]; then
+            echo "PR #$pr_number non è aperta (stato: $state): nessun merge."
+            exit 0
+          fi
+
+          if [[ "$(jq -r '.draft' <<<"$pr_json")" == "true" ]]; then
+            echo "PR #$pr_number è in draft: nessun merge."
+            exit 0
+          fi
+
+          if [[ "$(jq -r '.head.sha' <<<"$pr_json")" != "$HEAD_SHA" ]]; then
+            echo "L'head della PR #$pr_number è cambiato dopo la CI: nessun merge."
+            exit 0
+          fi
+
+          # `mergeable` / `mergeable_state` sono calcolati in modo asincrono da
+          # GitHub: si attende che il valore diventi definitivo.
+          mergeable=""
+          mergeable_state=""
+          for _ in 1 2 3 4 5 6; do
+            mergeable="$(jq -r '.mergeable // "null"' <<<"$pr_json")"
+            mergeable_state="$(jq -r '.mergeable_state // "unknown"' <<<"$pr_json")"
+            [[ "$mergeable" != "null" && "$mergeable_state" != "unknown" ]] && break
+            sleep 5
+            pr_json="$(gh api "repos/$REPOSITORY/pulls/$pr_number")"
+          done
+
+          if [[ "$mergeable" != "true" ]]; then
+            echo "PR #$pr_number non è mergeable (conflitti o stato non calcolabile): nessun merge."
+            exit 0
+          fi
+
+          if [[ "$mergeable_state" != "clean" ]]; then
+            echo "mergeable_state = '$mergeable_state' (atteso 'clean'): nessun merge."
+            exit 0
+          fi
+
+          changes_requested="$(gh api --paginate "repos/$REPOSITORY/pulls/$pr_number/reviews?per_page=100" --jq '.[]' \
+            | jq -s '
+                group_by(.user.login)
+                | map(sort_by(.submitted_at // "") | last)
+                | map(select(.state == "CHANGES_REQUESTED"))
+                | length')"
+          if [[ "$changes_requested" -gt 0 ]]; then
+            echo "Ci sono $changes_requested review con CHANGES_REQUESTED: nessun merge."
+            exit 0
+          fi
+
+          title="$(jq -r '.title' <<<"$pr_json")"
+          echo "Squash merge della PR #$pr_number."
+          gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
+            -f merge_method=squash \
+            -f sha="$HEAD_SHA" \
+            -f commit_title="$title (#$pr_number)" >/dev/null
+          echo "✅ PR #$pr_number fusa in squash." >> "$GITHUB_STEP_SUMMARY"

@@ -1,4 +1,4 @@
-# SPEC-V1.2 — Agent-Ready Template (CONGELATA)
+# SPEC-V1.3 — Agent-Ready Template (CONGELATA)
 
 Questo file è IL CONTRATTO vincolante.
 In caso di divergenza con qualsiasi altro file del repo (docs, config/,

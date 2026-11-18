@@ -48,6 +48,22 @@ use_shell:
   type: bool
   default: true
 
+is_website:
+  type: bool
+  default: false
+  help: Il progetto pubblica un sito statico su Cloudflare Pages?
+
+site_dir:
+  type: str
+  default: site
+  when: "{{ is_website }}"
+  help: Cartella del sito da pubblicare, relativa alla radice del repository
+
+cloudflare_project:
+  type: str
+  when: "{{ is_website }}"
+  help: Nome del progetto Cloudflare Pages su cui pubblicare
+
 _subdirectory: .
 _exclude:
   - "~*"
@@ -57,3 +73,9 @@ _exclude:
   - .DS_Store
   - .svn
   - "{{ 'mcp/**' if integration_mode != 'mcp' else '__never__' }}"
+  # Valori Pages di questo repository template: nei progetti generati li produce
+  # config/template/pages.json.jinja, quindi la copia statica va sempre esclusa.
+  - "config/template/pages.template-repo.json"
+  - "{{ '.github/workflows/pages-deployment.yml' if not is_website else '__never__' }}"
+  - "{{ '.github/workflows/pages-preview.yml' if not is_website else '__never__' }}"
+  - "{{ 'config/template/pages.json' if not is_website else '__never__' }}"

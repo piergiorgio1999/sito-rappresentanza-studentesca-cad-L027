@@ -17,11 +17,13 @@
 ./.github/pr-verification/test-status-emoji.sh
 ./.github/pull_request_template.md
 ./.github/ruleset.json.jinja
+./.github/workflows/auto-merge-when-green.yml
 ./.github/workflows/checker-selftest.yml
 ./.github/workflows/ci.yml
 ./.github/workflows/label-sync.yml
 ./.github/workflows/pages-deployment.yml
 ./.github/workflows/pages-preview.yml
+./.github/workflows/pr-ci-report.yml
 ./.github/workflows/project-status-refresh.yml
 ./.github/workflows/rerun-failed-pr-ci.yml
 ./.github/workflows/scope-exception-sync.yml
@@ -127,6 +129,8 @@
 ./config/template/comment-locales/en.json
 ./config/template/comment-locales/it.json
 ./config/template/integration-mode.json.jinja
+./config/template/pages.json.jinja
+./config/template/pages.template-repo.json
 ./config/template/project-status.json
 ./config/template/version.json
 ./contracts/README.md
