@@ -1,0 +1,187 @@
+name: PR CI Report
+
+# Pubblica sulla PR un riassunto leggibile dell'esito della CI, pensato per chi
+# ha aperto la PR e per un agente (Claude, GPT, Copilot) che deve capire e
+# correggere senza scavare nei log grezzi.
+#
+# Sicurezza: gira su workflow_run, quindi con il token del repository di base.
+# Per questo motivo NON esegue mai codice proveniente dal branch della PR: non
+# fa checkout e lavora solo con le API GitHub.
+
+on:
+  # Il workflow non fa checkout né esegue codice della PR: usa solo le API
+  # GitHub, quindi questo trigger è sicuro qui.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-ci-report-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Publish CI report on the PR
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Build and publish report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          PR_NUMBER_HINT: ${{ github.event.workflow_run.pull_requests[0].number || '' }}
+        run: |
+          set -Eeuo pipefail
+
+          marker='<!-- pr-ci-report -->'
+
+          # --- numero della PR -------------------------------------------------
+          pr_number="$PR_NUMBER_HINT"
+          if [[ -z "$pr_number" ]]; then
+            pr_number="$(gh api "repos/$REPOSITORY/commits/$HEAD_SHA/pulls" \
+              --jq 'map(select(.state == "open")) | first | .number // empty' 2>/dev/null || true)"
+          fi
+          if [[ -z "$pr_number" ]]; then
+            echo "Nessuna PR associata al run $RUN_ID: niente da pubblicare."
+            exit 0
+          fi
+
+          # --- job del run -----------------------------------------------------
+          jobs_json="$(gh api --paginate "repos/$REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+            --jq '.jobs[]' | jq -s '.')"
+
+          failed_jobs="$(jq -r '
+            map(select((.conclusion // "") | IN("failure", "cancelled", "timed_out", "action_required")))
+            | .[] | [(.id | tostring), .name] | @tsv' <<<"$jobs_json")"
+
+          gate_table="$(jq -r '
+            def dur:
+              if (.started_at and .completed_at) then
+                ((.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601)) as $s
+                | if $s < 0 then "—"
+                  else "\(($s / 60) | floor)m \($s % 60)s"
+                  end
+              else "—" end;
+            def esito:
+              (.conclusion // .status // "sconosciuto") as $c
+              | if $c == "success" then "✅ successo"
+                elif $c == "skipped" then "➖ saltato"
+                elif $c == "cancelled" then "🚫 annullato"
+                elif $c == "timed_out" then "⏱️ timeout"
+                elif $c == "failure" then "❌ fallito"
+                else "⚠️ \($c)" end;
+            .[] | "| \(.name) | \(esito) | \(dur) |"' <<<"$jobs_json")"
+
+          # --- file toccati dalla PR, raggruppati per cartella di primo livello --
+          files_json="$(gh api --paginate "repos/$REPOSITORY/pulls/$pr_number/files?per_page=100" \
+            --jq '.[].filename' | jq -R -s 'split("\n") | map(select(length > 0))')"
+
+          files_section="$(jq -r '
+            def topdir: if (. | contains("/")) then (. | split("/")[0] + "/") else "(radice)" end;
+            group_by(topdir)
+            | map("- **" + (.[0] | topdir) + "** (" + (length | tostring) + ")\n"
+                  + (map("  - `" + . + "`") | join("\n")))
+            | join("\n")' <<<"$files_json")"
+          [[ -n "$files_section" ]] || files_section="- nessun file modificato"
+
+          # --- composizione del commento ---------------------------------------
+          report_file="$(mktemp)"
+          {
+            printf '%s\n' "$marker"
+            echo "## Riassunto CI"
+            echo
+          } > "$report_file"
+
+          if [[ "$RUN_CONCLUSION" == "success" && -z "$failed_jobs" ]]; then
+            {
+              echo "✅ Tutti i gate sono verdi per \`${HEAD_SHA:0:7}\` ([run]($RUN_URL))."
+              echo
+              echo "### File toccati"
+              echo
+              printf '%s\n' "$files_section"
+            } >> "$report_file"
+          else
+            {
+              echo "❌ Esito complessivo: **${RUN_CONCLUSION:-sconosciuto}** per \`${HEAD_SHA:0:7}\` ([run]($RUN_URL))."
+              echo
+              echo "### Gate"
+              echo
+              echo "| Check | Esito | Durata |"
+              echo "| --- | --- | --- |"
+              printf '%s\n' "$gate_table"
+              echo
+            } >> "$report_file"
+
+            if [[ -n "$failed_jobs" ]]; then
+              echo "### Job falliti" >> "$report_file"
+              echo >> "$report_file"
+              while IFS=$'\t' read -r job_id job_name; do
+                [[ -n "$job_id" ]] || continue
+                failed_step="$(jq -r --arg id "$job_id" '
+                  .[] | select((.id | tostring) == $id) | .steps // []
+                  | map(select((.conclusion // "") | IN("failure", "timed_out")))
+                  | first | .name // "(step non identificato)"' <<<"$jobs_json")"
+                echo "#### $job_name" >> "$report_file"
+                echo >> "$report_file"
+                echo "- Step fallito: **$failed_step**" >> "$report_file"
+                echo >> "$report_file"
+                log_file="$(mktemp)"
+                if gh api "repos/$REPOSITORY/actions/jobs/$job_id/logs" > "$log_file" 2>/dev/null; then
+                  excerpt="$(grep -v -E '^[^ ]* *##\[(group|endgroup|debug)\]' "$log_file" \
+                    | sed -E 's/\r$//' \
+                    | grep -v -E '^\s*$' \
+                    | tail -n 40 || true)"
+                else
+                  excerpt=""
+                fi
+                if [[ -n "$excerpt" ]]; then
+                  echo '```text' >> "$report_file"
+                  printf '%s\n' "$excerpt" >> "$report_file"
+                  echo '```' >> "$report_file"
+                else
+                  echo "> Log non disponibile tramite API (può essere scaduto o il job è stato annullato)." >> "$report_file"
+                fi
+                echo >> "$report_file"
+                rm -f "$log_file"
+              done <<< "$failed_jobs"
+            fi
+
+            {
+              echo "### File toccati"
+              echo
+              printf '%s\n' "$files_section"
+            } >> "$report_file"
+          fi
+
+          cat "$report_file" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$HEAD_REPOSITORY" != "$REPOSITORY" ]]; then
+            echo "PR da fork: il commento non può essere pubblicato, il report resta nel job summary."
+            exit 0
+          fi
+
+          # --- upsert del commento ---------------------------------------------
+          comment_id="$(gh api --paginate "repos/$REPOSITORY/issues/$pr_number/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]") | select((.body // "") | contains("<!-- pr-ci-report -->")) | .id' \
+            | tail -n 1)"
+          if [[ -n "$comment_id" ]]; then
+            gh api --method PATCH "repos/$REPOSITORY/issues/comments/$comment_id" -F body=@"$report_file" >/dev/null
+          else
+            gh api --method POST "repos/$REPOSITORY/issues/$pr_number/comments" -F body=@"$report_file" >/dev/null
+          fi
+          rm -f "$report_file"
