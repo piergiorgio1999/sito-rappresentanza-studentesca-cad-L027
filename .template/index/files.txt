@@ -175,6 +175,7 @@
 ./site/campus-3d/index.html
 ./site/campus-3d/ingresso-aldo-moro.js
 ./site/campus-3d/interno-aldo-moro.js
+./site/campus-3d/login.html
 ./site/campus-3d/models/fontanella-glb.json
 ./site/campus-3d/models/fontanelle.json
 ./site/campus-3d/models/magnolia.json
@@ -194,6 +195,7 @@
 ./site/campus-3d/models/tubi-glb.json
 ./site/campus-3d/models/ventilazione-glb.json
 ./site/campus-3d/overrides.js
+./site/campus-3d/overrides.json
 ./site/campus-3d/raccordo-asfalto.js
 ./site/campus-3d/rettorato-facciata.jpg
 ./site/campus-3d/scan/scan-georef.json
@@ -324,8 +326,15 @@
 ./site/functions/api/avvisi.js
 ./site/functions/api/campus-ortho.js
 ./site/functions/api/campus-osm.js
+./site/functions/api/editor-auth.js
+./site/functions/api/editor-auth/logout.js
+./site/functions/api/editor-auth/me.js
 ./site/functions/api/fontanelle.js
 ./site/functions/api/mappa-3d.js
+./site/functions/api/mappa-3d/publish.js
+./site/functions/api/mappa-3d/restore.js
+./site/functions/api/mappa-3d/versions.js
+./site/functions/api/mappa-3d/versions/[id].js
 ./site/icon-192.png
 ./site/icon-512.png
 ./site/icon-maskable-512.png
