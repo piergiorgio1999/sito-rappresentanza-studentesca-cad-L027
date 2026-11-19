@@ -1671,7 +1671,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
         // Le fontanelle 3 e 4 sono quelle che ricadono sui nuovi marciapiedi
         // (coordinate PDF verificate sul lato 0 di CU014): restano nello stesso
         // punto geografico, ma la base si appoggia alla quota superiore del piano.
-        holder.position.set(w.x, (i === 3 || i === 4) ? 0.15 : 0, w.z);
+        // La fontanella 8 cadeva sotto il colonnato di Aldo Moro per l'errore di
+        // registrazione dell'affine (residui fino a 15 m): sta invece al limite
+        // interno del marciapiede, verso la guardiola. Spostamento in metri nel
+        // sistema locale dell'ingresso (u +5,0; v -7,2), convertito in mondo.
+        const dx = i === 8 ? 8.55 : 0, dz = i === 8 ? 1.94 : 0;
+        holder.position.set(w.x + dx, (i === 3 || i === 4) ? 0.15 : 0, w.z + dz);
         holder.rotation.y = (Number(config.rotationDeg) || 0) * Math.PI / 180 + i * 1.3;
         holder.userData.fountain = true;
         holder.traverse((o) => { if (o.isMesh) { o.userData.fountainPart = true; pickables.push(o); } });
@@ -3165,12 +3170,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     {
       const R = '#d8493f', Y = '#f1c420', B = '#6f9fe0';
       const benches = [ // [tipo:decoro, colore, u, v, gradi]: SOLO 0° (parallela alla strada) o 90° (perpendicolare); tutte nella fascia centrale v 27.8-33.2, fuori dalle strisce pedonali (u 44.8-50.4, v < 28.8) e dallo spazio del banchetto (u 37.8-44.6)
-        ['red:fiore', R, 37.3, 28.4, 0], ['red:foro', R, 39.6, 28.4, 0], // fila di due, testa a testa, dietro e a lato del banchetto (lato Chimica)
-        ['blue:fiore', B, 46.2, 29.7, 0], ['yellow:foro', Y, 47.6, 30.7, 90], // L
-        ['yellow:fiore', Y, 23.4, 32.6, 0], ['blue:liscia', B, 22.2, 31.4, 90], ['red:liscia', R, 24.6, 31.4, 90], // U
+        ['red:fiore', R, 37.16, 28.4, 0], ['red:foro', R, 39.74, 28.4, 0], // fila di due, testa a testa, dietro e a lato del banchetto (lato Chimica)
+        ['blue:fiore', B, 46.2, 29.7, 0], ['yellow:foro', Y, 47.83, 30.7, 90], // L
+        ['yellow:fiore', Y, 23.4, 32.6, 0], ['blue:liscia', B, 22.2, 30.95, 90], ['red:liscia', R, 24.6, 30.95, 90], // U
         ['yellow:fiore', Y, 26.8, 29.4, 0], ['blue:liscia', B, 29.1, 29.4, 90],
         ['red:fiore', R, 31.7, 32.0, 0], ['yellow:liscia', Y, 34.0, 32.0, 90],
-        ['red:fiore', R, 57.0, 31.2, 0], ['yellow:foro', Y, 59.3, 31.2, 0], // fila di due
+        ['red:fiore', R, 56.86, 31.2, 0], ['yellow:foro', Y, 59.44, 31.2, 0], // fila di due
         ['red:fiore', R, 52.0, 29.4, 0], ['blue:liscia', B, 54.3, 29.4, 90],
         ['yellow:fiore', Y, 62.0, 30.8, 0], ['red:liscia', R, 64.3, 30.8, 90],
         ['blue:fiore', B, 68.5, 29.4, 0], ['yellow:liscia', Y, 71.0, 29.4, 90],
@@ -4509,7 +4514,6 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       for (let i = 0; i < 20; i += 1) { let x = hash01(i, 101) * w, y = hash01(i, 102) * h; ctx.beginPath(); ctx.moveTo(x, y); for (let k = 0; k < 14; k += 1) { x += (hash01(i * 20 + k, 103) - 0.35) * 22; y += (hash01(i * 20 + k, 104) - 0.5) * 16; ctx.lineTo(x, y); } ctx.stroke(); }
       const paint = (fn, col) => { ctx.fillStyle = col; fn(); };
       paint(() => { for (let k = 0; k < 9; k += 1) { ctx.beginPath(); ctx.moveTo(X(60 + k * 0.9), Y(23.3)); ctx.lineTo(X(61.3 + k * 0.9), Y(23.3)); ctx.lineTo(X(62.1 + k * 0.9), Y(21.2)); ctx.lineTo(X(60.8 + k * 0.9), Y(21.2)); ctx.fill(); } }, 'rgba(226,190,52,.85)'); // campitura gialla a righe oblique
-      paint(() => { for (let k = 0; k < 8; k += 1) ctx.fillRect(X(44.8 + k * 0.78), Y(25.6), 0.4 * PX, 3.2 * PX); }, 'rgba(232,232,226,.8)'); // strisce di attraversamento in asse al vialetto
       for (let i = 0; i < 26000; i += 1) { ctx.fillStyle = `rgba(${hash01(i, 110) > 0.5 ? '88,89,91' : '70,71,73'},${0.35 + 0.5 * hash01(i, 105)})`; ctx.fillRect(hash01(i, 106) * w, hash01(i, 107) * h, 1 + 3 * hash01(i, 108), 1 + 2 * hash01(i, 109)); } // vernice consumata
     }, 1, 1, true);
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.encoding = THREE.sRGBEncoding;
@@ -4524,7 +4528,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     g.add(m);
     return g;
   }
-  const BENCH = { L: 2.2, Wb: 0.62, Wt: 0.46, Hh: 0.45 };
+  const BENCH = { L: 2.53, Wb: 0.71, Wt: 0.53, Hh: 0.52 }; // blocchi di cemento, leggermente più grandi del primo giro (+15%)
   let benchGeo = null;
   const benchTex = new Map();
   function benchTopTexture(kind) {
@@ -5756,10 +5760,34 @@ void main() {
       const du = ((x - a0[0]) * ux + (z - a0[1]) * uz) / Math.hypot(ux, uz), dv = ((x - a0[0]) * vx + (z - a0[1]) * vz) / Math.hypot(vx, vz);
       return du > -pad && du < Math.hypot(ux, uz) + pad && dv > -pad && dv < Math.hypot(vx, vz) + pad;
     };
+    // piazzale dell'ingresso di Piazzale Aldo Moro: le aiuole le disegna ingresso-aldo-moro.js, nessun albero OSM sopra
+    const ING = { ref: [12.5122, 41.9021], c: [10.005, 18.489], a: [0.37442, -0.92726], n: [-0.92726, -0.37442] };
+    let ingFrame = null;
+    try {
+      const mLon = 111320 * Math.cos(ING.ref[1] * Math.PI / 180), mLat = 111320;
+      const at = (de, dn) => { const w = project([ING.ref[0] + (ING.c[0] + de) / mLon, ING.ref[1] + (ING.c[1] + dn) / mLat]); return [w.x, -w.n]; };
+      const o = at(0, 0), pa = at(ING.a[0], ING.a[1]), pn = at(ING.n[0], ING.n[1]);
+      ingFrame = { o, ea: [pa[0] - o[0], pa[1] - o[1]], en: [pn[0] - o[0], pn[1] - o[1]] };
+    } catch (_) { /* senza planimetria restano tutti */ }
+    const inForecourt = (x, z) => {
+      if (!ingFrame) return false;
+      const dx = x - ingFrame.o[0], dz = z - ingFrame.o[1];
+      const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
+      return u > -46 && u < 46 && v > -82 && v < 36;
+    };
+    // asfalto di raccordo verso lo stradone e la Minerva (raccordo-asfalto.js): stesso
+    // riferimento del piazzale, riquadri [u0, u1, v0, v1]; nemmeno lì crescono alberi OSM
+    const RACCORDO = [[-46, 46, -98, -74], [-46, -22, -156, -98], [22, 46, -156, -98], [-42, 42, -188, -156], [-42, -19, -206, -188], [26, 42, -206, -188]];
+    const inRaccordo = (x, z) => {
+      if (!ingFrame) return false;
+      const dx = x - ingFrame.o[0], dz = z - ingFrame.o[1];
+      const u = dx * ingFrame.ea[0] + dz * ingFrame.ea[1], v = dx * ingFrame.en[0] + dz * ingFrame.en[1];
+      return RACCORDO.some(([u0, u1, v0, v1]) => u > u0 && u < u1 && v > v0 && v < v1);
+    };
     const list = treeData.filter((t, idx) => {
       if (t.rimosso || !insideMap(t.p)) return false;
       const w = project(t.p), x = w.x, z = -w.n;
-      if (onAsphalt(x, z, 1.5)) return false;
+      if (onAsphalt(x, z, 1.5) || inForecourt(x, z) || inRaccordo(x, z)) return false;
       if (!near.length || near.some(([nx, nz, r]) => Math.hypot(x - nx, z - nz) <= r)) return true;
       return rnd(idx, 17) < 0.3;
     });

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#822433">
+<title>Accesso · Editor della mappa 3D</title>
+<style>
+  :root{--red:#822433;--red-dark:#641b27;--ink:#211d1d;--muted:#6f6866;--line:#e6dfdc;--paper:#fff;--soft:#f8f5f3}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);background:#f1ece9;font:15px/1.5 "Palatino Linotype",Palatino,Times,serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  a{color:var(--red)}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 22px 20px;width:100%;max-width:380px}
+  .eyebrow{font:700 10px/1.2 Arial,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--red)}
+  h1{font:600 23px/1.15 "Palatino Linotype",Palatino,serif;margin:8px 0 6px}
+  p.note{margin:0 0 14px;font:12px/1.5 Arial,sans-serif;color:var(--muted)}
+  label{display:block;font:11px Arial,sans-serif;color:var(--muted);margin:11px 0 3px}
+  input{width:100%;padding:9px 10px;border:1px solid #d6cfcc;border-radius:7px;background:#fff;color:var(--ink);font:14px/1.4 Arial,sans-serif}
+  .btn{margin-top:15px;width:100%;min-height:38px;padding:9px 13px;border:1px solid var(--red);border-radius:7px;background:var(--red);color:#fff;font:700 11px Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+  .btn:hover{background:var(--red-dark)}
+  .btn[disabled]{opacity:.6;cursor:progress}
+  .msg{margin:13px 0 0;padding:9px 11px;border-radius:7px;font:12px/1.45 Arial,sans-serif;background:var(--soft);border:1px solid var(--line);color:#4b4441;white-space:pre-wrap;overflow-wrap:anywhere}
+  .msg.err{background:#fbf2f3;border-color:#dcb3b9;color:#8b1e2e}
+  .msg.ok{background:#f3f7f1;border-color:#c3d6bd;color:#2f5a28}
+  .msg:empty{display:none}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="eyebrow">Sapienza · Rappresentanza Scienze Chimiche</div>
+  <h1>Accesso all'editor</h1>
+  <p class="note">L'editor dei parametri della mappa 3D è riservato. Inserisci nome utente e password.</p>
+  <form id="form" autocomplete="off">
+    <label for="user">Nome utente</label>
+    <input id="user" name="user" type="text" autocomplete="username" spellcheck="false" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button id="go" class="btn" type="submit">Entra</button>
+  </form>
+  <p id="msg" class="msg" role="status" aria-live="polite"></p>
+</main>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function say(text, kind) {
+    $('msg').textContent = text || '';
+    $('msg').className = 'msg' + (kind ? ' ' + kind : '');
+  }
+  /* Se la sessione c'è già, si va dritti all'editor. */
+  fetch('/api/editor-auth/me', { cache: 'no-store', credentials: 'same-origin' })
+    .then(function (r) { if (r.ok) location.replace('editor.html'); })
+    .catch(function () { /* nessuna sessione: resta il form */ });
+
+  $('form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var user = $('user').value.trim(), password = $('password').value;
+    if (!user || !password) { say('Inserisci nome utente e password.', 'err'); return; }
+    $('go').disabled = true;
+    say('Verifica in corso…');
+    fetch('/api/editor-auth', {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ user: user, password: password })
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (d) {
+        if (r.ok) return d;
+        if (r.status === 503) throw new Error((d && d.error) || 'login non configurato');
+        if (r.status === 401) throw new Error('Nome utente o password non validi.');
+        throw new Error('Errore ' + r.status + ((d && d.error) ? ': ' + d.error : ''));
+      });
+    }).then(function () {
+      $('password').value = '';
+      say('Accesso riuscito.', 'ok');
+      location.replace('editor.html');
+    }).catch(function (e) {
+      $('go').disabled = false;
+      $('password').value = '';
+      say(e.message, 'err');
+    });
+  });
+})();
+</script>
+</body>
+</html>

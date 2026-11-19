@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#822433">
+<title>Editor parametri · Mappa 3D del campus</title>
+<style>
+  :root{--red:#822433;--red-dark:#641b27;--ink:#211d1d;--muted:#6f6866;--line:#e6dfdc;--paper:#fff;--soft:#f8f5f3}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);background:#f1ece9;font:15px/1.5 "Palatino Linotype",Palatino,Times,serif}
+  button,input,textarea,select{font:inherit}
+  button{cursor:pointer}
+  a{color:var(--red)}
+  button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+  header{padding:18px 22px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .eyebrow{font:700 10px/1.2 Arial,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--red)}
+  h1{font:600 25px/1.1 "Palatino Linotype",Palatino,serif;margin:7px 0 4px}
+  header p{margin:0;font:13px/1.45 Arial,sans-serif;color:#605957;max-width:70ch}
+  .who{float:right;font:11px Arial,sans-serif;color:var(--muted);text-align:right}
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px 22px 30px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  section{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:15px 16px}
+  h2{font:600 17px/1.2 "Palatino Linotype",Palatino,serif;margin:0 0 10px}
+  h3{font:700 10px Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#766e6a;margin:16px 0 7px}
+  label{display:block;font:11px Arial,sans-serif;color:var(--muted);margin-bottom:3px}
+  input[type=password],input[type=number],input[type=text],textarea{width:100%;padding:8px 10px;border:1px solid #d6cfcc;border-radius:7px;background:#fff;color:var(--ink);font:13px/1.4 "SFMono-Regular",Consolas,monospace}
+  textarea{min-height:330px;resize:vertical;white-space:pre}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0 0}
+  .btn{min-height:36px;padding:8px 13px;border:1px solid #d8d0cd;border-radius:7px;background:#fff;color:#413a38;font:700 11px Arial,sans-serif}
+  .btn:hover{border-color:var(--red);color:var(--red)}
+  .btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.primary:hover{background:var(--red-dark)}
+  .btn.small{min-height:28px;padding:4px 9px;font-size:10px}
+  .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+  .fields .hint{font:10px Arial,sans-serif;color:#9a918d}
+  .msg{margin:11px 0 0;padding:9px 11px;border-radius:7px;font:12px/1.45 Arial,sans-serif;background:var(--soft);border:1px solid var(--line);color:#4b4441;white-space:pre-wrap;overflow-wrap:anywhere}
+  .msg.err{background:#fbf2f3;border-color:#dcb3b9;color:#8b1e2e}
+  .msg.ok{background:#f3f7f1;border-color:#c3d6bd;color:#2f5a28}
+  .note{font:12px/1.5 Arial,sans-serif;color:var(--muted)}
+  iframe{width:100%;height:62vh;min-height:340px;border:1px solid var(--line);border-radius:8px;background:#e9e4df}
+  table.versions{width:100%;border-collapse:collapse;font:12px/1.4 Arial,sans-serif}
+  table.versions th{text-align:left;font:700 10px Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#766e6a;border-bottom:1px solid var(--line);padding:5px 6px}
+  table.versions td{border-bottom:1px solid #f0eae7;padding:5px 6px;vertical-align:middle}
+  table.versions tr:first-child td{background:#fbf8f6}
+  table.versions td.acts{white-space:nowrap;text-align:right}
+  .boot{padding:26px 22px;font:13px Arial,sans-serif;color:var(--muted)}
+</style>
+</head>
+<body>
+<!-- Scheletro vuoto: l'interfaccia viene costruita solo dopo che
+     GET /api/editor-auth/me ha confermato la sessione lato server.
+     Senza sessione la pagina rimanda a login.html senza mostrare nulla. -->
+<div id="boot" class="boot">Verifica della sessione…</div>
+<div id="app" hidden></div>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/mappa-3d', KEY = 'mappa3d-token', NAME_KEY = 'mappa3d-editor';
+  var $ = function (id) { return document.getElementById(id); };
+
+  fetch('/api/editor-auth/me', { cache: 'no-store', credentials: 'same-origin' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('nessuna sessione');
+      return r.json();
+    })
+    .then(function (d) { start((d && d.user) || ''); })
+    .catch(function () { location.replace('login.html'); });
+
+  function start(user) {
+    $('boot').remove();
+    render(user);
+    $('app').hidden = false;
+    boot();
+  }
+
+  function render(user) {
+    $('app').innerHTML = [
+      '<header>',
+      '  <div class="who">Sessione di <strong id="sessUser"></strong><br><button id="logout" class="btn small" type="button">Esci</button></div>',
+      '  <div class="eyebrow">Sapienza · Rappresentanza Scienze Chimiche</div>',
+      '  <h1>Editor parametri · Mappa 3D del campus</h1>',
+      '  <p>Modifica i parametri geometrici della scena 3D senza passare da git. I valori finiscono nell\'endpoint <code>/api/mappa-3d</code> e il sito li legge al caricamento. L\'elenco completo dei parametri e il loro significato sono in <a href="MAPPA-3D-API.md">MAPPA-3D-API.md</a>.</p>',
+      '</header>',
+      '<main>',
+      '  <section aria-labelledby="h-param">',
+      '    <h2 id="h-param">Parametri</h2>',
+      '    <label for="editor">Il tuo nome (firma il salvataggio nello storico)</label>',
+      '    <input id="editor" type="text" autocomplete="off" spellcheck="false" placeholder="es. Piergiorgio" maxlength="40">',
+      '    <label for="token" style="margin-top:10px">Token di scrittura (facoltativo con la sessione attiva)</label>',
+      '    <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token — serve solo fuori dal browser">',
+      '    <p class="note">Con la sessione aperta le scritture passano dal cookie: il token serve a script e modelli esterni. Se lo inserisci resta in <code>localStorage</code> di questo browser e non viene mai mostrato in chiaro né messo nell\'indirizzo della pagina.</p>',
+      '    <div class="row">',
+      '      <button id="load" class="btn" type="button">Carica</button>',
+      '      <button id="save" class="btn primary" type="button">Salva</button>',
+      '      <button id="reset" class="btn" type="button">Azzera tutto</button>',
+      '      <button id="publish" class="btn" type="button">Pubblica su git</button>',
+      '      <button id="forget" class="btn" type="button">Dimentica token</button>',
+      '    </div>',
+      '    <p id="msg" class="msg" role="status" aria-live="polite">Premi «Carica» per leggere i parametri attuali.</p>',
+      '    <h3>JSON</h3>',
+      '    <label for="json">Oggetto <code>overrides</code>: una chiave per modulo (<code>ingresso</code>, <code>interno</code>)</label>',
+      '    <textarea id="json" spellcheck="false" aria-describedby="msg">{}</textarea>',
+      '    <div class="row"><button id="fromJson" class="btn" type="button">Aggiorna i campi dal JSON</button></div>',
+      '    <h3>Campi</h3>',
+      '    <p class="note">Generati dai valori presenti nel JSON. Modificali e premi «Aggiorna il JSON dai campi», poi «Salva». Gli array (per esempio <code>RIBBONS</code>, <code>BLOCKS</code>, <code>DISC</code>) si scrivono come numeri separati da virgola.</p>',
+      '    <div id="fields" class="fields"></div>',
+      '    <div class="row"><button id="toJson" class="btn" type="button">Aggiorna il JSON dai campi</button></div>',
+      '  </section>',
+      '  <section aria-labelledby="h-prev">',
+      '    <h2 id="h-prev">Anteprima</h2>',
+      '    <div class="row" style="margin:0 0 10px"><button id="reloadPreview" class="btn" type="button">Ricarica anteprima</button></div>',
+      '    <iframe id="preview" title="Anteprima della mappa 3D" src="/campus-3d/?standalone=1"></iframe>',
+      '    <p class="note">L\'anteprima legge l\'API come il sito pubblico: ricaricala dopo aver salvato.</p>',
+      '    <h2 id="h-vers" style="margin-top:18px">Storico dei salvataggi</h2>',
+      '    <div class="row" style="margin:0 0 10px"><button id="reloadVersions" class="btn" type="button">Aggiorna elenco</button></div>',
+      '    <p id="vmsg" class="msg" role="status" aria-live="polite">Caricamento dello storico…</p>',
+      '    <div id="versions"></div>',
+      '    <p class="note">«Vedi» carica quella versione nella casella JSON senza salvarla. «Ripristina» la riscrive come nuova versione in cima: nulla viene cancellato.</p>',
+      '  </section>',
+      '</main>'
+    ].join('\n');
+    $('sessUser').textContent = user || 'utente';
+  }
+
+  function boot() {
+    var msg = $('msg'), vmsg = $('vmsg');
+    function say(text, kind) {
+      msg.textContent = text;
+      msg.className = 'msg' + (kind ? ' ' + kind : '');
+    }
+    function vsay(text, kind) {
+      vmsg.textContent = text || '';
+      vmsg.className = 'msg' + (kind ? ' ' + kind : '');
+      vmsg.style.display = text ? '' : 'none';
+    }
+    function token() { return $('token').value.trim(); }
+    function editorName() { return $('editor').value.trim(); }
+    try { $('token').value = localStorage.getItem(KEY) || ''; } catch (e) { /* storage non disponibile */ }
+    try { $('editor').value = localStorage.getItem(NAME_KEY) || ''; } catch (e) { /* ignora */ }
+    $('token').addEventListener('change', function () {
+      try { localStorage.setItem(KEY, token()); } catch (e) { /* ignora */ }
+    });
+    $('editor').addEventListener('change', function () {
+      try { localStorage.setItem(NAME_KEY, editorName()); } catch (e) { /* ignora */ }
+    });
+    $('forget').addEventListener('click', function () {
+      $('token').value = '';
+      try { localStorage.removeItem(KEY); } catch (e) { /* ignora */ }
+      say('Token dimenticato in questo browser.');
+    });
+    $('logout').addEventListener('click', function () {
+      fetch('/api/editor-auth/logout', { method: 'POST', cache: 'no-store', credentials: 'same-origin' })
+        .then(function () { location.replace('login.html'); })
+        .catch(function () { location.replace('login.html'); });
+    });
+
+    /* Intestazioni di scrittura: il cookie viaggia da solo, il Bearer solo se c'è. */
+    function writeHeaders() {
+      var h = { 'content-type': 'application/json' };
+      if (token()) h.authorization = 'Bearer ' + token();
+      if (editorName()) h['x-editor'] = editorName();
+      return h;
+    }
+
+    function parseJson() {
+      var o = JSON.parse($('json').value || '{}');
+      if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('il JSON deve essere un oggetto');
+      return o;
+    }
+    function setJson(o) { $('json').value = JSON.stringify(o, null, 2); buildFields(o); }
+
+    function buildFields(o) {
+      var host = $('fields');
+      host.textContent = '';
+      var mods = Object.keys(o);
+      if (!mods.length) {
+        var p = document.createElement('p');
+        p.className = 'note';
+        p.textContent = 'Nessun parametro impostato: la scena usa i valori di default. Aggiungi le chiavi nel JSON per vederle qui.';
+        host.appendChild(p);
+        return;
+      }
+      mods.forEach(function (mod) {
+        var params = o[mod];
+        if (!params || typeof params !== 'object' || Array.isArray(params)) return;
+        Object.keys(params).forEach(function (name) {
+          var v = params[name], wrap = document.createElement('div');
+          var lab = document.createElement('label');
+          lab.textContent = mod + ' · ' + name;
+          lab.setAttribute('for', 'f-' + mod + '-' + name);
+          var inp = document.createElement('input');
+          inp.id = 'f-' + mod + '-' + name;
+          inp.dataset.mod = mod;
+          inp.dataset.name = name;
+          if (typeof v === 'number') { inp.type = 'number'; inp.step = 'any'; inp.value = String(v); inp.dataset.kind = 'number'; }
+          else if (Array.isArray(v)) { inp.type = 'text'; inp.value = v.join(', '); inp.dataset.kind = 'array'; }
+          else if (typeof v === 'boolean') { inp.type = 'text'; inp.value = String(v); inp.dataset.kind = 'boolean'; }
+          else { inp.type = 'text'; inp.value = String(v); inp.dataset.kind = 'string'; }
+          wrap.appendChild(lab);
+          wrap.appendChild(inp);
+          if (inp.dataset.kind === 'array') {
+            var h = document.createElement('span');
+            h.className = 'hint';
+            h.textContent = 'numeri separati da virgola';
+            wrap.appendChild(h);
+          }
+          host.appendChild(wrap);
+        });
+      });
+    }
+
+    function fieldsToJson() {
+      var o = parseJson();
+      var inputs = $('fields').querySelectorAll('input[data-mod]');
+      for (var i = 0; i < inputs.length; i++) {
+        var inp = inputs[i], mod = inp.dataset.mod, name = inp.dataset.name, raw = inp.value.trim(), v;
+        if (inp.dataset.kind === 'number') {
+          v = Number(raw);
+          if (raw === '' || !isFinite(v)) throw new Error(mod + ' · ' + name + ': numero non valido');
+        } else if (inp.dataset.kind === 'array') {
+          v = raw === '' ? [] : raw.split(',').map(function (s) {
+            var n = Number(s.trim());
+            if (!isFinite(n)) throw new Error(mod + ' · ' + name + ': «' + s.trim() + '» non è un numero');
+            return n;
+          });
+        } else if (inp.dataset.kind === 'boolean') {
+          v = raw === 'true';
+        } else { v = raw; }
+        if (!o[mod] || typeof o[mod] !== 'object') o[mod] = {};
+        o[mod][name] = v;
+      }
+      return o;
+    }
+
+    function apiError(r, d) {
+      var base = 'Errore ' + r.status + (r.statusText ? ' ' + r.statusText : '');
+      if (r.status === 401) return base + ' — credenziali non accettate dall’API: rifai il login o controlla il token.';
+      return base + (d && d.error ? ': ' + d.error : '');
+    }
+    function withJson(r) {
+      return r.json().catch(function () { return null; }).then(function (d) {
+        if (!r.ok) throw new Error(apiError(r, d));
+        return d;
+      });
+    }
+    function stamp(sec) {
+      if (!sec) return 'mai salvato';
+      return new Date(sec * 1000).toLocaleString('it-IT');
+    }
+    function size(bytes) {
+      if (!bytes) return '0 B';
+      return bytes < 1024 ? bytes + ' B' : (bytes / 1024).toFixed(1) + ' kB';
+    }
+
+    $('load').addEventListener('click', function () {
+      say('Caricamento…');
+      fetch(API, { cache: 'no-store', credentials: 'same-origin' }).then(withJson).then(function (d) {
+        setJson((d && d.overrides) || {});
+        say('Caricato. Ultimo salvataggio: ' + stamp(d && d.updated_at) + '.', 'ok');
+      }).catch(function (e) { say('Caricamento non riuscito. ' + e.message, 'err'); });
+    });
+
+    function put(overrides, what) {
+      say('Salvataggio…');
+      fetch(API, {
+        method: 'PUT',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: writeHeaders(),
+        body: JSON.stringify({ overrides: overrides })
+      }).then(withJson).then(function (d) {
+        setJson((d && d.overrides) || {});
+        say(what + ' Ultimo salvataggio: ' + stamp(d && d.updated_at) + '. Ricarica l’anteprima per vedere l’effetto.', 'ok');
+        loadVersions();
+      }).catch(function (e) { say('Salvataggio non riuscito. ' + e.message, 'err'); });
+    }
+
+    $('save').addEventListener('click', function () {
+      var o;
+      try { o = parseJson(); } catch (e) { say('JSON non valido: ' + e.message, 'err'); return; }
+      put(o, 'Salvato.');
+    });
+    $('reset').addEventListener('click', function () {
+      if (!window.confirm('Azzerare tutti i parametri? La scena torna ai valori di default.')) return;
+      put({}, 'Parametri azzerati.');
+    });
+    $('toJson').addEventListener('click', function () {
+      try { setJson(fieldsToJson()); say('JSON aggiornato dai campi. Premi «Salva» per pubblicare.'); }
+      catch (e) { say(e.message, 'err'); }
+    });
+    $('fromJson').addEventListener('click', function () {
+      try { buildFields(parseJson()); say('Campi rigenerati dal JSON.'); }
+      catch (e) { say('JSON non valido: ' + e.message, 'err'); }
+    });
+    $('reloadPreview').addEventListener('click', function () {
+      var f = $('preview');
+      f.src = '/campus-3d/?standalone=1&t=' + Date.now();
+    });
+
+    /* ---- Storico ---- */
+    function showVersion(id) {
+      vsay('Lettura della versione ' + id + '…');
+      fetch(API + '/versions/' + id, { cache: 'no-store', credentials: 'same-origin' })
+        .then(withJson)
+        .then(function (d) {
+          setJson((d && d.overrides) || {});
+          vsay('Versione ' + id + ' caricata nella casella JSON: non è ancora salvata. Premi «Salva» per renderla attuale.', 'ok');
+        })
+        .catch(function (e) { vsay('Lettura non riuscita. ' + e.message, 'err'); });
+    }
+    function restoreVersion(id) {
+      if (!window.confirm('Ripristinare la versione ' + id + '? Diventa la versione attuale, aggiunta in cima allo storico.')) return;
+      vsay('Ripristino della versione ' + id + '…');
+      fetch(API + '/restore', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: writeHeaders(),
+        body: JSON.stringify({ id: id })
+      }).then(withJson).then(function (d) {
+        setJson((d && d.overrides) || {});
+        vsay('Versione ' + id + ' ripristinata come versione ' + (d && d.id) + '.', 'ok');
+        say('Parametri ripristinati dalla versione ' + id + '. Ricarica l’anteprima per vedere l’effetto.', 'ok');
+        loadVersions();
+      }).catch(function (e) { vsay('Ripristino non riuscito. ' + e.message, 'err'); });
+    }
+
+    function drawVersions(list) {
+      var host = $('versions');
+      host.textContent = '';
+      if (!list.length) {
+        var p = document.createElement('p');
+        p.className = 'note';
+        p.textContent = 'Nessun salvataggio ancora registrato.';
+        host.appendChild(p);
+        return;
+      }
+      var tab = document.createElement('table');
+      tab.className = 'versions';
+      var head = document.createElement('tr');
+      ['#', 'Data', 'Autore', 'Dim.', ''].forEach(function (t) {
+        var th = document.createElement('th');
+        th.textContent = t;
+        head.appendChild(th);
+      });
+      tab.appendChild(head);
+      list.forEach(function (v) {
+        var tr = document.createElement('tr');
+        [String(v.id), stamp(v.created_at), v.author || 'sconosciuto', size(v.bytes)].forEach(function (t) {
+          var td = document.createElement('td');
+          td.textContent = t;
+          tr.appendChild(td);
+        });
+        var acts = document.createElement('td');
+        acts.className = 'acts';
+        var see = document.createElement('button');
+        see.type = 'button';
+        see.className = 'btn small';
+        see.textContent = 'Vedi';
+        see.addEventListener('click', function () { showVersion(v.id); });
+        var res = document.createElement('button');
+        res.type = 'button';
+        res.className = 'btn small';
+        res.textContent = 'Ripristina';
+        res.addEventListener('click', function () { restoreVersion(v.id); });
+        acts.appendChild(see);
+        acts.appendChild(document.createTextNode(' '));
+        acts.appendChild(res);
+        tr.appendChild(acts);
+        tab.appendChild(tr);
+      });
+      host.appendChild(tab);
+    }
+
+    function loadVersions() {
+      vsay('Caricamento dello storico…');
+      fetch(API + '/versions', { cache: 'no-store', credentials: 'same-origin' })
+        .then(withJson)
+        .then(function (d) {
+          drawVersions((d && d.versions) || []);
+          vsay('');
+        })
+        .catch(function (e) {
+          $('versions').textContent = '';
+          vsay('Storico non disponibile: ' + e.message + '\nIl resto dell’editor continua a funzionare; riprova con «Aggiorna elenco».', 'err');
+        });
+    }
+    $('reloadVersions').addEventListener('click', loadVersions);
+
+    /* ---- Pubblicazione su git ---- */
+    $('publish').addEventListener('click', function () {
+      if (!window.confirm('Pubblicare su git?\n\nViene fatto un commit su main che scrive il solo file site/campus-3d/overrides.json con l’ultima versione salvata. Confermi?')) return;
+      say('Pubblicazione su git…');
+      fetch(API + '/publish', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: writeHeaders(),
+        body: '{}'
+      }).then(withJson).then(function (d) {
+        say('Pubblicato su git: ' + (d && d.path) + ' (' + size(d && d.bytes) + ') sul ramo ' + (d && d.branch) + '.', 'ok');
+        if (d && d.commit_url) {
+          var a = document.createElement('a');
+          a.href = d.commit_url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = 'Apri il commit su GitHub';
+          msg.appendChild(document.createTextNode(' '));
+          msg.appendChild(a);
+        }
+      }).catch(function (e) { say('Pubblicazione non riuscita. ' + e.message, 'err'); });
+    });
+
+    buildFields({});
+    loadVersions();
+  }
+})();
+</script>
+</body>
+</html>
