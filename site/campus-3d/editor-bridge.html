@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Collegamento editor · Orari Chimica</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f1ece9;color:#211d1d;font:16px/1.45 Arial,sans-serif}
+    main{width:min(560px,calc(100% - 40px));padding:24px;border:1px solid #e6dfdc;border-radius:14px;background:#fff;box-shadow:0 14px 40px #32201b18}
+    h1{margin:0 0 8px;font:600 23px/1.2 Georgia,serif}p{margin:8px 0;color:#5d5551}button,a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;margin-top:12px;padding:0 14px;border:0;border-radius:8px;background:#822433;color:#fff;font:700 14px Arial,sans-serif;text-decoration:none;cursor:pointer}
+    #status{padding:10px 12px;border-radius:8px;background:#f7f3f1;overflow-wrap:anywhere}#status.error{background:#fbebed;color:#7d1f2b}small{display:block;margin-top:12px;color:#726966}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Editor Campus collegato</h1>
+    <p id="status" role="status" aria-live="polite">Verifico la sessione riservata…</p>
+    <a id="login" href="login.html?next=editor-bridge.html" hidden>Accedi all’editor Orari Chimica</a>
+    <small>Questa finestra trasferisce le modifiche solo all’editor Campus aperto da te. Il login e la pubblicazione restano su Orari Chimica.</small>
+  </main>
+<script>
+(() => {
+  'use strict';
+  const SITE_ORIGIN = 'https://campus-sapienza-3d.pi-er-gi.chatgpt.site';
+  const status = document.getElementById('status'), login = document.getElementById('login');
+  const say = (text, error) => { status.textContent = text; status.classList.toggle('error', Boolean(error)); };
+  const reply = (type, data = {}) => { if (window.opener && !window.opener.closed) window.opener.postMessage({ type, ...data }, SITE_ORIGIN); };
+  const validEdits = (edits) => {
+    if (!edits || typeof edits !== 'object' || Array.isArray(edits)) return false;
+    const keys = Object.keys(edits);
+    return keys.length > 0 && keys.length <= 500 && keys.every((key) => /^[A-Za-z0-9_.~:@+-]{1,160}$/.test(key) && edits[key] && typeof edits[key] === 'object' && !Array.isArray(edits[key]));
+  };
+  async function publish(edits, requestId) {
+    const currentResponse = await fetch('/api/mappa-3d', { cache: 'no-store', credentials: 'same-origin' });
+    const current = await currentResponse.json().catch(() => ({}));
+    if (!currentResponse.ok) throw new Error(current.error || `lettura API (${currentResponse.status})`);
+    const put = await fetch('/api/mappa-3d', {
+      method: 'PUT', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'content-type': 'application/json', 'x-editor': 'Campus Sapienza 3D' },
+      body: JSON.stringify({ overrides: current.overrides || {}, editor_edits: edits })
+    });
+    const saved = await put.json().catch(() => ({}));
+    if (!put.ok) throw new Error(saved.error || `salvataggio (${put.status})`);
+    const deployed = await fetch('/api/mappa-3d/publish', { method: 'POST', credentials: 'same-origin', cache: 'no-store' });
+    const result = await deployed.json().catch(() => ({}));
+    if (!deployed.ok || !result.ok) throw new Error(result.error || `pubblicazione (${deployed.status})`);
+    reply('orari-editor-result', { request_id: requestId, ok: true, count: Object.keys(edits).length, commit_url: result.commit_url });
+    say(`Pubblicate ${Object.keys(edits).length} modifiche. Commit ${String(result.commit_sha || '').slice(0, 8)}.`);
+  }
+  fetch('/api/editor-auth/me', { cache: 'no-store', credentials: 'same-origin' }).then(async (response) => {
+    if (!response.ok) throw new Error('login richiesto');
+    const user = await response.json().catch(() => ({}));
+    say(`Sessione verificata${user.user ? ` per ${user.user}` : ''}. Lascia aperta questa finestra mentre usi Applica.`);
+    reply('orari-editor-connected');
+    window.addEventListener('message', async (event) => {
+      if (event.origin !== SITE_ORIGIN || event.source !== window.opener || !event.data || event.data.type !== 'campus-apply-edits') return;
+      const { request_id: requestId, editor_edits: edits } = event.data;
+      if (typeof requestId !== 'string' || requestId.length > 80 || !validEdits(edits)) {
+        reply('orari-editor-result', { request_id: requestId, ok: false, error: 'formato delle modifiche non valido' }); return;
+      }
+      say(`Salvo e pubblico ${Object.keys(edits).length} modifiche…`);
+      try { await publish(edits, requestId); }
+      catch (error) { const message = String(error && error.message || 'errore'); say(message, true); reply('orari-editor-result', { request_id: requestId, ok: false, error: message }); }
+    });
+  }).catch(() => {
+    say('Accedi per autorizzare il trasferimento delle modifiche.', true);
+    login.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

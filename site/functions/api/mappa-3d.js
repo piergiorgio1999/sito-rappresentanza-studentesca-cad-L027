@@ -1,0 +1,218 @@
+/* /api/mappa-3d — parametri della mappa 3D del campus, modificabili senza push su git
+   GET  /api/mappa-3d  → pubblico: {"overrides":{...},"updated_at":N} (N = epoch in secondi, 0 se vuoto)
+                         restituisce sempre l'ULTIMA versione salvata
+   PUT  /api/mappa-3d  → richiede `Authorization: Bearer <ADMIN_SECRET>`; corpo {"overrides":{...}}
+                         header facoltativo `X-Editor: <nome>` per firmare la versione
+   OPTIONS             → preflight CORS (serve all'editor e a un modello esterno su altro dominio)
+   Sotto-endpoint (file separati in functions/api/mappa-3d/):
+     GET  /api/mappa-3d/versions       → elenco delle ultime 50 versioni (senza corpo JSON)
+     GET  /api/mappa-3d/versions/<id>  → una versione intera
+     POST /api/mappa-3d/restore        → ripristina una versione (append), Bearer
+     POST /api/mappa-3d/publish        → scrive site/campus-3d/overrides.json sul repo, Bearer
+   Lo storico è APPEND-ONLY: ogni salvataggio è una riga nuova, niente viene sovrascritto.
+   Binding richiesti (wrangler.toml / dashboard Pages):
+     DB            → database D1 (tabelle create in automatico)
+     ADMIN_SECRET  → variabile segreta (stringa lunga a caso), la stessa usata dagli altri endpoint admin
+     GITHUB_TOKEN  → solo per /publish: token GitHub con permesso di scrittura sul repo
+   Schema dei parametri: vedi site/campus-3d/MAPPA-3D-API.md */
+import { hasSession } from './editor-auth.js';
+
+const SQL_LEGACY = 'CREATE TABLE IF NOT EXISTS mappa3d (k TEXT PRIMARY KEY, json TEXT, updated_at INTEGER)';
+const SQL_VERSIONS = 'CREATE TABLE IF NOT EXISTS mappa3d_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT NOT NULL, created_at INTEGER NOT NULL, author TEXT NOT NULL DEFAULT \'sconosciuto\')';
+const KEY = 'overrides';
+export const MAX_BYTES = 256 * 1024;
+const MAX_OVERRIDE_BYTES = 64 * 1024;
+export const MAX_VERSIONS = 500;
+export const LIST_LIMIT = 50;
+export const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, PUT, POST, OPTIONS',
+  'access-control-allow-headers': 'Authorization, Content-Type, X-Editor',
+  'access-control-max-age': '86400'
+};
+export const json = (d, s = 200, extra = {}) => new Response(JSON.stringify(d), {
+  status: s,
+  headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }, CORS, extra)
+});
+const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/* Un valore sovrascrivibile è un numero finito, un booleano, una stringa breve
+   o un array di numeri finiti: niente oggetti annidati, niente funzioni. */
+function badValue(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? '' : 'numero non finito';
+  if (typeof v === 'boolean') return '';
+  if (typeof v === 'string') return v.length <= 200 ? '' : 'stringa troppo lunga (max 200 caratteri)';
+  if (Array.isArray(v)) {
+    if (v.length > 400) return 'array troppo lungo (max 400 elementi)';
+    return v.every((x) => typeof x === 'number' && Number.isFinite(x)) ? '' : 'array: ammessi solo numeri';
+  }
+  return 'ammessi solo numeri, booleani, stringhe e array di numeri';
+}
+
+export function validate(overrides) {
+  if (!isPlainObject(overrides)) return 'overrides deve essere un oggetto';
+  for (const [mod, params] of Object.entries(overrides)) {
+    if (!isPlainObject(params)) return `overrides["${mod}"] deve essere un oggetto di parametri`;
+    for (const [name, value] of Object.entries(params)) {
+      const err = badValue(value);
+      if (err) return `overrides["${mod}"]["${name}"]: ${err}`;
+    }
+  }
+  const size = new TextEncoder().encode(JSON.stringify(overrides)).length;
+  if (size > MAX_OVERRIDE_BYTES) return `JSON troppo grande: ${size} byte, massimo ${MAX_OVERRIDE_BYTES}`;
+  return '';
+}
+
+/* Le modifiche sono documenti JSON indicizzati per id; limiti anche su profondità e chiavi. */
+export function validateEditorEdits(edits) {
+  if (!isPlainObject(edits)) return 'editor_edits deve essere un oggetto';
+  if (Object.keys(edits).length > 500) return 'troppi documenti editor (massimo 500)';
+  function safe(v, depth) {
+    if (depth > 24) return false;
+    if (v === null || typeof v === 'boolean' || typeof v === 'string') return true;
+    if (typeof v === 'number') return Number.isFinite(v);
+    if (Array.isArray(v)) return v.every((x) => safe(x, depth + 1));
+    if (!isPlainObject(v)) return false;
+    return Object.entries(v).every(([k, x]) => !['__proto__', 'prototype', 'constructor'].includes(k) && safe(x, depth + 1));
+  }
+  return safe(edits, 0) && Object.values(edits).every(isPlainObject) ? '' : 'editor_edits contiene dati non validi';
+}
+
+/* Un involucro marcato distingue le nuove righe dai vecchi oggetti overrides. */
+export function decodeVersion(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch (_) { data = {}; }
+  if (isPlainObject(data) && data._mappa3d_format === 1 && isPlainObject(data.overrides) && isPlainObject(data.editor_edits)) {
+    return { overrides: data.overrides, editor_edits: data.editor_edits };
+  }
+  return { overrides: isPlainObject(data) ? data : {}, editor_edits: {} };
+}
+
+/* Il token non deve mai comparire in una risposta: il confronto avviene qui e
+   l'unica cosa che esce è `true`/`false`. */
+export function authorized(request, env) {
+  if (!env.ADMIN_SECRET) return false;
+  const m = /^Bearer\s+(.+)$/i.exec((request.headers.get('authorization') || '').trim());
+  return !!m && m[1] === env.ADMIN_SECRET;
+}
+
+/* Scrittura ammessa con il Bearer (IA e script) oppure con il cookie di sessione
+   dell'editor (browser, dopo il login). La lettura resta pubblica. */
+export async function canWrite(request, env) {
+  if (authorized(request, env)) return true;
+  return hasSession(request, env);
+}
+
+/* Nome di chi salva: header facoltativo `X-Editor`, ripulito e accorciato. */
+export function editorName(request) {
+  const raw = (request.headers.get('x-editor') || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
+  return raw ? raw.slice(0, 40) : 'sconosciuto';
+}
+
+export async function ensureSchema(env) {
+  await env.DB.prepare(SQL_VERSIONS).run();
+}
+
+/* Corpo JSON limitato durante la lettura, prima del parse. */
+export async function readBody(request) {
+  const reader = request.body && request.body.getReader();
+  const chunks = []; let size = 0;
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BYTES) { await reader.cancel(); return { error: `corpo troppo grande: massimo ${MAX_BYTES} byte` }; }
+      chunks.push(value);
+    }
+  }
+  const bytes = new Uint8Array(size); let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  const text = new TextDecoder().decode(bytes);
+  try {
+    const body = JSON.parse(text || 'null');
+    if (!isPlainObject(body)) return { error: 'il corpo deve essere un oggetto JSON' };
+    return { body };
+  } catch (e) {
+    return { error: 'JSON non valido' };
+  }
+}
+
+/* Ultima versione. Se lo storico è vuoto ricade sulla vecchia tabella a riga
+   singola, così i parametri già salvati prima dello storico non si perdono. */
+export async function readLatest(env) {
+  await ensureSchema(env);
+  const row = await env.DB.prepare('SELECT id, json, created_at, author FROM mappa3d_versions ORDER BY id DESC LIMIT 1').first();
+  if (row) {
+    const state = decodeVersion(row.json);
+    return { ...state, updated_at: row.created_at || 0, id: row.id, author: row.author || 'sconosciuto' };
+  }
+  try {
+    await env.DB.prepare(SQL_LEGACY).run();
+    const old = await env.DB.prepare('SELECT json, updated_at FROM mappa3d WHERE k=?').bind(KEY).first();
+    if (old) {
+      let overrides = {};
+      try { overrides = JSON.parse(old.json) || {}; } catch (e) { overrides = {}; }
+      return { overrides, editor_edits: {}, updated_at: old.updated_at || 0, id: 0, author: 'sconosciuto' };
+    }
+  } catch (e) { /* tabella vecchia assente: va bene */ }
+  return { overrides: {}, editor_edits: {}, updated_at: 0, id: 0, author: 'sconosciuto' };
+}
+
+/* Append di una nuova versione + potatura oltre MAX_VERSIONS righe. */
+export async function appendVersion(env, overrides, author, editorEdits = {}) {
+  await ensureSchema(env);
+  const now = Math.floor(Date.now() / 1000);
+  const res = await env.DB.prepare('INSERT INTO mappa3d_versions (json, created_at, author) VALUES (?,?,?)')
+    .bind(JSON.stringify({ _mappa3d_format: 1, overrides, editor_edits: editorEdits }), now, author).run();
+  try {
+    await env.DB.prepare('DELETE FROM mappa3d_versions WHERE id NOT IN (SELECT id FROM mappa3d_versions ORDER BY id DESC LIMIT ?)')
+      .bind(MAX_VERSIONS).run();
+  } catch (e) { /* la potatura non deve far fallire un salvataggio riuscito */ }
+  const id = (res && res.meta && res.meta.last_row_id) || 0;
+  return { id, updated_at: now, author };
+}
+
+export async function onRequestGet({ env }) {
+  if (!env.DB) return json({ error: 'database non configurato' }, 500);
+  try {
+    const d = await readLatest(env);
+    return json({ overrides: d.overrides, editor_edits: d.editor_edits, updated_at: d.updated_at }, 200, { 'cache-control': 'public, max-age=30' });
+  } catch (e) {
+    return json({ error: 'lettura non riuscita' }, 500);
+  }
+}
+
+export async function onRequestPut({ request, env }) {
+  if (!env.DB) return json({ error: 'database non configurato' }, 500);
+  if (!env.ADMIN_SECRET) return json({ error: 'scrittura non configurata' }, 503);
+  if (!(await canWrite(request, env))) return json({ error: 'autenticazione non valida' }, 401, { 'www-authenticate': 'Bearer' });
+  const parsed = await readBody(request);
+  if (parsed.error) return json({ error: parsed.error }, 400);
+  const err = validate(parsed.body.overrides);
+  if (err) return json({ error: err }, 400);
+  let saved, editorEdits;
+  try {
+    // I client precedenti inviano solo overrides: conservano le modifiche dell'editor.
+    editorEdits = Object.prototype.hasOwnProperty.call(parsed.body, 'editor_edits')
+      ? parsed.body.editor_edits : (await readLatest(env)).editor_edits;
+    const editError = validateEditorEdits(editorEdits);
+    if (editError) return json({ error: editError }, 400);
+    saved = await appendVersion(env, parsed.body.overrides, editorName(request), editorEdits);
+  } catch (e) {
+    return json({ error: 'salvataggio non riuscito' }, 500);
+  }
+  return json({ overrides: parsed.body.overrides, editor_edits: editorEdits, updated_at: saved.updated_at, id: saved.id, author: saved.author });
+}
+
+export function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
+/* Metodi non ammessi: handler espliciti invece di un `onRequest` catch-all, che su
+   Pages rischierebbe di coprire anche GET/PUT/OPTIONS. Gli altri metodi ricadono
+   sul 405 predefinito di Pages. */
+const notAllowed = ({ request }) => json({ error: `metodo ${request.method} non ammesso` }, 405, { allow: 'GET, PUT, OPTIONS' });
+export const onRequestPost = notAllowed;
+export const onRequestPatch = notAllowed;
+export const onRequestDelete = notAllowed;
