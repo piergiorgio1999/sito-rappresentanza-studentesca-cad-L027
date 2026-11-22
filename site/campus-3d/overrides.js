@@ -9,6 +9,7 @@
   'use strict';
   var TIMEOUT = 2500;
   window.MAPPA3D_OVERRIDES = window.MAPPA3D_OVERRIDES || {};
+  window.MAPPA3D_EDITOR_EDITS = {};
   window.MAPPA3D_READY = false;
   var done = false;
   function ready(info) {
@@ -24,6 +25,9 @@
         var v = d.overrides[mod];
         if (v && typeof v === 'object' && !Array.isArray(v)) { window.MAPPA3D_OVERRIDES[mod] = v; n++; }
       });
+    }
+    if (d && d.editor_edits && typeof d.editor_edits === 'object' && !Array.isArray(d.editor_edits)) {
+      window.MAPPA3D_EDITOR_EDITS = d.editor_edits;
     }
     return n;
   }

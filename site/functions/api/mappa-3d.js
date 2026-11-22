@@ -20,7 +20,8 @@ import { hasSession } from './editor-auth.js';
 const SQL_LEGACY = 'CREATE TABLE IF NOT EXISTS mappa3d (k TEXT PRIMARY KEY, json TEXT, updated_at INTEGER)';
 const SQL_VERSIONS = 'CREATE TABLE IF NOT EXISTS mappa3d_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, json TEXT NOT NULL, created_at INTEGER NOT NULL, author TEXT NOT NULL DEFAULT \'sconosciuto\')';
 const KEY = 'overrides';
-export const MAX_BYTES = 64 * 1024;
+export const MAX_BYTES = 256 * 1024;
+const MAX_OVERRIDE_BYTES = 64 * 1024;
 export const MAX_VERSIONS = 500;
 export const LIST_LIMIT = 50;
 export const CORS = {
@@ -58,8 +59,33 @@ export function validate(overrides) {
     }
   }
   const size = new TextEncoder().encode(JSON.stringify(overrides)).length;
-  if (size > MAX_BYTES) return `JSON troppo grande: ${size} byte, massimo ${MAX_BYTES}`;
+  if (size > MAX_OVERRIDE_BYTES) return `JSON troppo grande: ${size} byte, massimo ${MAX_OVERRIDE_BYTES}`;
   return '';
+}
+
+/* Le modifiche sono documenti JSON indicizzati per id; limiti anche su profondità e chiavi. */
+export function validateEditorEdits(edits) {
+  if (!isPlainObject(edits)) return 'editor_edits deve essere un oggetto';
+  if (Object.keys(edits).length > 500) return 'troppi documenti editor (massimo 500)';
+  function safe(v, depth) {
+    if (depth > 24) return false;
+    if (v === null || typeof v === 'boolean' || typeof v === 'string') return true;
+    if (typeof v === 'number') return Number.isFinite(v);
+    if (Array.isArray(v)) return v.every((x) => safe(x, depth + 1));
+    if (!isPlainObject(v)) return false;
+    return Object.entries(v).every(([k, x]) => !['__proto__', 'prototype', 'constructor'].includes(k) && safe(x, depth + 1));
+  }
+  return safe(edits, 0) && Object.values(edits).every(isPlainObject) ? '' : 'editor_edits contiene dati non validi';
+}
+
+/* Un involucro marcato distingue le nuove righe dai vecchi oggetti overrides. */
+export function decodeVersion(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch (_) { data = {}; }
+  if (isPlainObject(data) && data._mappa3d_format === 1 && isPlainObject(data.overrides) && isPlainObject(data.editor_edits)) {
+    return { overrides: data.overrides, editor_edits: data.editor_edits };
+  }
+  return { overrides: isPlainObject(data) ? data : {}, editor_edits: {} };
 }
 
 /* Il token non deve mai comparire in una risposta: il confronto avviene qui e
@@ -87,12 +113,22 @@ export async function ensureSchema(env) {
   await env.DB.prepare(SQL_VERSIONS).run();
 }
 
-/* Corpo JSON con tetto di 64 KB, letto come testo per poter rifiutare prima del parse. */
+/* Corpo JSON limitato durante la lettura, prima del parse. */
 export async function readBody(request) {
-  const text = await request.text();
-  if (new TextEncoder().encode(text).length > MAX_BYTES) {
-    return { error: `corpo troppo grande: massimo ${MAX_BYTES} byte` };
+  const reader = request.body && request.body.getReader();
+  const chunks = []; let size = 0;
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BYTES) { await reader.cancel(); return { error: `corpo troppo grande: massimo ${MAX_BYTES} byte` }; }
+      chunks.push(value);
+    }
   }
+  const bytes = new Uint8Array(size); let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  const text = new TextDecoder().decode(bytes);
   try {
     const body = JSON.parse(text || 'null');
     if (!isPlainObject(body)) return { error: 'il corpo deve essere un oggetto JSON' };
@@ -108,9 +144,8 @@ export async function readLatest(env) {
   await ensureSchema(env);
   const row = await env.DB.prepare('SELECT id, json, created_at, author FROM mappa3d_versions ORDER BY id DESC LIMIT 1').first();
   if (row) {
-    let overrides = {};
-    try { overrides = JSON.parse(row.json) || {}; } catch (e) { overrides = {}; }
-    return { overrides, updated_at: row.created_at || 0, id: row.id, author: row.author || 'sconosciuto' };
+    const state = decodeVersion(row.json);
+    return { ...state, updated_at: row.created_at || 0, id: row.id, author: row.author || 'sconosciuto' };
   }
   try {
     await env.DB.prepare(SQL_LEGACY).run();
@@ -118,18 +153,18 @@ export async function readLatest(env) {
     if (old) {
       let overrides = {};
       try { overrides = JSON.parse(old.json) || {}; } catch (e) { overrides = {}; }
-      return { overrides, updated_at: old.updated_at || 0, id: 0, author: 'sconosciuto' };
+      return { overrides, editor_edits: {}, updated_at: old.updated_at || 0, id: 0, author: 'sconosciuto' };
     }
   } catch (e) { /* tabella vecchia assente: va bene */ }
-  return { overrides: {}, updated_at: 0, id: 0, author: 'sconosciuto' };
+  return { overrides: {}, editor_edits: {}, updated_at: 0, id: 0, author: 'sconosciuto' };
 }
 
 /* Append di una nuova versione + potatura oltre MAX_VERSIONS righe. */
-export async function appendVersion(env, overrides, author) {
+export async function appendVersion(env, overrides, author, editorEdits = {}) {
   await ensureSchema(env);
   const now = Math.floor(Date.now() / 1000);
   const res = await env.DB.prepare('INSERT INTO mappa3d_versions (json, created_at, author) VALUES (?,?,?)')
-    .bind(JSON.stringify(overrides), now, author).run();
+    .bind(JSON.stringify({ _mappa3d_format: 1, overrides, editor_edits: editorEdits }), now, author).run();
   try {
     await env.DB.prepare('DELETE FROM mappa3d_versions WHERE id NOT IN (SELECT id FROM mappa3d_versions ORDER BY id DESC LIMIT ?)')
       .bind(MAX_VERSIONS).run();
@@ -142,7 +177,7 @@ export async function onRequestGet({ env }) {
   if (!env.DB) return json({ error: 'database non configurato' }, 500);
   try {
     const d = await readLatest(env);
-    return json({ overrides: d.overrides, updated_at: d.updated_at }, 200, { 'cache-control': 'public, max-age=30' });
+    return json({ overrides: d.overrides, editor_edits: d.editor_edits, updated_at: d.updated_at }, 200, { 'cache-control': 'public, max-age=30' });
   } catch (e) {
     return json({ error: 'lettura non riuscita' }, 500);
   }
@@ -156,13 +191,18 @@ export async function onRequestPut({ request, env }) {
   if (parsed.error) return json({ error: parsed.error }, 400);
   const err = validate(parsed.body.overrides);
   if (err) return json({ error: err }, 400);
-  let saved;
+  let saved, editorEdits;
   try {
-    saved = await appendVersion(env, parsed.body.overrides, editorName(request));
+    // I client precedenti inviano solo overrides: conservano le modifiche dell'editor.
+    editorEdits = Object.prototype.hasOwnProperty.call(parsed.body, 'editor_edits')
+      ? parsed.body.editor_edits : (await readLatest(env)).editor_edits;
+    const editError = validateEditorEdits(editorEdits);
+    if (editError) return json({ error: editError }, 400);
+    saved = await appendVersion(env, parsed.body.overrides, editorName(request), editorEdits);
   } catch (e) {
     return json({ error: 'salvataggio non riuscito' }, 500);
   }
-  return json({ overrides: parsed.body.overrides, updated_at: saved.updated_at, id: saved.id, author: saved.author });
+  return json({ overrides: parsed.body.overrides, editor_edits: editorEdits, updated_at: saved.updated_at, id: saved.id, author: saved.author });
 }
 
 export function onRequestOptions() {

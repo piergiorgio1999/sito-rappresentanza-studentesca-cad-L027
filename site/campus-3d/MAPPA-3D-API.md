@@ -331,3 +331,9 @@ sostituire il segreto; per chiudere tutte le sessioni aperte, cambia `ADMIN_SECR
   aggiorna da solo a ogni salvataggio su D1.
 - `POST /api/mappa-3d/restore` non cancella mai niente: ripristinare la versione 3 crea la
   versione 51, e la 3 resta leggibile.
+
+## Collegamento con l'editor Campus Sapienza 3D
+
+L'editor privato Campus salva le modifiche localmente nel browser e, con **Applica a Orari Chimica**, le trasferisce tutte come mappa `editor_edits` indicizzata per id. Al primo uso, l'utente accede nella finestra Orari Chimica; il trasferimento parte automaticamente appena la sessione è verificata. Il bridge `editor-bridge.html` accetta messaggi solo dall'origine Campus configurata e dal proprio popup, quindi il cookie e il token GitHub non passano al sito editor.
+
+Il bridge esegue `GET /api/mappa-3d`, `PUT /api/mappa-3d` con `overrides` correnti e `editor_edits`, poi `POST /api/mappa-3d/publish`. Il salvataggio crea una versione D1; la pubblicazione aggiorna il fallback `overrides.json` tramite il token GitHub del server. `editor_edits` ammette al massimo 500 documenti e il payload trasferito dall'editor è limitato a 256 KiB. La pagina Orari applica questi documenti durante la costruzione della scena. Le vecchie righe versione e i client che inviano solo `overrides` restano compatibili.

@@ -1,5 +1,5 @@
 /* GET /api/mappa-3d/versions/<id> — pubblico: una versione intera dello storico. */
-import { json, CORS, ensureSchema } from '../../mappa-3d.js';
+import { json, CORS, ensureSchema, decodeVersion } from '../../mappa-3d.js';
 
 export async function onRequestGet({ params, env }) {
   if (!env.DB) return json({ error: 'database non configurato' }, 500);
@@ -9,9 +9,8 @@ export async function onRequestGet({ params, env }) {
     await ensureSchema(env);
     const row = await env.DB.prepare('SELECT id, json, created_at, author FROM mappa3d_versions WHERE id=?').bind(id).first();
     if (!row) return json({ error: 'versione non trovata' }, 404);
-    let overrides = {};
-    try { overrides = JSON.parse(row.json) || {}; } catch (e) { overrides = {}; }
-    return json({ id: row.id, created_at: row.created_at || 0, author: row.author || 'sconosciuto', overrides });
+    const { overrides, editor_edits } = decodeVersion(row.json);
+    return json({ id: row.id, created_at: row.created_at || 0, author: row.author || 'sconosciuto', overrides, editor_edits });
   } catch (e) {
     return json({ error: 'lettura della versione non riuscita' }, 500);
   }

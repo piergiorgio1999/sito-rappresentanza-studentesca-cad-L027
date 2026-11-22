@@ -47,13 +47,14 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
+  function nextPage() { return new URLSearchParams(location.search).get('next') === 'editor-bridge.html' ? 'editor-bridge.html' : 'editor.html'; }
   function say(text, kind) {
     $('msg').textContent = text || '';
     $('msg').className = 'msg' + (kind ? ' ' + kind : '');
   }
   /* Se la sessione c'è già, si va dritti all'editor. */
   fetch('/api/editor-auth/me', { cache: 'no-store', credentials: 'same-origin' })
-    .then(function (r) { if (r.ok) location.replace('editor.html'); })
+    .then(function (r) { if (r.ok) location.replace(nextPage()); })
     .catch(function () { /* nessuna sessione: resta il form */ });
 
   $('form').addEventListener('submit', function (ev) {
@@ -78,7 +79,7 @@
     }).then(function () {
       $('password').value = '';
       say('Accesso riuscito.', 'ok');
-      location.replace('editor.html');
+      location.replace(nextPage());
     }).catch(function (e) {
       $('go').disabled = false;
       $('password').value = '';

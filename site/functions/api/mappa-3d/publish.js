@@ -53,7 +53,7 @@ export async function onRequestPost({ request, env }) {
   if (!(await canWrite(request, env))) return json({ error: 'autenticazione non valida' }, 401, { 'www-authenticate': 'Bearer' });
   if (!env.GITHUB_TOKEN) return json({ error: 'GITHUB_TOKEN non configurato' }, 503);
   /* Il corpo non serve a nulla (si pubblica sempre l'ultima versione salvata), ma
-     se c'è deve stare nei 64 KB come negli altri endpoint. */
+     se c'è deve stare nel limite previsto come negli altri endpoint. */
   const raw = await request.text();
   if (new TextEncoder().encode(raw).length > MAX_BYTES) {
     return json({ error: `corpo troppo grande: massimo ${MAX_BYTES} byte` }, 400);
@@ -67,7 +67,7 @@ export async function onRequestPost({ request, env }) {
   } catch (e) {
     return json({ error: 'lettura dei parametri non riuscita' }, 500);
   }
-  const contents = JSON.stringify({ overrides: latest.overrides, updated_at: latest.updated_at }, null, 2) + '\n';
+  const contents = JSON.stringify({ overrides: latest.overrides, editor_edits: latest.editor_edits, updated_at: latest.updated_at }, null, 2) + '\n';
 
   /* 1) sha attuale del file (404 = file non ancora presente: si crea) */
   let sha;

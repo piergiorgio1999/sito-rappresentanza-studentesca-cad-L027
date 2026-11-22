@@ -1,7 +1,7 @@
 /* POST /api/mappa-3d/restore — corpo {"id":N}: rilegge la versione N e la riscrive
    come nuova versione in cima. Il ripristino è per append: non si perde mai nulla.
    Autenticazione: Bearer <ADMIN_SECRET> oppure cookie di sessione dell'editor. */
-import { json, CORS, canWrite, readBody, ensureSchema, appendVersion, editorName } from '../mappa-3d.js';
+import { json, CORS, canWrite, readBody, ensureSchema, appendVersion, editorName, decodeVersion } from '../mappa-3d.js';
 
 export async function onRequestPost({ request, env }) {
   if (!env.DB) return json({ error: 'database non configurato' }, 500);
@@ -15,11 +15,10 @@ export async function onRequestPost({ request, env }) {
     await ensureSchema(env);
     const row = await env.DB.prepare('SELECT json FROM mappa3d_versions WHERE id=?').bind(id).first();
     if (!row) return json({ error: 'versione non trovata' }, 404);
-    let overrides = {};
-    try { overrides = JSON.parse(row.json) || {}; } catch (e) { overrides = {}; }
+    const { overrides, editor_edits } = decodeVersion(row.json);
     const author = editorName(request);
-    const saved = await appendVersion(env, overrides, author);
-    return json({ overrides, restored_from: id, id: saved.id, updated_at: saved.updated_at, author: saved.author });
+    const saved = await appendVersion(env, overrides, author, editor_edits);
+    return json({ overrides, editor_edits, restored_from: id, id: saved.id, updated_at: saved.updated_at, author: saved.author });
   } catch (e) {
     return json({ error: 'ripristino non riuscito' }, 500);
   }
