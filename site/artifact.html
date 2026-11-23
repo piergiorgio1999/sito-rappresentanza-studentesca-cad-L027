@@ -487,7 +487,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .bb-cat{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sap)}
 .bb-st{font-size:.72rem;font-weight:800;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .bb-st.today{background:var(--sap);color:#fff}
-.bb-st.soon{background:#fff4d6;color:#7a5600}
+.bb-st.near{background:#fff4d6;color:#7a5600}
 .bb-st.fut{background:#e2f1da;color:#2f6b1f}
 .bb-st.past{background:#efe8ea;color:var(--muted)}
 .bb-st.est{background:#fff;color:var(--muted);border:1px dashed #b9aeb2}
@@ -3031,12 +3031,12 @@ function renderBorse(){
     if(it.est) return {k:'est', t: endOf(it) < now ? 'Da verificare' : 'Stima'};
     if(isPast(it)) return {k:'past', t: it.ev ? 'Passato' : 'Scaduto'};
     const hh = it.h || '23:59';
-    if(it.e && nDays(it.d) > 0){ const s = nDays(it.d); return {k: s <= 14 ? 'soon' : 'fut', t: s === 1 ? 'Inizia domani' : 'Inizia tra ' + s + ' giorni'}; }
+    if(it.e && nDays(it.d) > 0){ const s = nDays(it.d); return {k: s <= 14 ? 'near' : 'fut', t: s === 1 ? 'Inizia domani' : 'Inizia tra ' + s + ' giorni'}; }
     const n = nDays(it.e || it.d), run = it.e ? 'In corso · ' : '';
-    if(it.ev){ if(n === 0) return {k:'today', t:'Oggi'}; if(n === 1) return {k:'soon', t:'Domani'}; return {k: n <= 14 ? 'soon' : 'fut', t:'Tra ' + n + ' giorni'}; }
+    if(it.ev){ if(n === 0) return {k:'today', t:'Oggi'}; if(n === 1) return {k:'near', t:'Domani'}; return {k: n <= 14 ? 'near' : 'fut', t:'Tra ' + n + ' giorni'}; }
     if(n === 0) return {k:'today', t: run + 'Scade oggi · ' + hh};
-    if(n === 1) return {k:'soon', t: run + 'Scade domani · ' + hh};
-    return {k: n <= 14 ? 'soon' : 'fut', t: run + 'Scade tra ' + n + ' giorni'};
+    if(n === 1) return {k:'near', t: run + 'Scade domani · ' + hh};
+    return {k: n <= 14 ? 'near' : 'fut', t: run + 'Scade tra ' + n + ' giorni'};
   }
   const tile = it => { const t = day0(it.d); return it.est ? '<b>≈</b><span>' + MS[t.getMonth()] + '</span>' : '<b>' + t.getDate() + '</b><span>' + MS[t.getMonth()] + '</span>'; };
   const when = it => it.est ? it.when : (it.e ? 'Dal ' + fmt(it.d) + ' al ' + fmt(it.e) : fmt(it.d)) + (it.h ? ', ore ' + it.h : '');
