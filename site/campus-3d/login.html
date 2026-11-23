@@ -10,82 +10,341 @@
   :root{--red:#822433;--red-dark:#641b27;--ink:#211d1d;--muted:#6f6866;--line:#e6dfdc;--paper:#fff;--soft:#f8f5f3}
   *{box-sizing:border-box}
   body{margin:0;color:var(--ink);background:#f1ece9;font:15px/1.5 "Palatino Linotype",Palatino,Times,serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
-  button,input{font:inherit}
+  button,input,select{font:inherit}
   button{cursor:pointer}
   a{color:var(--red)}
-  button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--red);outline-offset:3px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 22px 20px;width:100%;max-width:380px}
+  .card.wide{max-width:520px}
   .eyebrow{font:700 10px/1.2 Arial,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--red)}
   h1{font:600 23px/1.15 "Palatino Linotype",Palatino,serif;margin:8px 0 6px}
+  h2{font:600 16px/1.2 "Palatino Linotype",Palatino,serif;margin:22px 0 2px;padding-top:16px;border-top:1px solid var(--line)}
   p.note{margin:0 0 14px;font:12px/1.5 Arial,sans-serif;color:var(--muted)}
+  p.warn{margin:0 0 14px;padding:9px 11px;border-radius:7px;font:12px/1.5 Arial,sans-serif;background:#fdf7ef;border:1px solid #e6d3b3;color:#6b4e1f}
   label{display:block;font:11px Arial,sans-serif;color:var(--muted);margin:11px 0 3px}
-  input{width:100%;padding:9px 10px;border:1px solid #d6cfcc;border-radius:7px;background:#fff;color:var(--ink);font:14px/1.4 Arial,sans-serif}
+  input,select{width:100%;padding:9px 10px;border:1px solid #d6cfcc;border-radius:7px;background:#fff;color:var(--ink);font:14px/1.4 Arial,sans-serif}
   .btn{margin-top:15px;width:100%;min-height:38px;padding:9px 13px;border:1px solid var(--red);border-radius:7px;background:var(--red);color:#fff;font:700 11px Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase}
   .btn:hover{background:var(--red-dark)}
   .btn[disabled]{opacity:.6;cursor:progress}
+  .btn.ghost{background:#fff;color:var(--red)}
+  .btn.ghost:hover{background:var(--soft)}
   .msg{margin:13px 0 0;padding:9px 11px;border-radius:7px;font:12px/1.45 Arial,sans-serif;background:var(--soft);border:1px solid var(--line);color:#4b4441;white-space:pre-wrap;overflow-wrap:anywhere}
   .msg.err{background:#fbf2f3;border-color:#dcb3b9;color:#8b1e2e}
   .msg.ok{background:#f3f7f1;border-color:#c3d6bd;color:#2f5a28}
   .msg:empty{display:none}
+  .foot{margin:16px 0 0;font:12px Arial,sans-serif;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font:12px/1.4 Arial,sans-serif}
+  th,td{text-align:left;padding:6px 6px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  td.right{text-align:right;padding-right:0}
+  .tag{display:inline-block;padding:1px 6px;border:1px solid var(--line);border-radius:999px;background:var(--soft);font-size:11px}
+  .del{min-height:28px;padding:3px 9px;border:1px solid #dcb3b9;border-radius:6px;background:#fff;color:#8b1e2e;font:700 10px Arial,sans-serif;letter-spacing:.05em;text-transform:uppercase}
+  .del:hover{background:#fbf2f3}
+  [hidden]{display:none !important}
 </style>
 </head>
 <body>
-<main class="card">
+<main class="card" id="card">
   <div class="eyebrow">Sapienza · Rappresentanza Scienze Chimiche</div>
-  <h1>Accesso all'editor</h1>
-  <p class="note">L'editor dei parametri della mappa 3D è riservato. Inserisci nome utente e password.</p>
-  <form id="form" autocomplete="off">
-    <label for="user">Nome utente</label>
-    <input id="user" name="user" type="text" autocomplete="username" spellcheck="false" required>
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required>
-    <button id="go" class="btn" type="submit">Entra</button>
-  </form>
+
+  <!-- vista 1: accesso normale -->
+  <section id="view-login" hidden>
+    <h1>Accesso all'editor</h1>
+    <p class="note">L'editor dei parametri della mappa 3D è riservato. Inserisci nome utente e password.</p>
+    <form id="form-login" autocomplete="off">
+      <label for="user">Nome utente</label>
+      <input id="user" name="user" type="text" autocomplete="username" spellcheck="false" required>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button id="go" class="btn" type="submit">Entra</button>
+    </form>
+    <p class="foot"><a href="?account=1" id="link-account">Gestisci il tuo account</a></p>
+  </section>
+
+  <!-- vista 2: primo accesso (nessuna password impostata) -->
+  <section id="view-setup" hidden>
+    <h1>Primo accesso</h1>
+    <p class="note">Non c'è ancora nessuna password: scegli ora nome utente e password dell'amministratore.</p>
+    <!-- Avviso onesto, da non rimuovere: è la ragione per cui questo modulo va usato subito. -->
+    <p class="warn">Finché la password non è impostata, chiunque raggiunga questo indirizzo può impostarla al posto tuo: conviene farlo subito dopo la pubblicazione del sito.</p>
+    <form id="form-setup" autocomplete="off">
+      <label for="s-user">Nome utente</label>
+      <input id="s-user" type="text" value="Piergiorgio" autocomplete="username" spellcheck="false" required>
+      <label for="s-pass">Password (almeno 8 caratteri)</label>
+      <input id="s-pass" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="s-pass2">Ripeti la password</label>
+      <input id="s-pass2" type="password" autocomplete="new-password" minlength="8" required>
+      <button id="s-go" class="btn" type="submit">Imposta la password ed entra</button>
+    </form>
+  </section>
+
+  <!-- vista 3: il proprio account e (solo admin) gli altri account -->
+  <section id="view-account" hidden>
+    <h1>Il tuo account</h1>
+    <p class="note" id="a-who"></p>
+
+    <h2>Cambia la tua password</h2>
+    <form id="form-pass" autocomplete="off">
+      <label for="p-cur">Password attuale</label>
+      <input id="p-cur" type="password" autocomplete="current-password" required>
+      <label for="p-new">Nuova password (almeno 8 caratteri)</label>
+      <input id="p-new" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="p-new2">Ripeti la nuova password</label>
+      <input id="p-new2" type="password" autocomplete="new-password" minlength="8" required>
+      <button id="p-go" class="btn" type="submit">Cambia password</button>
+    </form>
+
+    <section id="admin-box" hidden>
+      <h2>Account</h2>
+      <p class="note">Le sessioni aperte di un account si chiudono al cambio password e all'eliminazione.</p>
+      <table id="a-table"><thead><tr><th>Utente</th><th>Ruolo</th><th>Creato</th><th></th></tr></thead><tbody id="a-rows"></tbody></table>
+      <h2>Aggiungi un account</h2>
+      <form id="form-new" autocomplete="off">
+        <label for="n-user">Nome utente (3-32 caratteri: lettere, numeri, . - _)</label>
+        <input id="n-user" type="text" spellcheck="false" autocomplete="off" required>
+        <label for="n-pass">Password (almeno 8 caratteri)</label>
+        <input id="n-pass" type="password" autocomplete="new-password" minlength="8" required>
+        <label for="n-ruolo">Ruolo</label>
+        <select id="n-ruolo">
+          <option value="editor">editor — modifica la mappa, cambia solo la propria password</option>
+          <option value="admin">admin — gestisce anche gli account</option>
+        </select>
+        <button id="n-go" class="btn" type="submit">Crea account</button>
+      </form>
+    </section>
+
+    <p class="foot"><a href="editor.html">Vai all'editor</a> · <a href="#" id="a-logout">Esci</a></p>
+  </section>
+
   <p id="msg" class="msg" role="status" aria-live="polite"></p>
 </main>
 <script>
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  function nextPage() { return new URLSearchParams(location.search).get('next') === 'editor-bridge.html' ? 'editor-bridge.html' : 'editor.html'; }
+  var params = new URLSearchParams(location.search);
+  var accountMode = params.has('account');
+
+  function nextPage() { return params.get('next') === 'editor-bridge.html' ? 'editor-bridge.html' : 'editor.html'; }
   function say(text, kind) {
     $('msg').textContent = text || '';
     $('msg').className = 'msg' + (kind ? ' ' + kind : '');
   }
-  /* Se la sessione c'è già, si va dritti all'editor. */
-  fetch('/api/editor-auth/me', { cache: 'no-store', credentials: 'same-origin' })
-    .then(function (r) { if (r.ok) location.replace(nextPage()); })
-    .catch(function () { /* nessuna sessione: resta il form */ });
+  function show(which) {
+    $('view-login').hidden = which !== 'login';
+    $('view-setup').hidden = which !== 'setup';
+    $('view-account').hidden = which !== 'account';
+    $('card').className = which === 'account' ? 'card wide' : 'card';
+  }
+  /* Risposta JSON + stato, senza eccezioni per i corpi vuoti. */
+  function ask(url, options) {
+    var opt = options || {};
+    opt.cache = 'no-store';
+    opt.credentials = 'same-origin';
+    return fetch(url, opt).then(function (r) {
+      return r.text().then(function (t) {
+        var d = null;
+        try { d = t ? JSON.parse(t) : null; } catch (e) { d = null; }
+        return { status: r.status, ok: r.ok, data: d || {} };
+      });
+    });
+  }
+  function fail(res, fallback) {
+    return (res.data && res.data.error) ? res.data.error : (fallback || ('Errore ' + res.status));
+  }
+  function when(ts) {
+    if (!ts) return '—';
+    var d = new Date(ts * 1000);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('it-IT');
+  }
 
-  $('form').addEventListener('submit', function (ev) {
+  /* ---- avvio: che vista serve? ---------------------------------------- */
+  function start() {
+    ask('/api/editor-auth/me').then(function (res) {
+      if (res.ok && res.data.ok) {
+        if (accountMode) { openAccount(res.data); return; }
+        location.replace(nextPage());
+        return;
+      }
+      if (res.data.setup) {
+        show('setup');
+        if (res.status === 503) say(fail(res), 'err');
+        return;
+      }
+      show('login');
+      if (res.status === 404) say('Il servizio di accesso non risponde: controlla che le funzioni del sito siano pubblicate.', 'err');
+      else if (res.status !== 401) say(fail(res), 'err');
+      if (accountMode && res.status === 401) say('Accedi per gestire il tuo account.');
+    }).catch(function () {
+      show('login');
+      say('Server non raggiungibile: riprova.', 'err');
+    });
+  }
+
+  /* ---- accesso --------------------------------------------------------- */
+  $('form-login').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var user = $('user').value.trim(), password = $('password').value;
-    if (!user || !password) { say('Inserisci nome utente e password.', 'err'); return; }
+    var utente = $('user').value.trim(), password = $('password').value;
+    if (!utente || !password) { say('Inserisci nome utente e password.', 'err'); return; }
     $('go').disabled = true;
     say('Verifica in corso…');
-    fetch('/api/editor-auth', {
+    ask('/api/editor-auth', {
       method: 'POST',
-      cache: 'no-store',
-      credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ user: user, password: password })
-    }).then(function (r) {
-      return r.json().catch(function () { return null; }).then(function (d) {
-        if (r.ok) return d;
-        if (r.status === 503) throw new Error((d && d.error) || 'login non configurato');
-        if (r.status === 401) throw new Error('Nome utente o password non validi.');
-        throw new Error('Errore ' + r.status + ((d && d.error) ? ': ' + d.error : ''));
-      });
-    }).then(function () {
-      $('password').value = '';
-      say('Accesso riuscito.', 'ok');
-      location.replace(nextPage());
-    }).catch(function (e) {
+      body: JSON.stringify({ utente: utente, user: utente, password: password })
+    }).then(function (res) {
       $('go').disabled = false;
       $('password').value = '';
-      say(e.message, 'err');
+      if (!res.ok) {
+        if (res.data.setup) { show('setup'); say('Non c\'è ancora nessuna password: completa il primo accesso.', 'err'); return; }
+        say(res.status === 401 ? 'Nome utente o password non validi.' : fail(res), 'err');
+        return;
+      }
+      if (accountMode) { say('Accesso riuscito.', 'ok'); openAccount(res.data); return; }
+      say('Accesso riuscito.', 'ok');
+      location.replace(nextPage());
+    }).catch(function () {
+      $('go').disabled = false;
+      $('password').value = '';
+      say('Server non raggiungibile: riprova.', 'err');
     });
   });
+
+  /* ---- primo accesso --------------------------------------------------- */
+  $('form-setup').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var utente = $('s-user').value.trim(), p1 = $('s-pass').value, p2 = $('s-pass2').value;
+    if (p1 !== p2) { say('Le due password non coincidono.', 'err'); return; }
+    if (p1.length < 8) { say('La password deve essere lunga almeno 8 caratteri.', 'err'); return; }
+    $('s-go').disabled = true;
+    say('Salvataggio in corso…');
+    ask('/api/editor-auth/setup', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ utente: utente, password: p1, conferma: p2 })
+    }).then(function (res) {
+      $('s-go').disabled = false;
+      $('s-pass').value = ''; $('s-pass2').value = '';
+      if (!res.ok) {
+        say(fail(res), 'err');
+        if (res.status === 409) show('login');
+        return;
+      }
+      say('Password impostata. Accesso riuscito.', 'ok');
+      if (accountMode) { openAccount(res.data); return; }
+      location.replace(nextPage());
+    }).catch(function () {
+      $('s-go').disabled = false;
+      say('Server non raggiungibile: riprova.', 'err');
+    });
+  });
+
+  /* ---- il proprio account --------------------------------------------- */
+  function openAccount(info) {
+    show('account');
+    var nome = info.utente || info.user || '';
+    var ruolo = info.ruolo || 'editor';
+    $('a-who').textContent = 'Sei ' + nome + ' · ruolo ' + ruolo + '.';
+    $('admin-box').hidden = ruolo !== 'admin';
+    if (ruolo === 'admin') loadUtenti(nome);
+  }
+
+  $('form-pass').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var cur = $('p-cur').value, n1 = $('p-new').value, n2 = $('p-new2').value;
+    if (n1 !== n2) { say('Le due nuove password non coincidono.', 'err'); return; }
+    if (n1.length < 8) { say('La nuova password deve essere lunga almeno 8 caratteri.', 'err'); return; }
+    if (n1 === cur) { say('La nuova password deve essere diversa da quella in uso.', 'err'); return; }
+    $('p-go').disabled = true;
+    say('Cambio in corso…');
+    ask('/api/editor-auth/password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ corrente: cur, nuova: n1 })
+    }).then(function (res) {
+      $('p-go').disabled = false;
+      $('p-cur').value = ''; $('p-new').value = ''; $('p-new2').value = '';
+      if (!res.ok) { say(fail(res), 'err'); return; }
+      say('Password cambiata. Le altre sessioni aperte con questo account sono state chiuse.', 'ok');
+    }).catch(function () {
+      $('p-go').disabled = false;
+      say('Server non raggiungibile: riprova.', 'err');
+    });
+  });
+
+  /* ---- elenco e gestione degli account (solo admin) ------------------- */
+  function loadUtenti(io) {
+    ask('/api/editor-auth/utenti').then(function (res) {
+      if (!res.ok) { say(fail(res), 'err'); return; }
+      var rows = $('a-rows');
+      rows.textContent = '';
+      (res.data.utenti || []).forEach(function (u) {
+        var tr = document.createElement('tr');
+        var td1 = document.createElement('td');
+        td1.textContent = u.utente;
+        if (u.utente === io) { var b = document.createElement('span'); b.className = 'tag'; b.textContent = 'tu'; td1.appendChild(document.createTextNode(' ')); td1.appendChild(b); }
+        var td2 = document.createElement('td');
+        td2.textContent = u.ruolo;
+        var td3 = document.createElement('td');
+        td3.textContent = when(u.creato_il) + (u.creato_da ? ' · ' + u.creato_da : '');
+        var td4 = document.createElement('td');
+        td4.className = 'right';
+        if (u.utente !== io) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'del';
+          btn.textContent = 'Elimina';
+          btn.addEventListener('click', function () { removeUtente(u.utente, io); });
+          td4.appendChild(btn);
+        }
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+        rows.appendChild(tr);
+      });
+    }).catch(function () { say('Elenco non raggiungibile: riprova.', 'err'); });
+  }
+
+  function removeUtente(nome, io) {
+    if (!window.confirm('Eliminare l\'account "' + nome + '"? Le sue sessioni aperte si chiudono subito e l\'operazione non si annulla.')) return;
+    say('Eliminazione in corso…');
+    ask('/api/editor-auth/utenti/' + encodeURIComponent(nome), { method: 'DELETE' }).then(function (res) {
+      if (!res.ok) { say(fail(res), 'err'); return; }
+      say('Account "' + nome + '" eliminato.', 'ok');
+      loadUtenti(io);
+    }).catch(function () { say('Server non raggiungibile: riprova.', 'err'); });
+  }
+
+  $('form-new').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var utente = $('n-user').value.trim(), password = $('n-pass').value, ruolo = $('n-ruolo').value;
+    if (password.length < 8) { say('La password deve essere lunga almeno 8 caratteri.', 'err'); return; }
+    $('n-go').disabled = true;
+    say('Creazione in corso…');
+    ask('/api/editor-auth/utenti', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ utente: utente, password: password, ruolo: ruolo })
+    }).then(function (res) {
+      $('n-go').disabled = false;
+      $('n-pass').value = '';
+      if (!res.ok) { say(fail(res), 'err'); return; }
+      $('n-user').value = '';
+      say('Account "' + res.data.utente + '" creato con ruolo ' + res.data.ruolo + '.', 'ok');
+      ask('/api/editor-auth/me').then(function (me) { if (me.ok) loadUtenti(me.data.utente || me.data.user || ''); });
+    }).catch(function () {
+      $('n-go').disabled = false;
+      say('Server non raggiungibile: riprova.', 'err');
+    });
+  });
+
+  $('a-logout').addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ask('/api/editor-auth/logout', { method: 'POST' }).then(function () {
+      show('login');
+      say('Sessione chiusa.', 'ok');
+    }).catch(function () { say('Server non raggiungibile: riprova.', 'err'); });
+  });
+
+  start();
 })();
 </script>
 </body>

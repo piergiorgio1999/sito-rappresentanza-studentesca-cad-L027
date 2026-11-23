@@ -334,6 +334,10 @@
 ./site/functions/api/editor-auth.js
 ./site/functions/api/editor-auth/logout.js
 ./site/functions/api/editor-auth/me.js
+./site/functions/api/editor-auth/password.js
+./site/functions/api/editor-auth/setup.js
+./site/functions/api/editor-auth/utenti.js
+./site/functions/api/editor-auth/utenti/[utente].js
 ./site/functions/api/fontanelle.js
 ./site/functions/api/mappa-3d.js
 ./site/functions/api/mappa-3d/publish.js

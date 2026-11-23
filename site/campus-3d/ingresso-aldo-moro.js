@@ -199,6 +199,27 @@
       box(cx - DRAPPO.w / 2 - 0.1, cx + DRAPPO.w / 2 + 0.1, DRAPPO.top, DRAPPO.top + 0.12, DRAPPO.v - 0.07, DRAPPO.v + 0.07, trDark, 'asta-drappo');
       if (rosso) drappiRossi.push([cx, DRAPPO.top - 1.6, DRAPPO.v]);
     }
+    /* Sbarre a palo nelle cinque campate interne, le stesse dei drappi: le due campate
+       estreme restano libere. Braccio alzato, come una barriera aperta. */
+    const sbarraBianca = new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.55 });
+    const sbarraRossa = new THREE.MeshStandardMaterial({ color: 0xb3252c, roughness: 0.55 });
+    const paloMat = new THREE.MeshStandardMaterial({ color: 0xbdbbb5, roughness: 0.6, metalness: 0.25 });
+    const SBARRA = { v: V_BACK + 1.2, h: 1.15, len: 4.2, alza: 58 * Math.PI / 180, seg: 7 };
+    for (let i = 1; i <= 5; i += 1) {
+      const cx = x0 + END + pitch * (i + 0.5) - pitch * 0.34;      // accostata al lato della campata
+      const palo = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, SBARRA.h, 12), paloMat);
+      palo.position.set(cx, SBARRA.h / 2, SBARRA.v); palo.name = 'sbarra-palo'; palo.raycast = () => {}; group.add(palo);
+      const perno = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), paloMat);
+      perno.position.set(cx, SBARRA.h, SBARRA.v); perno.raycast = () => {}; group.add(perno);
+      const braccio = new THREE.Group();                            // ruota attorno al perno
+      for (let k = 0; k < SBARRA.seg; k += 1) {
+        const l = SBARRA.len / SBARRA.seg;
+        const t = new THREE.Mesh(new THREE.BoxGeometry(l, 0.13, 0.13), k % 2 ? sbarraBianca : sbarraRossa);
+        t.position.x = l * (k + 0.5); t.raycast = () => {}; braccio.add(t);
+      }
+      braccio.position.set(cx, SBARRA.h, SBARRA.v);
+      braccio.rotation.z = SBARRA.alza; braccio.name = 'sbarra-braccio'; group.add(braccio);
+    }
     // fascia di lucernari sul tetto (lato sud), come nella foto
     box(x1 - END - 14, x1 - END - 2, H_TOT + 0.35, H_TOT + 0.95, V_BACK + 1.5, V_FRONT - 2.2, new THREE.MeshStandardMaterial({ color: 0xcfe0e6, roughness: 0.4 }), 'lucernari');
 
