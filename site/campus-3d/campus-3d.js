@@ -2121,6 +2121,8 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
   const RICOSTRUITI_A_MANO = [
     { nome: 'Propilei di Piazzale Aldo Moro (ingresso-aldo-moro.js)', anello: anelloPropilei },
     { nome: 'Istituto Castelnuovo, CU006 (matematica-castelnuovo.js)', anello: () => anelloCodice('CU006') },
+    { nome: 'Istituto di Fisica, CU013 (fisica-marconi.js)', anello: () => anelloCodice('CU013') },
+    { nome: 'Edificio Fermi, CU033 (fisica-fermi.js)', anello: () => anelloCodice('CU033') },
   ];
   const bboxAnello = (ring) => ring.reduce((b, [lon, lat]) => [Math.min(b[0], lon), Math.min(b[1], lat), Math.max(b[2], lon), Math.max(b[3], lat)], [Infinity, Infinity, -Infinity, -Infinity]);
   const bboxSiToccano = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];

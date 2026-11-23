@@ -228,7 +228,11 @@
       t.repeat.set(Math.max(0.2, wM / TILE_L), Math.max(0.2, hM / TILE_L));
       return std(LITO_COL, { map: t, roughness: 0.88 });
     };
-    const litoWall = lito(TILE_L, TILE_L); // facce verticali dell'estrusione: UV in metri
+    /* Facce verticali dell'estrusione: ExtrudeGeometry genera le UV dei fianchi già in metri
+       (WorldUVGenerator), quindi il repeat è 1/TILE_L e non il rapporto usato sui box. */
+    const litoExtr = baseLito.clone(); litoExtr.needsUpdate = true;
+    litoExtr.repeat.set(1 / TILE_L, 1 / TILE_L);
+    const litoWall = std(LITO_COL, { map: litoExtr, roughness: 0.88 });
     const baseTrav = travertinoTexture(6, 4, 3.0);
     const TRAV_COL = P.TRAV_COL ?? 0xcbc0a8;
     const trav = (wM, hM, tex, tile) => {
