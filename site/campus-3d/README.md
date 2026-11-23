@@ -54,3 +54,8 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 - Nella vista d'apertura i modelli pesanti non visibili da lì (statua, fontanelle, condotte, tubi: circa 16 MB) si scaricano alla prima interazione.
 - Stradone: asfalto disegnato (u da −8 a 92, v da 20,75 a 39,85 del lato 0) con linee gialle di bordo e strisce pedonali; panchine di cemento colorato (sezione trapezoidale, fiore dipinto sul piano) solo a 0° o 90° rispetto all'asse, in gruppi nella fascia centrale. Posizioni e disegni indicativi, ricavati dalle foto.
 - Alberi OSM (`trees.json`): nessuno sull'asfalto; lontano da Chimica/Fisica (140 m) e dalla Minerva (85 m) se ne disegna circa il 30%.
+
+## Aggiornamento del 24/11/2026: ingresso di Fisica Marconi
+
+- Integrato `fisica-marconi.js` nella scena: il modello CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale, con parapetto e uscita vetrata. La forma e le dimensioni dei dettagli sono schematiche dove le fonti non forniscono quote.
+- La sagoma OSM di CU013 viene sottratta ai volumi circostanti prima dell'estrusione, così il modello di dettaglio non è attraversato dalla massa proxy.
