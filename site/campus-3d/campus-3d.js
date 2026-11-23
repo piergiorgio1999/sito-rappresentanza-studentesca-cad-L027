@@ -255,6 +255,13 @@
     }
     if (!filtered.length) listNode.innerHTML = '<p style="padding:8px 12px;color:#746c68;font:13px Arial">Nessun edificio corrisponde alla ricerca.</p>';
   }
+  /* Quote corrette a mano dove il tag OSM e' palesemente sbagliato. CU013, l'Edificio
+     di Fisica, in OSM risulta di 3 piani: ne verrebbero 12,4 m, un volume tozzo e piu'
+     basso del vero, che accanto a Chimica (21 m) legge come se mancasse. 21 m e' una
+     stima allineata a Chimica, non un dato rilevato: va sostituita appena si ha la quota
+     vera o un rilievo dell'edificio. */
+  const QUOTE_CORRETTE = { CU013: { value: 21, label: 'quota corretta a mano: il tag OSM di 3 piani e\' errato' } };
+
   function heightInfo(b) {
     const raw = String(b.height ?? '').trim().replace(',', '.');
     const match = raw.match(/^(\d+(?:\.\d+)?)\s*(m|meter|meters|metre|metres|ft|feet|foot|')?$/i);
@@ -263,6 +270,7 @@
       const value = Number(match[1]) * (feet ? 0.3048 : 1);
       return { value, label: `height OSM: ${raw}${feet ? ' ft' : ' m'}` };
     }
+    if (b.code && QUOTE_CORRETTE[b.code]) return QUOTE_CORRETTE[b.code];
     const levelsText = String(b.levels ?? '').trim().replace(',', '.');
     const levels = /^\d+(?:\.\d+)?$/.test(levelsText) ? Number(levelsText) : NaN;
     if (Number.isFinite(levels) && levels > 0) return { value: levels * 3.8 + 1, label: `levels OSM: ${levels} × 3,8 m + parapetto` };
@@ -546,7 +554,7 @@
         return String(props['addr:housenumber'] || props.ref || '').toUpperCase() === code;
       });
       const props = osmFeature?.properties || {};
-      const height = heightInfo({ height: osmBuilding?.height || props.height, levels: osmBuilding?.levels || props['building:levels'] }).value;
+      const height = heightInfo({ height: osmBuilding?.height || props.height, levels: osmBuilding?.levels || props['building:levels'], code }).value;
       const geometry = new THREE.ExtrudeGeometry(parsed.shapes, { depth: height, bevelEnabled: false, curveSegments: 1 });
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0.16, 0);
@@ -2477,7 +2485,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     let rawHeight = b?.height || props.height;
     let rawLevels = b?.levels || props['building:levels'];
     if (heightOverride > 0) rawHeight = heightOverride; // ala a quota propria (cu014-solido.json)
-    const height = heightInfo({ height: rawHeight, levels: rawLevels }).value;
+    const height = heightInfo({ height: rawHeight, levels: rawLevels, code }).value;
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 1 });
     geometry.rotateX(-Math.PI / 2);
     geometry.translate(0, 0.04, 0);
