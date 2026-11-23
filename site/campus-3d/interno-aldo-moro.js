@@ -18,9 +18,11 @@
     V_NEAR, V_FAR,        // dal retro del colonnato alla fine dell'area modellata (oltre c'è già il viale del modello)
     U_MAX,                // semilarghezza dell'area
     ROAD_L, ROAD_R,       // cordoli della carreggiata centrale (u)
-    FACADE_L, FACADE_R,   // filo delle facciate dei due palazzi
+    FACADE_L, FACADE_R,   // filo reale delle facciate dei due edifici OSM che fiancheggiano il piazzale
     WALK_L, WALK_R,       // filo interno dei marciapiedi: oltre c'e' asfalto, dove sta il filare di alberi
-    BLD_V0, BLD_V1, BLD_H, ZOC,
+    BLD_V0, BLD_V1,       // tratto in v occupato dai due edifici (marciapiedi lungo le facciate)
+    VC, RAISE,            // v della scalinata d'ingresso e quota del piano rialzato
+    RAMP_U0, RAMP_U1, RAMP_V0, RAMP_V1, RAMP_H, // rampa carrabile davanti a Igiene
     STALL_D,
     BLOCKS,               // blocchi di stalli: v di inizio (lato interno), primo stallo, numero e larghezza
     ROW3;                 // tre stalli sopra la prima aiuola
@@ -30,9 +32,15 @@
     V_NEAR = P.V_NEAR ?? -6.1; V_FAR = P.V_FAR ?? -78;
     U_MAX = P.U_MAX ?? 46;
     ROAD_L = P.ROAD_L ?? 15.7; ROAD_R = P.ROAD_R ?? -16;
-    FACADE_L = P.FACADE_L ?? 32.5; FACADE_R = P.FACADE_R ?? -30.5;
+    /* Fili di facciata e tratto in v presi dalle impronte OSM dei due edifici, non stimati:
+       CU016 Ortopedia (u positiva) u 30,5..109,8 e v -2,6..-56,6; CU015 Igiene (u negativa)
+       u -31,2..-82 e v -6..-56. */
+    FACADE_L = P.FACADE_L ?? 30.5; FACADE_R = P.FACADE_R ?? -31.2;
     WALK_L = P.WALK_L ?? FACADE_L - 7; WALK_R = P.WALK_R ?? FACADE_R + 7;
-    BLD_V0 = P.BLD_V0 ?? -8.5; BLD_V1 = P.BLD_V1 ?? -67; BLD_H = P.BLD_H ?? 23.4; ZOC = P.ZOC ?? 1.2;
+    BLD_V0 = P.BLD_V0 ?? -4.5; BLD_V1 = P.BLD_V1 ?? -56.3;
+    VC = P.VC ?? -35; RAISE = P.RAISE ?? 1.2;
+    RAMP_U0 = P.RAMP_U0 ?? -30.2; RAMP_U1 = P.RAMP_U1 ?? -24.6;
+    RAMP_V0 = P.RAMP_V0 ?? -66.5; RAMP_V1 = P.RAMP_V1 ?? -41.5; RAMP_H = P.RAMP_H ?? RAISE;
     STALL_D = P.STALL_D ?? 5.2;
     /* BLOCKS si sovrascrive con un array piatto di numeri, 4 per blocco: v, u0, n, w
        (l'API non ammette oggetti annidati). */
@@ -56,47 +64,6 @@
     return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
 
-  function brickTexture(rand) {
-    const cv = document.createElement('canvas'); cv.width = cv.height = 256;
-    const g = cv.getContext('2d');
-    g.fillStyle = '#b98558'; g.fillRect(0, 0, 256, 256);
-    const rows = 32, bh = 256 / rows;
-    for (let r = 0; r < rows; r++) {
-      const off = (r % 2) * 16;
-      for (let x = -32; x < 288; x += 32) {
-        const t = 0.88 + rand() * 0.2;
-        g.fillStyle = `rgb(${Math.round(190 * t)},${Math.round(121 * t)},${Math.round(80 * t)})`;
-        g.fillRect(x + off + 1, r * bh + 1, 30, bh - 1.5);
-      }
-    }
-    const tex = new THREE.CanvasTexture(cv); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.anisotropy = 4;
-    return tex;
-  }
-
-  /* Una campata di facciata: 3,2 m x 3,6 m (un piano), mattoni con finestra a due ante. */
-  function facadeTexture(rand) {
-    const W = 256, H = 288, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const g = cv.getContext('2d');
-    g.fillStyle = '#b57e55'; g.fillRect(0, 0, W, H);
-    for (let r = 0; r < 36; r++) {
-      const off = (r % 2) * 10;
-      for (let x = -20; x < W + 20; x += 20) {
-        const t = 0.9 + rand() * 0.16;
-        g.fillStyle = `rgb(${Math.round(188 * t)},${Math.round(121 * t)},${Math.round(80 * t)})`;
-        g.fillRect(x + off + 1, r * 8 + 1, 18, 6.2);
-      }
-    }
-    const wx = 56, wy = 48, ww = 144, wh = 160;
-    g.fillStyle = '#d6cfbd'; g.fillRect(wx - 8, wy - 8, ww + 16, wh + 16);
-    const grd = g.createLinearGradient(0, wy, 0, wy + wh); grd.addColorStop(0, '#53687a'); grd.addColorStop(1, '#222d36');
-    g.fillStyle = grd; g.fillRect(wx, wy, ww, wh);
-    g.strokeStyle = '#e4dfd0'; g.lineWidth = 6; g.strokeRect(wx, wy, ww, wh);
-    g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); g.moveTo(wx, wy + wh * 0.32); g.lineTo(wx + ww, wy + wh * 0.32); g.stroke();
-    g.fillStyle = '#cdc5b0'; g.fillRect(wx - 14, wy + wh + 6, ww + 28, 10);
-    const tex = new THREE.CanvasTexture(g.canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.anisotropy = 8;
-    return tex;
-  }
-
   function build(c) {
     readParams();
     const scene = c.scene;
@@ -107,8 +74,6 @@
     const trMat = std(0xe7e0cf);
     loader.load('tex/travertino_COL_1k.jpg', (t) => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.25, 0.25); t.anisotropy = 4; trMat.map = t; trMat.needsUpdate = true; });
     const trDark = std(0xcfc6b0);
-    const roofMat = std(0x2e2c2a, { roughness: 1 });
-    const roofRed = std(0x9c2a2a, { roughness: 0.9 });
     const asphaltMat = lay(0x131417, 1);
     const sideMat = std(0x34322f, { roughness: 1 });
     const lawnMat = lay(0x1a3a13, 3);
@@ -170,10 +135,6 @@
       arrow(g, X, Y, ppm, 6.8, -26.8, 1, 0); arrow(g, X, Y, ppm, -4, -26.3, 1, 0);
       arrow(g, X, Y, ppm, 4.1, -43.7, 1, 0); arrow(g, X, Y, ppm, -5.7, -60.5, -1, 0);
       arrow(g, X, Y, ppm, -14, -28.5, 0, 1); arrow(g, X, Y, ppm, 6.8, -9.6, 0, -1);
-      g.fillStyle = 'rgba(236,235,228,0.92)'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.font = `bold ${1.3 * ppm}px Arial, sans-serif`;
-      g.save(); g.translate(X(-11.4), Y(-34)); g.rotate(Math.PI); g.fillText('USCITA', 0, 0); g.restore();
-      g.save(); g.translate(X(-13.8), Y(-17)); g.rotate(Math.PI / 2); g.font = `bold ${1.0 * ppm}px Arial, sans-serif`; g.fillText('Viale Piero Gobetti', 0, 0); g.restore();
     }, -U_MAX, U_MAX, V_FAR, V_NEAR, 20, 0.03, 4, 'segnaletica');
 
     // due blocchi di parcheggio: due file di stalli schiena contro schiena, bordo giallo
@@ -197,17 +158,6 @@
     }, ROW3.u0 - 0.5, ROW3.u1 + 0.5, ROW3.v0 - 0.5, ROW3.v1 + 0.5, 64, 0.045, 5, 'stalli-aiuola');
     for (let i = 0; i < 3; i++) stalls.push([ROW3.u0 + (i + 0.5) * ((ROW3.u1 - ROW3.u0) / 3), (ROW3.v0 + ROW3.v1) / 2]);
 
-    // automobili negli stalli (istanziate)
-    const cars = stalls.filter(() => rand() < 0.62);
-    const palette = [0xe8e8e6, 0xc9ccd0, 0x8f9298, 0x2d2f33, 0xb32a2a, 0xdcdcdc, 0x3b4655];
-    const bodies = new THREE.InstancedMesh(new THREE.BoxGeometry(1.8, 0.62, 4.3), std(0xffffff, { roughness: 0.5, metalness: 0.2 }), cars.length);
-    const cabins = new THREE.InstancedMesh(new THREE.BoxGeometry(1.55, 0.5, 2.3), std(0x23282d, { roughness: 0.3, metalness: 0.3 }), cars.length);
-    const mt = new THREE.Matrix4(), col = new THREE.Color();
-    cars.forEach(([u, v], i) => {
-      mt.makeTranslation(u, 0.45, v); bodies.setMatrixAt(i, mt); bodies.setColorAt(i, col.set(palette[Math.floor(rand() * palette.length)]));
-      mt.makeTranslation(u, 0.99, v - 0.1); cabins.setMatrixAt(i, mt);
-    });
-    bodies.name = 'automobili'; cabins.name = 'abitacoli'; group.add(bodies, cabins);
 
     // aiuola 1: trapezio sotto la fila dei tre stalli, bordata di giallo
     const lawn = (pts, grow, name) => {
@@ -227,35 +177,52 @@
       const p = new THREE.Mesh(new THREE.CircleGeometry(0.13 + rand() * 0.1, 6), lay(0x8a502c, 8)); p.rotation.x = -Math.PI / 2; p.position.set(cu2 + Math.cos(a) * r, 0.29, cv2 + Math.sin(a) * r); group.add(p);
     }
 
-    // due palazzi in mattoni: basamento in travertino, facciata a campate con finestre, scalinata e portone al centro
-    const facadeTex = facadeTexture(rand);
-    const addBuilding = (side) => {
-      const inner = side > 0 ? FACADE_L : FACADE_R, outer = side > 0 ? FACADE_L + 12 : FACADE_R - 12;
-      const u0 = Math.min(inner, outer), u1 = Math.max(inner, outer), len = BLD_V0 - BLD_V1;
-      const bays = Math.round(len / 3.2);
-      const ft = facadeTex.clone(); ft.needsUpdate = true; ft.repeat.set(bays, 6);
-      const bt = brickTexture(rand); bt.repeat.set(10, 4);
-      const brick = std(0xffffff, { map: bt }), face = std(0xffffff, { map: ft });
-      const mats = [brick, brick, roofMat, roofMat, brick, brick];
-      mats[side > 0 ? 1 : 0] = face; // la facciata guarda verso il piazzale
-      const m = new THREE.Mesh(new THREE.BoxGeometry(u1 - u0, BLD_H - ZOC - 0.6, len), mats);
-      m.position.set((u0 + u1) / 2, ZOC + (BLD_H - ZOC - 0.6) / 2, (BLD_V0 + BLD_V1) / 2); m.name = 'palazzo-' + (side > 0 ? 'sx' : 'dx'); group.add(m);
-      box(u0 - 0.1, u1 + 0.1, 0, ZOC, BLD_V1 - 0.1, BLD_V0 + 0.1, trDark, 'basamento');
-      box(u0 - 0.25, u1 + 0.25, BLD_H - 0.6, BLD_H, BLD_V1 - 0.25, BLD_V0 + 0.25, trMat, 'cornicione');
-      box(u0 + 0.5, u1 - 0.5, BLD_H, BLD_H + 0.5, BLD_V1 + 0.5, BLD_V0 - 0.5, roofMat, 'terrazza');
-      if (side < 0) box(u0 + 1.2, u0 + 5.2, BLD_H + 0.5, BLD_H + 0.75, -60, -20, roofRed, 'tetto-rosso');
-      // scalinata larga e portone al centro della facciata
-      const vc = -35, hw = 5.5;
-      for (let k = 0; k < 6; k++) {
+    /* Ingressi dei due edifici che fiancheggiano il piazzale. I volumi NON si costruiscono
+       qui: ci sono già nella scena come estrusioni OSM (CU015 Igiene a u negativa, CU016
+       Ortopedia a u positiva), e i palazzi inventati che stavano qui li duplicavano,
+       coprendo per di più l'Edificio di Fisica dietro Igiene. Restano solo i dettagli a
+       terra che OSM non ha e che si leggono nella foto zenitale — scalinata, portone,
+       pensilina — appoggiati al filo reale della facciata. */
+    const addEntrance = (side) => {
+      const inner = side > 0 ? FACADE_L : FACADE_R, hw = 5.5;
+      for (let k = 0; k < 6; k++) { // scalinata larga al centro della facciata
         const d = 1.6 + 0.4 * (5 - k), a = inner - side * d;
-        box(Math.min(a, inner), Math.max(a, inner), 0, 0.2 * (k + 1), vc - hw, vc + hw, trMat, 'gradino');
+        box(Math.min(a, inner), Math.max(a, inner), 0, (RAISE / 6) * (k + 1), VC - hw, VC + hw, trMat, 'gradino');
       }
       const span = (d) => [Math.min(inner, inner - side * d), Math.max(inner, inner - side * d)];
-      box(...span(0.4).concat([1.2, 6.2, vc - 2.6, vc + 2.6]), trMat, 'cornice-portone');
-      box(...span(0.5).concat([1.2, 5.5, vc - 1.9, vc + 1.9]), std(0x2b2320, { roughness: 0.5 }), 'portone');
-      box(...span(1.2).concat([5.5, 5.7, vc - 2.6, vc + 2.6]), trMat, 'pensilina');
+      box(...span(0.4).concat([RAISE, 6.2, VC - 2.6, VC + 2.6]), trMat, 'cornice-portone');
+      box(...span(0.5).concat([RAISE, 5.5, VC - 1.9, VC + 1.9]), std(0x2b2320, { roughness: 0.5 }), 'portone');
+      box(...span(1.2).concat([5.5, 5.7, VC - 2.6, VC + 2.6]), trMat, 'pensilina');
     };
-    addBuilding(1); addBuilding(-1);
+    addEntrance(1); addEntrance(-1);
+
+    /* Rampa carrabile davanti a Igiene, accanto alla scalinata (foto zenitale: ~25 m, sale
+       dal piazzale al piano rialzato dell'edificio). Non sostituisce nulla: si affianca.
+       Piano inclinato in asfalto, muretti di contenimento in travertino sui due lati e
+       cordolo al piede. RAMP_V1 è l'estremo alto, verso la scalinata. */
+    {
+      const u0 = Math.min(RAMP_U0, RAMP_U1), u1 = Math.max(RAMP_U0, RAMP_U1), W = 0.4;
+      const vL = RAMP_V0, vH = RAMP_V1, h = RAMP_H;
+      const deck = new THREE.BufferGeometry();
+      deck.setAttribute('position', new THREE.Float32BufferAttribute([
+        u0, 0.03, vL, u1, 0.03, vL, u1, h, vH, u0, h, vH], 3));
+      deck.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+      deck.setIndex([0, 1, 2, 0, 2, 3]);
+      deck.computeVertexNormals();
+      const piano = new THREE.Mesh(deck, std(0x1a1b1f, { roughness: 1, side: THREE.DoubleSide }));
+      piano.name = 'rampa-piano'; group.add(piano);
+      // muretto: profilo nel piano (v, quota), estruso in spessore lungo u
+      const muretto = (uOuter, name) => {
+        const s = new THREE.Shape();
+        s.moveTo(vL, 0); s.lineTo(vH, h); s.lineTo(vH, h + 0.9); s.lineTo(vL, 0.9); s.closePath();
+        const g = new THREE.ExtrudeGeometry(s, { depth: W, bevelEnabled: false });
+        g.rotateY(-Math.PI / 2); g.translate(uOuter, 0, 0); // l'estrusione va verso -u
+        const m = new THREE.Mesh(g, trMat); m.name = name; group.add(m); return m;
+      };
+      muretto(u0, 'rampa-muretto-interno');        // lato facciata: contiene il piano rialzato
+      muretto(u1 + W, 'rampa-muretto-piazzale');   // lato piazzale
+      box(u0 - W, u1 + W, 0, 0.18, vL - 0.3, vL, trDark, 'rampa-cordolo');
+    }
 
     // alberi a chioma scura in fila davanti a ciascun palazzo
     const trunkMat = std(0x4a3a2c), crownMats = [0x08140c, 0x0c1a0e, 0x06100a].map((c0) => std(c0, { roughness: 1, flatShading: true }));

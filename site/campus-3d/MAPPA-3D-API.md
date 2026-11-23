@@ -138,6 +138,11 @@ scalari (`BAL_Y`…) o come array piatto di numeri, perché l'API non accetta og
 
 File: `site/campus-3d/interno-aldo-moro.js` (viale e parcheggi dietro il colonnato).
 
+I due edifici che fiancheggiano il piazzale non li costruisce questo modulo: sono le
+estrusioni OSM di CU015 (Igiene) e CU016 (Ortopedia). Qui restano solo i dettagli a
+terra che OSM non ha — scalinate, portoni, pensiline e la rampa carrabile davanti a
+Igiene — appoggiati al filo reale delle facciate.
+
 | Parametro | Significato | Default |
 | --- | --- | --- |
 | `U_MID` | scorrimento del modello lungo l'asse | `2.1` |
@@ -147,12 +152,17 @@ File: `site/campus-3d/interno-aldo-moro.js` (viale e parcheggi dietro il colonna
 | `U_MAX` | semilarghezza dell'area modellata | `46` |
 | `ROAD_L` | cordolo sinistro della carreggiata centrale | `15.7` |
 | `ROAD_R` | cordolo destro della carreggiata centrale | `-16` |
-| `FACADE_L` | filo della facciata del palazzo di sinistra | `32.5` |
-| `FACADE_R` | filo della facciata del palazzo di destra | `-30.5` |
-| `BLD_V0` | inizio in `v` dei due palazzi | `-8.5` |
-| `BLD_V1` | fine in `v` dei due palazzi | `-67` |
-| `BLD_H` | altezza dei due palazzi | `23.4` |
-| `ZOC` | altezza dello zoccolo dei palazzi | `1.2` |
+| `FACADE_L` | filo reale della facciata di sinistra (CU016 Ortopedia, da OSM) | `30.5` |
+| `FACADE_R` | filo reale della facciata di destra (CU015 Igiene, da OSM) | `-31.2` |
+| `BLD_V0` | inizio in `v` del tratto occupato dai due edifici | `-4.5` |
+| `BLD_V1` | fine in `v` dello stesso tratto | `-56.3` |
+| `VC` | `v` della scalinata d'ingresso, uguale sui due fronti | `-35` |
+| `RAISE` | quota del piano rialzato dei due edifici (scalinata e rampa salgono fin qui) | `1.2` |
+| `RAMP_U0` | lato facciata della rampa carrabile davanti a Igiene | `-30.2` |
+| `RAMP_U1` | lato piazzale della stessa rampa | `-24.6` |
+| `RAMP_V0` | estremo basso della rampa, verso l'interno | `-66.5` |
+| `RAMP_V1` | estremo alto della rampa, accanto alla scalinata | `-41.5` |
+| `RAMP_H` | dislivello superato dalla rampa | `RAISE` |
 | `STALL_D` | profondità di uno stallo di parcheggio | `5.2` |
 | `BLOCKS` | blocchi di stalli, array piatto di **4 numeri per blocco**: `v` (inizio lato interno), `u0` (primo stallo), `n` (numero di stalli), `w` (larghezza) | `[-38.9, -10, 8, 2.4, -57.4, -9.5, 7, 2.6]` |
 | `ROW3_U0` | inizio in `u` della fila di tre stalli sopra la prima aiuola | `-4.9` |

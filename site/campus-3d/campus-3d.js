@@ -10,7 +10,9 @@
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
   const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
   // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
-  const FADE = { center: [12.514862, 41.902740], inner: 470, outer: 860 };
+  // La cartina si ferma poco oltre il perimetro della Citta' Universitaria: i suoi angoli
+  // stanno a circa 410 m dal centro, quindi resta nitida fino a 420 e sparisce a 540.
+  const FADE = { center: [12.514862, 41.902740], inner: 420, outer: 540 };
   // Ritaglio AGEA locale (ripiego e vista ortofoto 2D).
   const PHOTO_BOUNDS = { west: 12.505, south: 41.898, east: 12.519, north: 41.906 };
   // Confine della CU in 3D fotografico: lato esterno delle strade che la circondano
@@ -2083,6 +2085,51 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     if (!hiddenCap) hiddenCap = new THREE.MeshBasicMaterial({ visible: false });
     return hiddenCap;
   }
+  /* ---------- fascia dei Propilei: lì vale il modello a mano, non l'impronta OSM ----------
+     Stesso riferimento del piazzale usato in buildTrees (u lungo le colonne, v verso Piazzale Aldo Moro).
+     Il colonnato di ingresso-aldo-moro.js è lungo L = 87.6 attorno a U_MID = 2.1 (u da -41.7 a 45.9) e i suoi
+     corpi in mattoni vanno da BLOCK_BACK = -6.1 a V_FRONT = 5.1 rispetto a V_MID = -0.6 (v da -6.7 a 4.5):
+     la fascia li copre con mezzo metro di margine, quanto basta a non lasciare facce complanari. Le impronte
+     OSM che ci entrano (gli edifici che fiancheggiano l'ingresso) ci perdono solo la parte che ci cade dentro:
+     il corpo principale resta in piedi. */
+  const PROPILEI = { u0: -43, u1: 46.4, v0: -7.2, v1: 5 };
+  const ING_PROP = { ref: [12.5122, 41.9021], c: [10.005, 18.489], a: [0.37442, -0.92726], n: [-0.92726, -0.37442] };
+  const propEN = (u, v) => [ING_PROP.c[0] + ING_PROP.a[0] * u + ING_PROP.n[0] * v, ING_PROP.c[1] + ING_PROP.a[1] * u + ING_PROP.n[1] * v];
+  const propLonLat = (u, v) => { const [de, dn] = propEN(u, v); return [ING_PROP.ref[0] + de / (111320 * Math.cos(ING_PROP.ref[1] * Math.PI / 180)), ING_PROP.ref[1] + dn / 111320]; };
+  let propFrame;
+  function propileiFrame() {
+    if (propFrame === undefined) {
+      try {
+        const at = (u, v) => { const w = project(propLonLat(u, v)); return [w.x, -w.n]; };
+        const o = at(0, 0), pa = at(1, 0), pn = at(0, 1);
+        propFrame = { o, ea: [pa[0] - o[0], pa[1] - o[1]], en: [pn[0] - o[0], pn[1] - o[1]] };
+      } catch (_) { propFrame = null; } // senza riferimento le impronte restano intere
+    }
+    return propFrame;
+  }
+  function inPropilei(x, z) {
+    const f = propileiFrame();
+    if (!f) return false;
+    const dx = x - f.o[0], dz = z - f.o[1];
+    const u = dx * f.ea[0] + dz * f.ea[1], v = dx * f.en[0] + dz * f.en[1];
+    return u > PROPILEI.u0 && u < PROPILEI.u1 && v > PROPILEI.v0 && v < PROPILEI.v1;
+  }
+  // Impronta meno la fascia dei Propilei: zero o più impronte. Senza sovrapposizione torna la stessa, invariata.
+  function fuoriPropilei(rings) {
+    const outer = closeRing(rings[0]);
+    if (outer.length < 4) return [rings];
+    if (!outer.some((pt) => { const w = project(pt); return inPropilei(w.x, -w.n); })) return [rings];
+    const pc = window.polygonClipping;
+    if (!pc || typeof pc.difference !== 'function') return [rings];
+    try {
+      const { u0, u1, v0, v1 } = PROPILEI;
+      const cut = [[u0, v0], [u1, v0], [u1, v1], [u0, v1], [u0, v0]].map(([u, v]) => propLonLat(u, v));
+      const subject = rings.map(closeRing).filter((r) => r.length >= 4);
+      if (!subject.length) return [rings];
+      return pc.difference(subject, [cut]).filter((poly) => poly[0] && closeRing(poly[0]).length >= 4);
+    } catch (_) { return [rings]; } // la libreria non ce la fa: meglio l'impronta intera che il buco
+  }
+  const impronteOSM = (rings) => carveCourtyard(rings).flatMap(fuoriPropilei);
   function addPolygon(feature, rings, lookup) {
     const outer = closeRing(rings[0]);
     if (outer.length < 4 || !insideMap(polygonCentroid(outer))) return;
@@ -2145,8 +2192,8 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     for (const feature of contextFeatures) {
       const props = feature.properties || {}, geometry = feature.geometry;
       if (!geometry || String(props['addr:housenumber'] || props.ref || '').trim().toUpperCase() !== 'CU014') continue;
-      if (geometry.type === 'Polygon') for (const r of carveCourtyard(geometry.coordinates)) addPolygon(feature, r, lookup);
-      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of carveCourtyard(polygon)) addPolygon(feature, r, lookup);
+      if (geometry.type === 'Polygon') for (const r of impronteOSM(geometry.coordinates)) addPolygon(feature, r, lookup);
+      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of impronteOSM(polygon)) addPolygon(feature, r, lookup);
     }
     updateSelectionMaterials();
   }
@@ -2515,8 +2562,8 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     for (const feature of context.features || []) {
       const geometry = feature.geometry;
       if (!geometry) continue;
-      if (geometry.type === 'Polygon') for (const r of carveCourtyard(geometry.coordinates)) addPolygon(feature, r, lookup);
-      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of carveCourtyard(polygon)) addPolygon(feature, r, lookup);
+      if (geometry.type === 'Polygon') for (const r of impronteOSM(geometry.coordinates)) addPolygon(feature, r, lookup);
+      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of impronteOSM(polygon)) addPolygon(feature, r, lookup);
     }
     addCuFondi();
     addCuVentaglio();

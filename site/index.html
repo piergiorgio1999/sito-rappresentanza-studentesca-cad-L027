@@ -1234,7 +1234,6 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
       <div class="mp-zoom">
         <button type="button" id="mpIn" aria-label="Ingrandisci">+</button>
         <button type="button" id="mpOut" aria-label="Riduci">−</button>
-        <button type="button" id="mpFit" aria-label="Mostra tutta la mappa">⤢</button>
       </div>
     </div>
     <details class="mp-list"><summary>Elenco edifici</summary><div class="mp-grid" id="mpGrid"></div></details>
@@ -3172,7 +3171,7 @@ mpEl.addEventListener('pointerup',mpUp); mpEl.addEventListener('pointercancel',m
 mpEl.addEventListener('wheel',e=>{ e.preventDefault(); const r=mpEl.getBoundingClientRect(); mpZoomAt(Math.exp(-e.deltaY*(e.ctrlKey?.01:.0018)),e.clientX-r.left,e.clientY-r.top); },{passive:false});
 mpEl.addEventListener('dblclick',e=>{ const r=mpEl.getBoundingClientRect(); mpZoomAt(1.8,e.clientX-r.left,e.clientY-r.top,true); });
 const mpCenterZoom=f=>{ if(window.campusOverlay?.active){window.campusOverlay.camera({action:'zoom',factor:f});return;} const r=mpEl.getBoundingClientRect(); mpZoomAt(f,r.width/2,r.height/2,true); };
-$('mpIn').onclick=()=>mpCenterZoom(1.5); $('mpOut').onclick=()=>mpCenterZoom(1/1.5); $('mpFit').onclick=()=>mpFit(true);
+$('mpIn').onclick=()=>mpCenterZoom(1.5); $('mpOut').onclick=()=>mpCenterZoom(1/1.5);
 function mpHover(e){ const p=e.target.closest('.mp-s'), t=$('mpTip');
   const pm=e.target.closest('.mp-poi-m'); if(pm){ const r=mpEl.getBoundingClientRect(); t.innerHTML=`<b>${esc(pm.dataset.name)}</b>${pm.dataset.note?' '+esc(pm.dataset.note):''}`; t.style.left=(e.clientX-r.left)+'px'; t.style.top=(e.clientY-r.top)+'px'; t.hidden=false; return; }
   document.querySelectorAll('.mp-s.hov').forEach(x=>x!==p&&x.classList.remove('hov'));
