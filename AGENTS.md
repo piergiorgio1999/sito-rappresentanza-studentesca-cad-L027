@@ -52,6 +52,22 @@ Anche anteprime, render e schermate da mostrare all'utente nascono da Git: apri
 la PR e usa l'anteprima che il workflow pubblica per quella PR. Un server
 locale serve solo alla verifica dell'agente prima del push.
 
+## Nuove parti del sito: prima in Claude Design
+
+Quando l'utente chiede di aggiungere una nuova parte al sito (sezione, scheda,
+pagina), non scrivere subito l'HTML.
+
+1. Crea prima la bozza come artifact Claude Design (tipo "Design") e consegnala
+   all'utente.
+2. L'utente la modifica a piacimento nell'interfaccia di Claude.
+3. Solo dopo la sua conferma, genera la nuova parte del sito a partire da quella
+   versione modificata, nel rispetto di `site/HANDOFF.md` (`site/index.html` e
+   `site/artifact.html` restano allineati) e di "Pubblicazione di siti e pagine
+   HTML".
+
+Fanno eccezione le correzioni puntuali (testi, colori, bug): si fanno
+direttamente. Se l'utente chiede esplicitamente di saltare la bozza, si salta.
+
 ## Economia di contesto
 
 Ogni lettura costa: usa il percorso più corto che porta a `WAIT`, `FIX` o `PASS`.
