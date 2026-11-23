@@ -1623,6 +1623,9 @@
   }
   // il tasto flottante «⟳ Ruota» sta accanto a «▤ Scheda»: solo con un oggetto selezionato e la scheda nascosta
   function syncRot() {
+    // Su /campus-3d/ l'editor e' caricato ma la sua barra non viene costruita: senza
+    // questa guardia il ciclo di animazione solleva un errore a ogni fotogramma.
+    if (!ui.rot) return;
     const on = !!(mode === 'modifica' && sel && sel.type === 'item' && sel.cardHidden), kind = on ? turnKind() : null;
     if (ui.rot.hidden === on) ui.rot.hidden = !on;
     const pr = String(rotOn()); if (ui.rot.getAttribute('aria-pressed') !== pr) ui.rot.setAttribute('aria-pressed', pr);
