@@ -207,6 +207,11 @@
       travMats.push(m); return m;
     };
     const travPlain = std(P.TRAV_PLAIN ?? 0xc8bda6, { roughness: 0.92 });   // fasce lisce: cornicione, architravi
+    /* I cornicioni sono lastre piene su tutta l'impronta: se restano in travertino chiaro,
+       viste dall'alto i tre volumi si saldano in un'unica massa bianca. Sopra ciascuno va
+       quindi il piano di copertura, piu' scuro, rientrato quel tanto che lascia in vista
+       il bordo chiaro del cornicione. */
+    const roofTop = std(P.ROOF_TOP ?? 0x9d978c, { roughness: 1 });
     const travDark = std(P.TRAV_DARK ?? 0x9b9280, { roughness: 0.95 });     // basamento, appena più scuro
     const shadow = std(0x2d2b27, { roughness: 1 });                          // fondo degli scassi: con l'illuminazione della scena un grigio piu' chiaro esce slavato
     const glass = std(0x33454f, { roughness: 0.14, metalness: 0.3, transparent: true, opacity: 0.9 });
@@ -278,6 +283,7 @@
     box(-HW, HW, H_FRONT - H_CORN, H_FRONT - 0.42, -0.02, D_FRONT + 0.02, travPlain, 'fascia-sommitale');
     box(-HW - CORN_OUT, HW + CORN_OUT, H_FRONT - 0.42, H_FRONT,
       -CORN_OUT, D_FRONT + CORN_OUT, travPlain, 'cornicione');
+    box(-HW + 0.5, HW - 0.5, H_FRONT, H_FRONT + 0.03, 0.5, D_FRONT - 0.5, roofTop, 'copertura-fronte');
     // basamento appena accennato, più scuro; si interrompe sul corpo centrale, dove ci sono i gradini
     box(-HW - 0.09, -CHW, 0, H_BASE, -0.09, D_FRONT, travDark, 'basamento-sx');
     box(CHW, HW + 0.09, 0, H_BASE, -0.09, D_FRONT, travDark, 'basamento-dx');
@@ -394,6 +400,7 @@
     [[SIDE_L, -HW], [HW, SIDE_R]].forEach(([a, b]) => {
       box(a, b, 0, SIDE_H - 0.5, SIDE_Z0, SIDE_Z1, wTravOut, 'blocco-anni70');
       box(a - 0.2, b + 0.2, SIDE_H - 0.5, SIDE_H, SIDE_Z0 - 0.15, SIDE_Z1, travPlain, 'cornicione-blocco');
+      box(a + 0.4, b - 0.4, SIDE_H, SIDE_H + 0.03, SIDE_Z0 + 0.4, SIDE_Z1 - 0.4, roofTop, 'copertura-blocco');
       box(a - 0.06, b + 0.06, 0, 0.9, SIDE_Z0 - 0.06, SIDE_Z1, travDark, 'basamento-blocco');
       // due file di finestre sul fronte del blocco
       const w = Math.abs(b - a), n = Math.max(2, Math.round(w / 3.0));
@@ -416,6 +423,7 @@
       flat(ringPts(CZ, R_IN - 0.25, R_OUT + 0.25, a0, a1, 3), H_W1 - 0.35, travPlain, 0.35, 'marcapiano-ala');
       flat(ringPts(CZ, R_IN + SETBACK, R_OUT, a0, a1, 3), H_W1, wTrav, H_W2 - H_W1 - 0.35, 'ala-curva-livello-alto');
       flat(ringPts(CZ, R_IN + SETBACK - 0.25, R_OUT + 0.25, a0, a1, 3), H_W2 - 0.35, travPlain, 0.35, 'cornicione-ala');
+      flat(ringPts(CZ, R_IN + SETBACK + 0.35, R_OUT - 0.35, a0, a1, 3), H_W2, roofTop, 0.03, 'copertura-ala');
       // terrazza che resta sopra il livello basso, sul lato della corte
       flat(ringPts(CZ, R_IN, R_IN + SETBACK, a0, a1, 3), H_W1 - 0.02, roofMat, 0.06, 'terrazza-ala');
       // finestre: una fila per livello sul fronte esterno e una sul fronte della corte
@@ -452,6 +460,7 @@
     bands.forEach(([r0, r1, h], i) => {
       flat(ringPts(T_CZ, r0, r1, -T_A, T_A, 3), 0, tTrav, h - 0.45, `torre-fascia-${i}`);
       flat(ringPts(T_CZ, r0 - 0.2, r1 + (i === 2 ? 0.3 : 0.2), -T_A, T_A, 3), h - 0.45, travPlain, 0.45, `torre-cornicione-${i}`);
+      flat(ringPts(T_CZ, r0 + 0.35, r1 - 0.35, -T_A, T_A, 3), h, roofTop, 0.03, `torre-copertura-${i}`);
     });
     /* Finestre del fronte esterno della torre: una campata per ciascuno dei sette telai radiali
        di cui parla il volume Getty, su tre livelli (quanti sono gli ordini di aule a gradoni che

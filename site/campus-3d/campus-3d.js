@@ -2055,15 +2055,9 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     }
     return c;
   }
-  /* Edifici che nel livello di contesto vanno saltati perche' un modulo li ricostruisce
-     a mano: altrimenti la scatola OSM resta li' e compenetra il modello.
-       222784447 = colonnato d'ingresso  -> ingresso-aldo-moro.js
-        33391509 = Istituto Castelnuovo  -> matematica-castelnuovo.js
-     Chi aggiunge un modulo nuovo per un edificio deve aggiungere qui il suo osm_id. */
-  const CONTESTO_SOSTITUITO = new Set(['222784447', '33391509']);
-
+  /* Niente elenco di osm_id da saltare: gli edifici ricostruiti a mano spariscono prima, perché la loro
+     area è già stata sottratta all'impronta in fuoriRicostruiti() (vedi RICOSTRUITI_A_MANO). */
   function addContextPolygon(shape, props) {
-    if (CONTESTO_SOSTITUITO.has(String(props.osm_id))) return; // sostituiti da un modello a mano: vedi la costante
     const levels = Number(String(props['building:levels'] ?? '').replace(',', '.'));
     let height = heightInfo({ height: props.height, levels: props['building:levels'] }).value;
     const area = Math.abs(THREE.ShapeUtils.area(shape.getPoints()));
@@ -2100,51 +2094,77 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     if (!hiddenCap) hiddenCap = new THREE.MeshBasicMaterial({ visible: false });
     return hiddenCap;
   }
-  /* ---------- fascia dei Propilei: lì vale il modello a mano, non l'impronta OSM ----------
-     Stesso riferimento del piazzale usato in buildTrees (u lungo le colonne, v verso Piazzale Aldo Moro).
-     Il colonnato di ingresso-aldo-moro.js è lungo L = 87.6 attorno a U_MID = 2.1 (u da -41.7 a 45.9) e i suoi
-     corpi in mattoni vanno da BLOCK_BACK = -6.1 a V_FRONT = 5.1 rispetto a V_MID = -0.6 (v da -6.7 a 4.5):
-     la fascia li copre con mezzo metro di margine, quanto basta a non lasciare facce complanari. Le impronte
-     OSM che ci entrano (gli edifici che fiancheggiano l'ingresso) ci perdono solo la parte che ci cade dentro:
-     il corpo principale resta in piedi. */
+  /* ---------- aree ricostruite a mano: l'unico punto in cui si sottraggono le impronte OSM ----------
+     Dove un modulo ricostruisce un edificio pezzo per pezzo, l'estrusione OSM della stessa area non deve
+     esistere: resterebbe dentro al modello e lo compenetrerebbe (la «scatola bianca»). Invece di nasconderla
+     a valle, caso per caso, qui si dichiara una volta sola l'area che il modello occupa e la si sottrae
+     all'impronta prima di estruderla. Di qui passa tutto ciò che viene estruso — il livello di contesto e
+     gli edifici codificati — perché impronteOSM() è l'unico ingresso di entrambi (buildScene, rebuildCu014).
+
+     Per un modulo nuovo basta aggiungere una voce a RICOSTRUITI_A_MANO: nient'altro da toccare.
+     Ogni voce dà il suo anello esterno in [lon, lat] ed è una funzione, perché i dati (buildings) arrivano
+     dopo il caricamento dello script. Se la libreria di clipping manca o l'anello non c'è ancora, l'impronta
+     torna invariata: nessun effetto collaterale, al più resta la scatola OSM di prima. */
+  /* Fascia dei Propilei. Stesso riferimento del piazzale usato in buildTrees (u lungo le colonne, v verso
+     Piazzale Aldo Moro). Il colonnato di ingresso-aldo-moro.js è lungo L = 87.6 attorno a U_MID = 2.1
+     (u da -41.7 a 45.9) e i suoi corpi in mattoni vanno da BLOCK_BACK = -6.1 a V_FRONT = 5.1 rispetto a
+     V_MID = -0.6 (v da -6.7 a 4.5): la fascia li copre con mezzo metro di margine, quanto basta a non
+     lasciare facce complanari. Le impronte OSM che ci entrano (gli edifici che fiancheggiano l'ingresso)
+     ci perdono solo la parte che ci cade dentro: il corpo principale resta in piedi. */
   const PROPILEI = { u0: -43, u1: 46.4, v0: -7.2, v1: 5 };
   const ING_PROP = { ref: [12.5122, 41.9021], c: [10.005, 18.489], a: [0.37442, -0.92726], n: [-0.92726, -0.37442] };
   const propEN = (u, v) => [ING_PROP.c[0] + ING_PROP.a[0] * u + ING_PROP.n[0] * v, ING_PROP.c[1] + ING_PROP.a[1] * u + ING_PROP.n[1] * v];
   const propLonLat = (u, v) => { const [de, dn] = propEN(u, v); return [ING_PROP.ref[0] + de / (111320 * Math.cos(ING_PROP.ref[1] * Math.PI / 180)), ING_PROP.ref[1] + dn / 111320]; };
-  let propFrame;
-  function propileiFrame() {
-    if (propFrame === undefined) {
-      try {
-        const at = (u, v) => { const w = project(propLonLat(u, v)); return [w.x, -w.n]; };
-        const o = at(0, 0), pa = at(1, 0), pn = at(0, 1);
-        propFrame = { o, ea: [pa[0] - o[0], pa[1] - o[1]], en: [pn[0] - o[0], pn[1] - o[1]] };
-      } catch (_) { propFrame = null; } // senza riferimento le impronte restano intere
-    }
-    return propFrame;
+  const anelloPropilei = () => { const { u0, u1, v0, v1 } = PROPILEI; return [[u0, v0], [u1, v0], [u1, v1], [u0, v1], [u0, v0]].map(([u, v]) => propLonLat(u, v)); };
+  // impronta OSM di un edificio codificato, presa da campus-buildings.json (anello esterno, in lon/lat)
+  const anelloCodice = (code) => { const b = buildings.find((x) => String(x.code).toUpperCase() === code); return (b && b.rings && b.rings[0]) || null; };
+  const RICOSTRUITI_A_MANO = [
+    { nome: 'Propilei di Piazzale Aldo Moro (ingresso-aldo-moro.js)', anello: anelloPropilei },
+    { nome: 'Istituto Castelnuovo, CU006 (matematica-castelnuovo.js)', anello: () => anelloCodice('CU006') },
+  ];
+  const bboxAnello = (ring) => ring.reduce((b, [lon, lat]) => [Math.min(b[0], lon), Math.min(b[1], lat), Math.max(b[2], lon), Math.max(b[3], lat)], [Infinity, Infinity, -Infinity, -Infinity]);
+  const bboxSiToccano = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+  /* Scheggia: quel che resta quando il taglio passa quasi esattamente sul bordo dell'impronta. Non è un
+     edificio — estrusa diventerebbe un muro bianco lungo e sottile — ma un residuo del clipping. Si misura
+     lo spessore della striscia equivalente, 2·area/perimetro: il colonnato dei Propilei ne lascia una di
+     0,24 m su 25 m di lunghezza. Sotto il mezzo metro il pezzo si butta; nel dubbio si tiene. */
+  const SPESSORE_MIN = 0.5; // m
+  function scheggia(ring) {
+    try {
+      const pts = ring.map((pt) => { const w = project(pt); return [w.x, w.n]; });
+      let doppiaArea = 0, giro = 0;
+      for (let i = 0; i < pts.length - 1; i += 1) {
+        const [x0, n0] = pts[i], [x1, n1] = pts[i + 1];
+        doppiaArea += x0 * n1 - x1 * n0;
+        giro += Math.hypot(x1 - x0, n1 - n0);
+      }
+      return giro > 0 && Math.abs(doppiaArea) / giro < SPESSORE_MIN;
+    } catch (_) { return false; }
   }
-  function inPropilei(x, z) {
-    const f = propileiFrame();
-    if (!f) return false;
-    const dx = x - f.o[0], dz = z - f.o[1];
-    const u = dx * f.ea[0] + dz * f.ea[1], v = dx * f.en[0] + dz * f.en[1];
-    return u > PROPILEI.u0 && u < PROPILEI.u1 && v > PROPILEI.v0 && v < PROPILEI.v1;
-  }
-  // Impronta meno la fascia dei Propilei: zero o più impronte. Senza sovrapposizione torna la stessa, invariata.
-  function fuoriPropilei(rings) {
+  // Impronta meno le aree ricostruite a mano: zero o più impronte. Senza sovrapposizione torna la stessa, invariata.
+  function fuoriRicostruiti(rings) {
     const outer = closeRing(rings[0]);
     if (outer.length < 4) return [rings];
-    if (!outer.some((pt) => { const w = project(pt); return inPropilei(w.x, -w.n); })) return [rings];
     const pc = window.polygonClipping;
-    if (!pc || typeof pc.difference !== 'function') return [rings];
+    if (!pc || typeof pc.difference !== 'function') return [rings]; // senza libreria meglio l'impronta intera
+    const bb = bboxAnello(outer), tagli = [];
+    for (const area of RICOSTRUITI_A_MANO) {
+      let anello = [];
+      try { anello = closeRing(area.anello() || []); } catch (_) { anello = []; } // area non ancora disponibile: si salta
+      if (anello.length < 4 || !bboxSiToccano(bb, bboxAnello(anello))) continue;
+      tagli.push([anello]);
+    }
+    if (!tagli.length) return [rings];
     try {
-      const { u0, u1, v0, v1 } = PROPILEI;
-      const cut = [[u0, v0], [u1, v0], [u1, v1], [u0, v1], [u0, v0]].map(([u, v]) => propLonLat(u, v));
       const subject = rings.map(closeRing).filter((r) => r.length >= 4);
       if (!subject.length) return [rings];
-      return pc.difference(subject, [cut]).filter((poly) => poly[0] && closeRing(poly[0]).length >= 4);
+      return pc.difference(subject, ...tagli)
+        .map((poly) => ({ poly, esterno: closeRing(poly[0] || []) }))
+        .filter(({ esterno }) => esterno.length >= 4 && !scheggia(esterno))
+        .map(({ poly }) => poly);
     } catch (_) { return [rings]; } // la libreria non ce la fa: meglio l'impronta intera che il buco
   }
-  const impronteOSM = (rings) => carveCourtyard(rings).flatMap(fuoriPropilei);
+  const impronteOSM = (rings) => carveCourtyard(rings).flatMap(fuoriRicostruiti);
   function addPolygon(feature, rings, lookup) {
     const outer = closeRing(rings[0]);
     if (outer.length < 4 || !insideMap(polygonCentroid(outer))) return;
