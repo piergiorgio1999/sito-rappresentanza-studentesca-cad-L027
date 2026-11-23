@@ -472,19 +472,50 @@
       .filter(([, z]) => z >= D_FRONT - 0.2);
     if (court.length > 3) flat(court, 0.06, pav, 0, 'corte-lastricato').receiveShadow = true;
 
-    /* Tre scale antincendio cilindriche nella corte (anni '80, non di Ponti). */
+    /* Tre scale antincendio cilindriche nella corte (anni '80, non di Ponti).
+       Non sono muratura bianca ma gabbie in ferro verniciato rosso-marrone, e a ogni
+       piano un passaggio le collega all'edificio: senza quei collegamenti non sarebbero
+       vie di fuga. Il passaggio esce radialmente dal centro della corte verso il muro
+       delle ali, a R_IN. */
+    const ferro = std(P.FERRO ?? 0x6e3524, { roughness: 0.72, metalness: 0.35 });
+    const ferroScuro = std(P.FERRO_SCURO ?? 0x4e2619, { roughness: 0.78, metalness: 0.3 });
+    const PIANI = Array.isArray(P.CYL_PIANI) && P.CYL_PIANI.length ? P.CYL_PIANI.slice() : [4.3, 8.1, 11.9];
+    const PASS_W = P.CYL_PASS_W ?? 1.4;
     for (let i = 0; i + 1 < CYL.length; i += 2) {
-      const cy = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 24), travPlain);
-      cy.position.set(CYL[i], CYL_H / 2, CYL[i + 1]); cy.name = 'scala-antincendio'; group.add(cy);
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R + 0.18, CYL_R + 0.18, 0.4, 24), travDark);
-      cap.position.set(CYL[i], CYL_H + 0.2, CYL[i + 1]); cap.name = 'coronamento-scala'; group.add(cap);
-      // feritoie verticali, come nelle foto dello stato attuale
-      for (let k = 0; k < 8; k += 1) {
-        const a = (k / 8) * Math.PI * 2;
-        const sl = new THREE.Mesh(new THREE.BoxGeometry(0.34, CYL_H - 2.4, 0.3), shadow);
-        sl.position.set(CYL[i] + Math.sin(a) * (CYL_R - 0.06), CYL_H / 2, CYL[i + 1] + Math.cos(a) * (CYL_R - 0.06));
-        sl.rotation.y = a; sl.raycast = () => {}; group.add(sl);
+      const cx = CYL[i], cz = CYL[i + 1];
+      // fusto: anima piena sottile, montanti e parapetti in ferro
+      const cy = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R - 0.35, CYL_R - 0.35, CYL_H, 20), ferroScuro);
+      cy.position.set(cx, CYL_H / 2, cz); cy.name = 'scala-antincendio'; group.add(cy);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R + 0.12, CYL_R + 0.12, 0.35, 20), ferro);
+      cap.position.set(cx, CYL_H + 0.17, cz); cap.name = 'coronamento-scala'; group.add(cap);
+      for (let k = 0; k < 12; k += 1) {                    // montanti verticali
+        const a = (k / 12) * Math.PI * 2;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.14, CYL_H, 0.14), ferro);
+        m.position.set(cx + Math.sin(a) * CYL_R, CYL_H / 2, cz + Math.cos(a) * CYL_R);
+        m.rotation.y = a; m.raycast = () => {}; group.add(m);
       }
+      // direzione radiale verso il muro della corte
+      const dx = cx - 0, dz = cz - CZ, dl = Math.hypot(dx, dz) || 1;
+      const ux = dx / dl, uz = dz / dl, span = Math.max(1.2, R_IN - dl);
+      PIANI.forEach((h, n) => {
+        const anello = new THREE.Mesh(new THREE.TorusGeometry(CYL_R, 0.09, 6, 20), ferro);
+        anello.rotation.x = Math.PI / 2; anello.position.set(cx, h + 1.05, cz);
+        anello.name = 'parapetto-scala'; anello.raycast = () => {}; group.add(anello);
+        const piano = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, 0.14, 20), ferroScuro);
+        piano.position.set(cx, h, cz); piano.raycast = () => {}; group.add(piano);
+        // passerella di collegamento all'edificio, a ogni piano
+        const mid = CYL_R + span / 2 - 0.2, ang = Math.atan2(ux, uz);
+        const pass = new THREE.Mesh(new THREE.BoxGeometry(PASS_W, 0.14, span), ferroScuro);
+        pass.position.set(cx + ux * mid, h, cz + uz * mid);
+        pass.rotation.y = ang;
+        pass.name = 'passerella-scala-' + (n + 1); pass.raycast = () => {}; group.add(pass);
+        [-1, 1].forEach((sgn) => {                          // parapetti della passerella
+          const pr = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, span), ferro);
+          const px = Math.cos(ang) * sgn * (PASS_W / 2), pz = -Math.sin(ang) * sgn * (PASS_W / 2);
+          pr.position.set(pass.position.x + px, h + 0.57, pass.position.z + pz);
+          pr.rotation.y = pass.rotation.y; pr.raycast = () => {}; group.add(pr);
+        });
+      });
     }
 
     group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
