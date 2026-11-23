@@ -468,6 +468,43 @@ main>section.panel{border:0;background:none;padding:0;box-shadow:none;border-rad
 .soon b{font-size:.95rem}
 .is-soon{opacity:.55;pointer-events:none;filter:grayscale(.3)}
 footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.78rem;line-height:1.5}
+/* ===== Borse e bandi ===== */
+.bb-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 14px}
+.bb-bar .chips button{min-height:40px;padding:7px 13px;font-size:.88rem}
+.bb-toggle{margin-left:auto;min-height:40px;padding:7px 13px;font-size:.88rem}
+@media(max-width:560px){.bb-toggle{margin-left:0}}
+.bb-today{display:flex;align-items:center;gap:10px;margin:22px 0 4px;font-weight:800;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--sap)}
+.bb-today::before,.bb-today::after{content:"";height:2px;background:var(--sap);flex:1;opacity:.3}
+.bb-month{font-family:var(--serif);color:var(--sap2);font-size:1.15rem;margin:22px 0 10px}
+.bb-list{list-style:none;margin:0;padding:0;display:grid;gap:10px;position:relative;max-width:820px}
+.bb-list::before{content:"";position:absolute;left:30px;top:0;bottom:0;width:2px;background:var(--line)}
+.bb-ev{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;align-items:start}
+.bb-date{position:relative;z-index:1;text-align:center;border:1px solid var(--line);border-radius:12px;background:#fff;padding:7px 4px;line-height:1.1}
+.bb-date b{display:block;font-size:1.35rem;font-family:var(--serif);color:var(--sap2)}
+.bb-date span{display:block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:3px}
+.bb-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 14px;display:grid;gap:6px;min-width:0}
+.bb-top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.bb-cat{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sap)}
+.bb-st{font-size:.72rem;font-weight:800;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.bb-st.today{background:var(--sap);color:#fff}
+.bb-st.soon{background:#fff4d6;color:#7a5600}
+.bb-st.fut{background:#e2f1da;color:#2f6b1f}
+.bb-st.past{background:#efe8ea;color:var(--muted)}
+.bb-st.est{background:#fff;color:var(--muted);border:1px dashed #b9aeb2}
+.bb-card h4{margin:0;font-family:var(--serif);font-size:1.05rem;line-height:1.3;color:var(--ink)}
+.bb-card p{margin:0;font-size:.9rem}
+.bb-card p.bb-when{font-size:.82rem;color:var(--muted);font-weight:600}
+.bb-ev.is-today .bb-card{border-color:var(--sap);box-shadow:0 0 0 2px rgba(130,36,51,.14)}
+.bb-ev.is-today .bb-date{border-color:var(--sap);background:var(--rose)}
+.bb-ev.is-next .bb-card{border-color:#cfadb6}
+.bb-ev.is-past .bb-card,.bb-ev.is-past .bb-date{opacity:.62}
+.bb-ev.is-est .bb-card{border-style:dashed}
+.bb-more{justify-self:start;border:0;background:none;color:var(--sap);font-weight:700;font-size:.86rem;padding:6px 0;min-height:36px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.bb-det{border-top:1px solid var(--line);padding-top:8px;display:grid;gap:8px}
+.bb-det ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:.88rem}
+.bb-det a{color:var(--sap);font-weight:700;overflow-wrap:anywhere}
+.bb-det .bb-links{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.88rem}
+@media(max-width:420px){.bb-ev{grid-template-columns:52px minmax(0,1fr);gap:8px}.bb-date b{font-size:1.15rem}.bb-list::before{left:25px}}
 @media(prefers-reduced-motion:no-preference){.btn{transition:background .15s}}
 
 /* ===== Barra laterale (prova) ===== */
@@ -843,6 +880,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     <button role="tab" id="t-orari" data-tab="orari" aria-controls="tab-orari" aria-selected="true" tabindex="0"><span aria-hidden="true">🗓️</span>Orari</button>
     <button role="tab" id="t-esami" data-tab="esami" aria-controls="tab-esami" aria-selected="false" tabindex="-1"><span aria-hidden="true">⏳</span>Esami<i class="beta">beta</i></button>
     <button role="tab" id="t-testi" data-tab="testi" aria-controls="tab-testi" aria-selected="false" tabindex="-1"><span aria-hidden="true">📚</span><em class="two">Testi e pagine dei corsi</em><i class="beta">beta</i></button>
+    <button role="tab" id="t-borse" data-tab="borse" aria-controls="tab-borse" aria-selected="false" tabindex="-1"><span aria-hidden="true">🎓</span><em class="two">Borse e bandi</em></button>
     <button role="tab" id="t-aule" data-tab="aule" aria-controls="tab-aule" aria-selected="false" tabindex="-1"><span aria-hidden="true">🚪</span><em class="two">Aule e docenti</em></button>
     <button role="tab" id="t-mappa" data-tab="mappa" aria-controls="tab-mappa" aria-selected="false" tabindex="-1"><span aria-hidden="true">🗺️</span><em class="two">Mappa del campus</em></button>
     <button role="tab" id="t-eduroam" data-tab="eduroam" aria-controls="tab-eduroam" aria-selected="false" tabindex="-1"><span aria-hidden="true">📶</span><em class="two">Wi-Fi Eduroam</em></button>
@@ -1024,6 +1062,40 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     <div class="au-res" id="auRes" aria-live="polite"></div>
     <div id="auBld"></div>
     <p class="au-note" id="auSrc"></p>
+  </section>
+
+    <!-- ===== Borse e bandi ===== -->
+  <section class="panel" id="tab-borse" role="tabpanel" aria-labelledby="t-borse" hidden>
+    <div class="ph"><h2>Borse e bandi</h2><p>Borse di studio, borse di collaborazione, rimborsi e scadenze economiche aperti a chi frequenta una triennale di Scienze Chimiche, in ordine di data. Controllato il 23 novembre 2026.</p></div>
+    <div class="banner" id="bbBanner" hidden></div>
+    <p class="note" style="margin:0 0 12px;max-width:760px">Le date senza etichetta sono quelle scritte nei bandi. Le voci con l’etichetta <b>Stima</b> non sono ufficiali: ripetono il calendario dell’anno scorso e vanno riverificate quando esce il nuovo bando.</p>
+    <div id="bbRoot"></div>
+
+    <h3 class="h3">Senza scadenza fissa</h3>
+    <div class="cards">
+      <article class="card"><h3 class="h3" style="margin-top:0">Altre borse di collaborazione e tutorato</h3><p>Durante l’anno Sapienza pubblica altri bandi di collaborazione: biblioteche, musei, laboratori, orientamento e tutorato. I requisiti sono gli stessi: iscrizione dal 2° anno al 1° anno fuori corso e almeno 2/5 dei CFU dell’anno precedente.</p><p>Compenso di 1.295 € per 150 ore, esenti da tributi; 1.500 € per il supporto a studenti con disabilità o DSA. Puoi avere una sola borsa per anno accademico e presentare al massimo 8 domande. Dal 1° settembre 2026 serve prima confermare la “Dichiarazione” su BorseCollaborazione.</p><p><a href="https://www.uniroma1.it/it/pagina/borse-di-collaborazione" target="_blank" rel="noopener">Borse di collaborazione Sapienza</a> · <a href="https://trasparenza.uniroma1.it/page/5/bandi-di-concorso.html" target="_blank" rel="noopener">Elenco dei bandi</a></p></article>
+      <article class="card"><h3 class="h3" style="margin-top:0">Esonero rettorale una tantum</h3><p>Per chi è in fragilità economica o in un disagio particolare e non può usare gli esoneri previsti dalla legge per il diritto allo studio. Si può chiedere una sola volta in tutta la carriera. La pagina dell’articolo di regolamento non indica scadenze: chiedi alla Segreteria studenti.</p><p><a href="https://www.uniroma1.it/it/content/esonero-rettorale-una-tantum" target="_blank" rel="noopener">Art. 65, esonero rettorale</a></p></article>
+      <article class="card"><h3 class="h3" style="margin-top:0">Esoneri e riduzioni per merito</h3><p>Esonero dai contributi per chi ha il massimo dei voti al diploma o alla laurea; riduzione con maturità tra 95 e 99 nell’anno di immatricolazione; riduzione per chi supera molti esami con buoni voti; rimborso dei contributi dell’ultimo anno per chi completa il percorso di eccellenza.</p><p>Soglie di voto e crediti non sono scritte nella pagina di presentazione: vedi il Regolamento studenti, capi X e XI.</p><p><a href="https://www.uniroma1.it/it/pagina/esenzioni-agevolazioni-e-borse-di-studio" target="_blank" rel="noopener">Esenzioni, agevolazioni e borse di studio</a></p></article>
+    </div>
+
+    <h3 class="h3">Non sono per la triennale</h3>
+    <p class="note" style="max-width:760px;margin:0 0 10px">Compaiono negli elenchi Sapienza, ma un triennalista non può chiederle. Tienile presenti se pensi alla magistrale.</p>
+    <div class="cards">
+      <article class="card"><h3 class="h3" style="margin-top:0">Borse per tesi all’estero</h3><p>2.821 € lordi per almeno due mesi continuativi di lavoro di tesi all’estero. Riservate a iscritti a una laurea magistrale; il bando è gestito da ogni Facoltà.</p><p><a href="https://www.uniroma1.it/it/pagina/borse-tesi-allestero" target="_blank" rel="noopener">Borse per tesi all’estero</a></p></article>
+      <article class="card"><h3 class="h3" style="margin-top:0">Borse di perfezionamento all’estero</h3><p>1.290 € al mese per 6–12 mesi. Per laureati Sapienza con laurea magistrale, a ciclo unico o di vecchio ordinamento: la laurea triennale non basta.</p><p><a href="https://www.uniroma1.it/it/pagina/borse-di-perfezionamento-allestero" target="_blank" rel="noopener">Perfezionamento all’estero</a></p></article>
+      <article class="card"><h3 class="h3" style="margin-top:0">Overseas</h3><p>Mobilità extra-UE con contributo mensile, ma il bando 2026/27 è della Facoltà di Ingegneria civile e industriale e non vale per Chimica.</p></article>
+    </div>
+
+    <h3 class="h3">Fonti ufficiali</h3>
+    <ul>
+      <li><a href="https://web.uniroma1.it/trasparenza/bando/247332_23/2026" target="_blank" rel="noopener">Bando n. 23/2026, borse di collaborazione del Dipartimento di Chimica</a> e la <a href="https://bibchimicailluminati.web.uniroma1.it/it/borse-di-collaborazione-studenti-chimica-20262027" target="_blank" rel="noopener">pagina della Biblioteca Illuminati</a></li>
+      <li><a href="https://laziodisco.it/bandi-aperti/bando-diritto-allo-studio-2026-2027/" target="_blank" rel="noopener">Bando diritto allo studio 2026/27, Lazio DiSCo</a></li>
+      <li><a href="https://www.uniroma1.it/it/pagina/bando-erasmus-2026-2027-studio" target="_blank" rel="noopener">Erasmus+ Studio 2026/27</a> · <a href="https://www.uniroma1.it/it/pagina/tirocini-erasmus-allestero" target="_blank" rel="noopener">Erasmus+ Traineeship</a></li>
+      <li><a href="https://www.uniroma1.it/it/content/isee-il-diritto-allo-studio-universitario-scadenze-e-multe-caso-di-ritardo" target="_blank" rel="noopener">ISEE per il diritto allo studio: scadenze e multe</a></li>
+      <li><a href="https://www.uniroma1.it/it/notizia/bando-rimborso-materiale-didattico-aa-2026-2027" target="_blank" rel="noopener">Rimborso materiale didattico 2026/27</a> · <a href="https://www.uniroma1.it/it/pagina/residenze-universitarie-sapienza-concorso-assegnazione-posti-letto" target="_blank" rel="noopener">Residenze universitarie</a></li>
+      <li><a href="https://www.uniroma1.it/it/pagina/borse-di-studio" target="_blank" rel="noopener">Elenco generale delle borse di studio Sapienza</a></li>
+    </ul>
+    <p class="note" style="max-width:760px">Questa pagina riassume i bandi per orientarti. Se una data o un importo non coincide con il bando, vale il bando.</p>
   </section>
 
   <!-- ===== Timeline esami ===== -->
@@ -2890,10 +2962,156 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
 renderSelectors();
 render();
 
+/* =================== BORSE E BANDI =================== */
+var bbCat = 'all', bbPast = false, bbFocus = '';
+function renderBorse(){
+  const root = $('bbRoot'); if(!root) return;
+  const CATS = {collab:'Collaborazione', dsu:'Diritto allo studio', tasse:'Tasse e ISEE', rimb:'Contributi', estero:'Estero'};
+  const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const MS = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const GG = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+  const ERA = 'https://www.uniroma1.it/it/pagina/bando-erasmus-2026-2027-studio';
+  const DISCO = 'https://laziodisco.it/bandi-aperti/bando-diritto-allo-studio-2026-2027/';
+  const ISEE = 'https://www.uniroma1.it/it/content/isee-il-diritto-allo-studio-universitario-scadenze-e-multe-caso-di-ritardo';
+  const BANDO = 'https://web.uniroma1.it/trasparenza/bando/247332_23/2026';
+  const ITEMS = [
+    {d:'2026-02-27',h:'13:00',cat:'estero',t:'Erasmus+ Studio 2026/27, prima scadenza',p:'Candidature chiuse. Il bando generale era uscito il 16 dicembre 2025.',
+      more:['La pagina Sapienza riporta anche il 12 febbraio come data di riferimento per i CFU verbalizzati.','Chi risulta assegnatario nella prima scadenza non può partecipare alla seconda.'],links:[[ERA,'Bando Erasmus+ Studio 2026/27']]},
+    {d:'2026-04-17',h:'23:59',cat:'rimb',t:'Rimborso spese psicologiche (spese 2025)',p:'Domande chiuse. Fino a 1.000 € per consulenza psicologica, psicoterapia e psichiatria sostenute dal 1° gennaio al 31 dicembre 2025.',
+      more:['Graduatoria provvisoria l’8 maggio 2026, definitiva il 14 maggio 2026.','Requisiti e procedura sono nel bando completo su Amministrazione trasparente.'],links:[['https://www.uniroma1.it/it/pagina/bando-rimborso-spese-prestazioni-professionali-consulenza-psicologica-e-psicoterapia','Pagina del bando']]},
+    {d:'2026-05-26',h:'13:00',cat:'estero',t:'Erasmus+ Traineeship 2026/27',p:'Candidature chiuse. Tirocinio all’estero di 2–5 mesi, per iscritti dal 2° anno di triennale.',
+      more:['Contributo 2026/27: 550 € al mese (Paesi con costo della vita alto) o 500 € (medio e basso), più 200 € al mese di integrazione MUR e un Travel Grant.','L’ente ospitante si trova da soli e serve la Letter of Acceptance prima di candidarsi. Il colloquio è obbligatorio.'],links:[['https://www.uniroma1.it/it/pagina/tirocini-erasmus-allestero','Erasmus+ Traineeship']]},
+    {d:'2026-05-29',h:'23:59',cat:'rimb',t:'100 borse di Ateneo per carichi di cura o vulnerabilità',p:'Domande chiuse (edizione 2025/26). 1.000 € lordi a borsa.',
+      more:['Per genitori, caregiver e giovani caregiver, careleaver, vittime di violenza di genere e vittime del terrorismo o della criminalità organizzata.','ISEE e criteri di graduatoria sono nel bando completo, non nella pagina di presentazione.'],links:[['https://www.uniroma1.it/it/pagina/bando-100-borse-di-studio-studentessei-con-carichi-di-cura-o-condizioni-di-vulnerabilita','Pagina del bando']]},
+    {d:'2026-06-10',e:'2026-07-22',h:'12:00',cat:'dsu',t:'Borsa di studio e posto alloggio DiSCo Lazio 2026/27',p:'Domanda chiusa. La seconda fase, per correggere e reinviare la domanda (solo per gli ammessi), si è chiusa l’11 agosto 2026 alle 12:00.',
+      more:['Il calendario di graduatorie, ricorsi e pagamenti è nell’Allegato L del bando.'],links:[[DISCO,'Bando DiSCo 2026/27']]},
+    {d:'2026-06-15',h:'13:00',cat:'estero',t:'Erasmus+ Studio 2026/27, seconda scadenza',p:'Candidature chiuse. Valeva solo per la mobilità del secondo semestre.',links:[[ERA,'Bando Erasmus+ Studio 2026/27']]},
+    {d:'2026-10-11',h:'23:59',cat:'dsu',t:'Residenze universitarie Sapienza: posti letto 2026/27',p:'Concorso chiuso. 20 posti letto in stanze doppie, gratuiti fino al 31 luglio 2027.',
+      more:['Requisiti indicati: iscrizione fino al 1° anno fuori corso, ISEEU acquisito su Infostud e CFU acquisiti al 10 agosto 2026.'],links:[['https://www.uniroma1.it/it/pagina/residenze-universitarie-sapienza-concorso-assegnazione-posti-letto','Concorso residenze']]},
+    {d:'2026-10-30',h:'23:59',cat:'rimb',t:'Contributo per le spese di locazione 2026',p:'Domande chiuse. Per iscritti fino al 1° anno fuori corso nell’a.a. 2025/26.',links:[['https://trasparenza.uniroma1.it/page/5/details/31239/contributi-per-le-spese-di-locazione-abitativa-sostenute-durante-lanno-2026.html','Bando su Amministrazione trasparente']]},
+
+    {key:'collab26',d:'2026-11-23',h:'23:59',cat:'collab',t:'Borse di collaborazione, Dipartimento di Chimica (bando n. 23/2026)',p:'40 borse: 11 in Biblioteca, 1 al Museo di Chimica «Primo Levi» e 28 nei laboratori didattici. 150 ore per 1.295 € esenti da tributi.',
+      more:['Domanda solo online su borsecollaborazione.uniroma1.it con le credenziali Infostud. Dal 1° settembre 2026 serve prima confermare la “Dichiarazione” sulla tua posizione per il 2026/27. Controlla che la domanda risulti inoltrata prima della scadenza.',
+        'Requisiti generali: iscrizione dal 2° anno al 1° anno fuori corso, con almeno 2/5 dei CFU previsti dal percorso nell’anno accademico precedente.',
+        'Requisito specifico: aver sostenuto almeno uno di questi esami: Chimica generale e inorganica con laboratorio, Chimica analitica I, II o III con laboratorio, Chimica fisica I o III, Chimica organica III, Fondamenti di scienze macromolecolari, Processi e impianti I o II. Il voto di quell’esame conta nel merito.',
+        'Borse nei laboratori: Chimica generale e inorganica 4, Chimica analitica I 4, II 3, III 4, Chimica fisica I 4, III 1, Chimica organica III 4, Fondamenti di scienze macromolecolari 2, Processi e impianti I e II 2.',
+        'Il compenso arriva di norma in due rate, dopo 75 e 150 ore. A parità di punteggio prevale l’ISEE più basso. Gli studenti a tempo parziale vanno in fondo alla graduatoria.'],
+      links:[[BANDO,'Bando n. 23/2026'],['https://bibchimicailluminati.web.uniroma1.it/it/borse-di-collaborazione-studenti-chimica-20262027','Pagina della Biblioteca Illuminati'],['https://borsecollaborazione.uniroma1.it','Portale BorseCollaborazione']]},
+    {d:'2026-11-26',ev:true,cat:'collab',t:'Graduatoria provvisoria delle borse di Chimica',p:'Pubblicazione prevista il 26 novembre 2026.',
+      more:['Le rettifiche vanno chieste entro 5 giorni naturali dalla pubblicazione, con l’email istituzionale, all’indirizzo indicato nel bando.','Chi riceve la convocazione deve accettare l’incarico dal sistema entro 5 giorni. L’accettazione non si può revocare.'],links:[[BANDO,'Bando n. 23/2026']]},
+    {d:'2026-11-29',cat:'dsu',t:'DiSCo: contratto di locazione per i fuori sede',p:'Solo per chi ha chiesto la borsa DiSCo come fuori sede. Il contratto va sottoscritto entro il 29 novembre 2026 e deve durare almeno 10 mesi, tra il 1° ottobre 2026 e il 30 settembre 2027, nel comune sede degli studi.',links:[[DISCO,'Bando DiSCo 2026/27']]},
+    {d:'2026-12-10',cat:'dsu',t:'DiSCo: ISEEUP e regolarizzazioni',p:'Termine per sottoscrivere l’ISEEUP presso un CAF convenzionato (studenti non residenti in Italia), recuperare la DSU in banca dati INPS e sistemare le incongruenze ISEE. Stessa data per le regolarizzazioni del posto alloggio.',links:[[DISCO,'Bando DiSCo 2026/27']]},
+    {d:'2026-12-16',est:true,when:'Dicembre 2026 (stima)',cat:'estero',t:'Erasmus+ Studio 2027/28: bando',p:'Non ancora pubblicato. L’anno scorso il bando è uscito il 16 dicembre 2025.',
+      more:['Condizioni del bando 2026/27, da riverificare nel nuovo: CFU verbalizzati alla data di riferimento, livello di lingua di norma A2 (o quello richiesto dalla sede), mobilità minima di 2 mesi.','Contributo 2026/27: 400 € al mese (Paesi del gruppo 1, per esempio Germania e Francia) o 350 € (gruppo 2, per esempio Spagna), più un’integrazione Sapienza/MUR da 200 a 500 € al mese in base all’ISEE. Per tenerla servono almeno 12 CFU riconosciuti.','Come candidarsi: scegli la sede dal Search Tool accordi, prepara il progetto formativo, fai il test di lingua al CLA se non hai una certificazione e compila il modulo del tuo Dipartimento.'],links:[[ERA,'Bando 2026/27 (riferimento)']]},
+    {d:'2026-12-17',cat:'tasse',t:'ISEE reale su Infostud, senza multa',p:'Se alla seconda rata hai scelto “ISEE non disponibile”, entro il 17 dicembre 2026 devi acquisire l’ISEE reale su Infostud.',
+      more:['Con ISEE presunto sotto 24.000 € il bollettino della seconda rata prevede contributi zero: paghi solo tassa regionale e imposta di bollo.','Con ISEE presunto sopra 24.000 € paghi un forfait di 300 € più tassa regionale e bollo. Se l’ISEE reale risulta più basso, il sistema genera un credito.','La no tax area di Sapienza arriva a 24.000 € di ISEE (la legge ferma il limite a 22.000 €), per chi ha i requisiti di merito.','Il sito Sapienza consiglia di andare al CAF con almeno 30 giorni di anticipo.'],links:[[ISEE,'Scadenze ISEE e multe']]},
+    {d:'2026-12-18',e:'2027-06-30',cat:'tasse',t:'ISEE in ritardo: parte la multa',p:'Dal 18 dicembre 2026 puoi ancora acquisire l’ISEE, ma con una multa di 50 € più 2,50 € per ogni giorno di ritardo, fino a un massimo di 100 €.',
+      more:['Dopo il 30 giugno 2027 non puoi più acquisire l’ISEE: paghi i contributi al valore ordinario più le multe maturate.'],links:[[ISEE,'Scadenze ISEE e multe']]},
+    {d:'2026-12-27',cat:'dsu',t:'DiSCo: contratto di locazione nel sistema',p:'Entro il 27 dicembre 2026 inserisci gli estremi del contratto di locazione nel sistema DiSCo (studenti fuori sede).',links:[[DISCO,'Bando DiSCo 2026/27']]},
+    {d:'2027-02-10',cat:'dsu',t:'DiSCo: iscrizione perfezionata e regolarizzazioni',p:'Il 10 febbraio 2027 è la data di riferimento per l’iscrizione perfezionata e per le regolarizzazioni relative a borsa di studio e mobilità internazionale.',links:[[DISCO,'Bando DiSCo 2026/27']]},
+    {d:'2027-02-15',est:true,when:'Fine febbraio 2027 (stima)',cat:'estero',t:'Erasmus+ Studio 2027/28: prima scadenza',p:'Date non ancora pubblicate. Nel 2026 le candidature chiudevano a fine febbraio (27 febbraio, ore 13:00).',links:[[ERA,'Bando 2026/27 (riferimento)']]},
+    {d:'2027-03-01',e:'2027-03-31',h:'23:59',cat:'rimb',t:'Rimborso materiale didattico 2026/27',p:'Fino a 500 € per libri, software, dispositivi per lo studio e materiale per la tesi, spesi dal 1° gennaio 2026 al 31 marzo 2027.',
+      more:['Servono l’iscrizione al 2026/27 entro il 31 marzo 2027 con tasse e contributi pagati, l’ISEEU acquisito su Infostud e un IBAN intestato a te registrato su Infostud.','Spese ammesse: libri di testo, software e app didattici, dispositivi informatici per lo studio, materiale per la tesi e dotazioni obbligatorie per laboratori o tirocini. Servono fatture: scontrini, fotocopie e stampe non bastano.','Non può partecipare chi ha vinto la borsa DiSCo 2026/27. Gli idonei non vincitori possono farlo.','Domanda con il modulo Google indicato dal bando, allegando Allegato B, Allegato C, un unico PDF con le fatture e un documento d’identità. Dopo l’invio non puoi modificare nulla.'],links:[['https://www.uniroma1.it/it/notizia/bando-rimborso-materiale-didattico-aa-2026-2027','Pagina del bando']]},
+    {d:'2027-03-25',cat:'tasse',t:'Terza rata delle tasse universitarie',p:'La terza rata scade il 25 marzo 2027.',links:[[ISEE,'Scadenze ISEE e multe']]},
+    {d:'2027-04-17',est:true,when:'Primavera 2027 (stima)',cat:'rimb',t:'Rimborso spese psicologiche e 100 borse di Ateneo: nuove edizioni',p:'Non ancora pubblicate. Le edizioni precedenti scadevano il 17 aprile 2026 (rimborso psicologico) e il 29 maggio 2026 (100 borse).',
+      more:['Rimborso psicologico: fino a 1.000 € per le spese sostenute nell’anno precedente.','100 borse: 1.000 € lordi per studenti con carichi di cura o in condizioni di vulnerabilità.'],links:[['https://www.uniroma1.it/it/pagina/borse-di-studio','Elenco borse Sapienza']]},
+    {d:'2027-05-25',est:true,when:'Maggio-giugno 2027 (stima)',cat:'estero',t:'Erasmus+ Traineeship e seconda scadenza Studio 2027/28',p:'Date non ancora pubblicate. Nel 2026 il tirocinio chiudeva il 26 maggio alle 13:00 e la seconda scadenza dello studio il 15 giugno alle 13:00.',links:[['https://www.uniroma1.it/it/pagina/tirocini-erasmus-allestero','Erasmus+ Traineeship'],[ERA,'Erasmus+ Studio']]},
+    {d:'2027-06-10',est:true,when:'Giugno-luglio 2027 (stima)',cat:'dsu',t:'Borsa di studio DiSCo Lazio 2027/28: bando',p:'Non ancora pubblicato. Nel 2026 la domanda era aperta dal 10 giugno al 22 luglio, ore 12:00.',
+      more:['Valori del bando 2026/27, da riverificare nel nuovo: soglia ISEE 28.339,88 € (ISPE 61.608,48 €) per la borsa; 40.000 € di ISEE (ISPE 86.956,58 €) per posto alloggio, mobilità internazionale e premi di laurea. Controlla a quali benefici si applica ciascuna coppia.','Borsa per chi ha ISEE fino a 14.169,94 €: fuori sede 7.556,78 €, pendolare 4.129,32 €, in sede 2.633,68 €. Tra 14.169,94 € e 18.893,25 €: 6.571,11 €, 3.590,71 € e 2.290,16 €. Oltre 18.893,25 € l’importo scende fino alla metà. In ogni fascia ci sono 2 pasti al giorno gratuiti (valore 600 €).','Maggiorazione del 20% per le studentesse iscritte a corsi STEM.','Fuori sede: residenza a più di 50 km e contratto di locazione di almeno 10 mesi nel comune sede degli studi. Pendolare: meno di 50 km. In sede: stesso comune.'],links:[[DISCO,'Bando 2026/27 (riferimento)']]},
+    {d:'2027-06-30',cat:'tasse',t:'Ultimo giorno per l’ISEE',p:'Dopo il 30 giugno 2027 l’ISEE non si può più acquisire: paghi i contributi al valore ordinario più le multe.',links:[[ISEE,'Scadenze ISEE e multe']]},
+    {d:'2027-10-10',est:true,when:'Autunno 2027 (stima)',cat:'dsu',t:'Residenze universitarie Sapienza: posti letto 2027/28',p:'Non ancora pubblicato. Quest’anno la domanda chiudeva l’11 ottobre alle 23:59.',links:[['https://www.uniroma1.it/it/pagina/residenze-universitarie-sapienza-concorso-assegnazione-posti-letto','Concorso 2026/27 (riferimento)']]},
+    {d:'2027-10-23',est:true,when:'Ottobre-novembre 2027 (stima)',cat:'collab',t:'Borse di collaborazione di Chimica 2027/28',p:'Non ancora pubblicato. Quest’anno il bando è uscito il 23 ottobre con scadenza il 23 novembre.',
+      more:['Prepara in anticipo i requisiti: almeno uno degli esami richiesti dal bando (per esempio Chimica generale e inorganica, Analitica I–III, Chimica fisica I e III, Organica III) e 2/5 dei CFU dell’anno precedente.'],links:[[BANDO,'Bando 2026/27 (riferimento)']]}
+  ];
+
+  const now = new Date(), today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day0 = iso => new Date(iso + 'T00:00:00');
+  const nDays = iso => Math.round((day0(iso) - today0) / 864e5);
+  const fmt = iso => { const t = day0(iso); return t.getDate() + ' ' + MESI[t.getMonth()] + ' ' + t.getFullYear(); };
+  const endOf = it => new Date((it.e || it.d) + 'T' + (it.h || '23:59') + ':00');
+  const isPast = it => !it.est && now > endOf(it);
+
+  function status(it){
+    if(it.est) return {k:'est', t: endOf(it) < now ? 'Da verificare' : 'Stima'};
+    if(isPast(it)) return {k:'past', t: it.ev ? 'Passato' : 'Scaduto'};
+    const hh = it.h || '23:59';
+    if(it.e && nDays(it.d) > 0){ const s = nDays(it.d); return {k: s <= 14 ? 'soon' : 'fut', t: s === 1 ? 'Inizia domani' : 'Inizia tra ' + s + ' giorni'}; }
+    const n = nDays(it.e || it.d), run = it.e ? 'In corso · ' : '';
+    if(it.ev){ if(n === 0) return {k:'today', t:'Oggi'}; if(n === 1) return {k:'soon', t:'Domani'}; return {k: n <= 14 ? 'soon' : 'fut', t:'Tra ' + n + ' giorni'}; }
+    if(n === 0) return {k:'today', t: run + 'Scade oggi · ' + hh};
+    if(n === 1) return {k:'soon', t: run + 'Scade domani · ' + hh};
+    return {k: n <= 14 ? 'soon' : 'fut', t: run + 'Scade tra ' + n + ' giorni'};
+  }
+  const tile = it => { const t = day0(it.d); return it.est ? '<b>≈</b><span>' + MS[t.getMonth()] + '</span>' : '<b>' + t.getDate() + '</b><span>' + MS[t.getMonth()] + '</span>'; };
+  const when = it => it.est ? it.when : (it.e ? 'Dal ' + fmt(it.d) + ' al ' + fmt(it.e) : fmt(it.d)) + (it.h ? ', ore ' + it.h : '');
+
+  let uid = 0;
+  const card = (it, cls) => {
+    const s = status(it), id = 'bbm' + (uid++);
+    const hasDet = (it.more && it.more.length) || (it.links && it.links.length);
+    const det = hasDet ? '<button type="button" class="bb-more" aria-expanded="false" aria-controls="' + id + '">Dettagli</button><div class="bb-det" id="' + id + '" hidden>'
+      + (it.more && it.more.length ? '<ul>' + it.more.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '')
+      + (it.links && it.links.length ? '<div class="bb-links">' + it.links.map(l => '<a href="' + l[0] + '" target="_blank" rel="noopener">' + esc(l[1]) + '</a>').join('') + '</div>' : '')
+      + '</div>' : '';
+    return '<li class="bb-ev ' + cls + '"><div class="bb-date" aria-hidden="true">' + tile(it) + '</div><div class="bb-card"><div class="bb-top"><span class="bb-cat">' + CATS[it.cat] + '</span><span class="bb-st ' + s.k + '">' + esc(s.t) + '</span></div><h4>' + esc(it.t) + '</h4><p class="bb-when">' + esc(when(it)) + '</p><p>' + esc(it.p) + '</p>' + det + '</div></li>';
+  };
+  const group = arr => {
+    let out = '', cur = '', open = false;
+    arr.forEach(x => {
+      const t = day0(x.it.d), key = MESI[t.getMonth()] + ' ' + t.getFullYear();
+      if(key !== cur){ if(open) out += '</ol>'; out += '<h3 class="bb-month">' + key.charAt(0).toUpperCase() + key.slice(1) + '</h3><ol class="bb-list">'; cur = key; open = true; }
+      out += card(x.it, x.cls);
+    });
+    return out + (open ? '</ol>' : '');
+  };
+
+  const all = ITEMS.slice().sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : ((a.e || '') < (b.e || '') ? -1 : 1));
+  const vis = all.filter(it => bbCat === 'all' || it.cat === bbCat);
+  const past = vis.filter(isPast), up = vis.filter(it => !isPast(it));
+  const nPast = all.filter(isPast).length;
+  let nextSet = false;
+  const upArr = up.map(it => {
+    let cls = '';
+    if(it.est) cls = 'is-est';
+    else { cls = status(it).k === 'today' ? 'is-today' : (nextSet ? '' : 'is-next'); nextSet = true; }
+    return {it, cls};
+  });
+
+  const chips = ['all'].concat(Object.keys(CATS)).map(k => '<button type="button" data-bbcat="' + k + '" aria-pressed="' + (bbCat === k) + '">' + (k === 'all' ? 'Tutte' : CATS[k]) + '</button>').join('');
+  root.innerHTML = '<div class="bb-bar"><div class="chips" role="group" aria-label="Filtra per tipo">' + chips + '</div>'
+    + (nPast ? '<button type="button" class="btn alt bb-toggle" data-bbpast="1" aria-pressed="' + bbPast + '">' + (bbPast ? 'Nascondi' : 'Mostra') + ' i bandi scaduti (' + nPast + ')</button>' : '') + '</div>'
+    + (bbPast && past.length ? group(past.map(it => ({it, cls:'is-past'}))) : '')
+    + '<div class="bb-today">Oggi · ' + GG[now.getDay()] + ' ' + now.getDate() + ' ' + MESI[now.getMonth()] + ' ' + now.getFullYear() + '</div>'
+    + (upArr.length ? group(upArr) : '<p class="empty">Nessun bando in questa categoria.</p>');
+
+  const ban = $('bbBanner'), key = ITEMS.find(it => it.key === 'collab26');
+  if(ban && key){
+    if(isPast(key)) ban.hidden = true;
+    else {
+      const s = status(key);
+      ban.hidden = false;
+      ban.innerHTML = '<strong>' + (s.k === 'today' ? 'Scade oggi alle 23:59' : 'Scade il 23 novembre 2026 alle 23:59') + ': borse di collaborazione del Dipartimento di Chimica.</strong> 40 borse, 150 ore, 1.295 €. Domanda su <a href="https://borsecollaborazione.uniroma1.it" target="_blank" rel="noopener">borsecollaborazione.uniroma1.it</a> con le credenziali Infostud. Requisiti nei dettagli qui sotto.';
+    }
+  }
+
+  if(!root.dataset.bb){
+    root.dataset.bb = '1';
+    root.addEventListener('click', e => {
+      const c = e.target.closest('[data-bbcat]');
+      if(c){ bbCat = c.dataset.bbcat; bbFocus = '[data-bbcat="' + bbCat + '"]'; renderBorse(); return; }
+      const p = e.target.closest('[data-bbpast]');
+      if(p){ bbPast = !bbPast; bbFocus = '[data-bbpast]'; renderBorse(); return; }
+      const m = e.target.closest('.bb-more');
+      if(m){ const d = $(m.getAttribute('aria-controls')), o = m.getAttribute('aria-expanded') === 'true'; m.setAttribute('aria-expanded', String(!o)); d.hidden = o; m.textContent = o ? 'Dettagli' : 'Nascondi'; }
+    });
+  }
+  if(bbFocus){ const f = root.querySelector(bbFocus); if(f) f.focus(); bbFocus = ''; }
+}
+
 /* =================== SCHEDE =================== */
 /* Interruttori delle funzioni: quando backend e database su Cloudflare sono pronti, mettere a true */
 const FEATURES = { accounts:false, market:false };
-const TABS = ['orari','aule','esami','testi','market','food','pellicano','safezone','inclusione','organigramma','mappa','eduroam','segnala','news','impostazioni','account'];
+const TABS = ['orari','aule','esami','testi','market','food','pellicano','safezone','inclusione','organigramma','borse','mappa','eduroam','segnala','news','impostazioni','account'];
 function showTab(t, push){
   let sub=[]; if(t && t.includes('/')){ [t,...sub]=t.split('/'); }
   if(t==='libri') t='testi';
@@ -2915,6 +3133,7 @@ function showTab(t, push){
   if(t==='account') renderAccount();
   if(t==='segnala'){ renderFaq(); renderProfs(); }
   if(t==='news') renderNews();
+  if(t==='borse') renderBorse();
   if(t==='orari') render();
   if(t==='aule' && window.renderAule) window.renderAule();
   if(t==='impostazioni') renderSettings();
