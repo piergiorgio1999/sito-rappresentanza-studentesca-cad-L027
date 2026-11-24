@@ -3,7 +3,7 @@
  "nota": "Cortile dell'azoto (Chimica), modello minimale. Coordinate locali in metri: u lungo la cancellata su strada, v verso il portico, h in alto. Misure ricavate dalla pianta della scansione Scaniverse registrata, dalle foto e da CORREZIONI_RIFERIMENTI.md. La scansione grezza non è usata nel modello.",
  "riferimento": {
   "scansione": "115418",
-  "angoloDeg": -47.7,
+  "angoloDeg": 42.3,
   "origine": [
    3.66,
    -6.06
