@@ -2120,7 +2120,12 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
      V_MID = -0.6 (v da -6.7 a 4.5): la fascia li copre con mezzo metro di margine, quanto basta a non
      lasciare facce complanari. Le impronte OSM che ci entrano (gli edifici che fiancheggiano l'ingresso)
      ci perdono solo la parte che ci cade dentro: il corpo principale resta in piedi. */
-  const PROPILEI = { u0: -43, u1: 46.4, v0: -7.2, v1: 5 };
+  /* La fascia arriva dietro il colonnato, non si ferma al suo filo: le impronte OSM degli
+     edifici che fiancheggiano l'ingresso (Igiene e Ortopedia) venivano su a ridosso degli
+     archi e li tamponavano, cosi' che guardando l'ingresso si vedeva un muro bianco invece
+     del passaggio. Dodici metri di profondita' liberano la luce degli archi lasciando in
+     piedi i corpi veri, che stanno piu' indietro. */
+  const PROPILEI = { u0: -45, u1: 48.4, v0: -13.5, v1: 5 };
   const ING_PROP = { ref: [12.5122, 41.9021], c: [10.005, 18.489], a: [0.37442, -0.92726], n: [-0.92726, -0.37442] };
   const propEN = (u, v) => [ING_PROP.c[0] + ING_PROP.a[0] * u + ING_PROP.n[0] * v, ING_PROP.c[1] + ING_PROP.a[1] * u + ING_PROP.n[1] * v];
   const propLonLat = (u, v) => { const [de, dn] = propEN(u, v); return [ING_PROP.ref[0] + de / (111320 * Math.cos(ING_PROP.ref[1] * Math.PI / 180)), ING_PROP.ref[1] + dn / 111320]; };

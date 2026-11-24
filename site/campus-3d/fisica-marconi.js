@@ -259,7 +259,7 @@
     PENS_W = P.PENS_W ?? 0; PENS_D = P.PENS_D ?? 2.4; PENS_Y = P.PENS_Y ?? 4.5; PENS_T = P.PENS_T ?? 0.38;
     /* Piazzale rialzato in travertino dentro l'intaglio sud-est: profondità e numero di alzate
        non documentati; la quota è quella dello zoccolo, le lastre sono i 60 cm documentati. */
-    PLAT_Z = P.PLAT_Z ?? 24.0; PLAT_H = P.PLAT_H ?? H_ZOCC; STEPS = P.STEPS ?? 5; LASTRA = P.LASTRA ?? 0.6;
+    PLAT_Z = P.PLAT_Z ?? 37.1; PLAT_H = P.PLAT_H ?? H_ZOCC; STEPS = P.STEPS ?? 5; LASTRA = P.LASTRA ?? 0.6;
     /* PIANO DI SEDIME (fonte 6). Le due assonometrie poggiano il complesso su una piastra
        disegnata con il bordo a gradino. Misurata rettificando l'assonometria 1 nel piano della
        pianta (vedi fonte 6 per il metodo) e leggendo i bordi come rette di quota 0:
@@ -559,11 +559,36 @@
        rientro e ci si arriva camminando sul lastricato, non su un gradino intermedio. */
     flat([[REC_X0, REC_Z0], [REC_X1, REC_Z0], [REC_X1, PZ0], [PX1, PZ0], [PX1, PLAT_Z], [PX0, PLAT_Z]],
       0, lastre, PLAT_H, 'piazzale-travertino').receiveShadow = true;
+    /* Scalinata: NON corre per tutti i 34,5 m del fronte, come stava qui prima.
+       La pianta del piano terreno di Pagano (ArchiDiAP, stessa serie dei prospetti, barra di
+       scala 10,15 px/m) e il disegno assonometrico mostrano un piazzale rialzato molto piu'
+       profondo di quanto fosse modellato, con i gradini sui TRE lati liberi - ovest, sud ed
+       est - e non una gradinata unica contro l'edificio. Il bordo sud misurato cade a
+       z = 37,1, da cui PLAT_Z. */
     const SH = PLAT_H / STEPS;
     for (let k = 0; k < STEPS; k += 1) {
-      const d = (STEPS - k) * 0.36;
-      box(PX0, PX1, k * SH, (k + 1) * SH, PLAT_Z - 0.01, PLAT_Z + d, travPlain, 'gradino');
+      const d = (STEPS - k) * 0.36, y0 = k * SH, y1 = (k + 1) * SH;
+      box(PX0 - d, PX1 + d, y0, y1, PLAT_Z - 0.01, PLAT_Z + d, travPlain, 'gradino-sud');
+      box(PX0 - d, PX0 + 0.01, y0, y1, PZ0, PLAT_Z, travPlain, 'gradino-ovest');
+      box(PX1 - 0.01, PX1 + d, y0, y1, PZ0, PLAT_Z, travPlain, 'gradino-est');
     }
+
+    /* Aiuola al centro del piazzale, con il cordolo in travertino, e le panchine di pietra
+       che le corrono accanto: il rettangolo interno del disegno assonometrico e le sagome
+       tonde allineate lungo il suo lato. Sette panchine, come indicato. Misure del cordolo
+       lette sulla pianta: x 25,7-43,5 e z 21,8-28,2. */
+    const AI = [25.7, 21.8, 43.5, 28.2], CORD = 0.35, AI_H = 0.45;
+    box(AI[0], AI[2], 0, PLAT_H + AI_H, AI[1], AI[3], travPlain, 'aiuola-cordolo');
+    flat([[AI[0] + CORD, AI[1] + CORD], [AI[2] - CORD, AI[1] + CORD],
+      [AI[2] - CORD, AI[3] - CORD], [AI[0] + CORD, AI[3] - CORD]],
+      PLAT_H + AI_H - 0.06, corteMat, 0, 'aiuola-verde');
+    const PAN_N = 7, PAN_L = 1.8, PAN_P = 0.55, PAN_H = 0.45, PAN_Z = AI[1] - 1.5;
+    for (let k = 0; k < PAN_N; k += 1) {
+      const cx = AI[0] + (AI[2] - AI[0]) * (k + 0.5) / PAN_N;
+      box(cx - PAN_L / 2, cx + PAN_L / 2, PLAT_H, PLAT_H + PAN_H,
+        PAN_Z - PAN_P / 2, PAN_Z + PAN_P / 2, travPlain, 'panchina');
+    }
+
     // vano d'ingresso: fondo scuro, porte vetrate partite da montanti, pensilina piatta sopra
     /* La massa e' un'estrusione piena: la profondita' dell'incasso si legge solo dal fronte,
        quindi il vano e' una campitura scura a filo e porte e montanti stanno appena davanti. */
@@ -583,6 +608,26 @@
     if (PENS_W > 0) {
       box(X_ENTR - PENS_W / 2, X_ENTR + PENS_W / 2, PENS_Y, PENS_Y + PENS_T,
         REC_Z0 - 0.1, REC_Z0 + PENS_D, travPlain, 'pensilina');
+    }
+
+    /* ---------------- portico su pilotis attorno alla corte ----------------
+       La pianta del piano terreno di Pagano mostra i quattro lati della corte scanditi da
+       pilastri quadrati ravvicinati: è il porticato che le fonti chiamano «collegamento su
+       pilotis». Sezione e passo sono letti sul disegno, 0,5 m di lato e circa 4 m di passo;
+       l'altezza è quella del primo solaio. Dove il passo non entra intero nel lato, i
+       pilastri si distribuiscono in modo uniforme invece di lasciare un vuoto in fondo. */
+    const PIL_L = 0.5, PIL_PASSO = 4.0, PIL_H = SILLS.length > 1 ? SILLS[1] - 0.3 : 3.6;
+    for (let i = 0; i < RING_CORTE.length; i += 1) {
+      const a = RING_CORTE[i], b = RING_CORTE[(i + 1) % RING_CORTE.length];
+      const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz);
+      if (L < PIL_PASSO) continue;
+      const n = Math.max(2, Math.round(L / PIL_PASSO));
+      for (let k = 0; k <= n; k += 1) {
+        const t = k / n;
+        const cx = a[0] + dx * t, cz = a[1] + dz * t;
+        box(cx - PIL_L / 2, cx + PIL_L / 2, 0, PIL_H, cz - PIL_L / 2, cz + PIL_L / 2,
+          travPlain, 'pilastro-corte');
+      }
     }
 
     /* ---------------- balconata del primo piano dentro il rientro ----------------
