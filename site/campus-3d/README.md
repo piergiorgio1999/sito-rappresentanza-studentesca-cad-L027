@@ -54,3 +54,13 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 - Nella vista d'apertura i modelli pesanti non visibili da lì (statua, fontanelle, condotte, tubi: circa 16 MB) si scaricano alla prima interazione.
 - Stradone: asfalto disegnato (u da −8 a 92, v da 20,75 a 39,85 del lato 0) con linee gialle di bordo e strisce pedonali; panchine di cemento colorato (sezione trapezoidale, fiore dipinto sul piano) solo a 0° o 90° rispetto all'asse, in gruppi nella fascia centrale. Posizioni e disegni indicativi, ricavati dalle foto.
 - Alberi OSM (`trees.json`): nessuno sull'asfalto; lontano da Chimica/Fisica (140 m) e dalla Minerva (85 m) se ne disegna circa il 30%.
+
+## Aggiornamento del 24/11/2026: ingresso di Fisica Marconi
+
+- Integrati `matematica-castelnuovo.js` e `fisica-marconi.js` nella scena: CU006 usa il modello procedurale di Castelnuovo e CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale.
+- I proxy bianchi OSM di CU006 e CU013 sono nascosti lasciando il contorno di selezione; CU013 viene inoltre sottratto ai volumi contestuali prima dell'estrusione.
+
+## Aggiornamento del 24/11/2026: cortile Castelnuovo e Fisica Fermi
+
+- La corte CU006 usa una pavimentazione in opus incertum; due raccordi ortogonali chiudono i varchi tra le ali curve e i blocchi laterali. Le due scale antincendio laterali sono avvicinate alle ali e collegate con passerelle perpendicolari alla parete; quella centrale resta nella posizione originale.
+- Aggiunto il modello procedurale di Fisica Enrico Fermi (CU033); il proxy OSM è escluso dalla scena quando è attivo il modello di dettaglio.

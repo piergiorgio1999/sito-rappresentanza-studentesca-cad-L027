@@ -6,7 +6,8 @@
   const DISEGNATI = new Set(['CU014', 'CU032']); // edifici disegnati nella scena (CU035 tolto su richiesta, commento del 23/10)
   // edifici con un modello di dettaglio (corpo dall'STL, facciate, esterni dai file): nella mappa del sito restano loro,
   // al posto del volume estruso dalla planimetria ufficiale (richiesta del 15/11/2026)
-  const MODELLATI = new Set(['CU014', 'CU013']); // CU013 = Edificio di Fisica (impronta OSM della relazione 5457573)
+  const MODELLATI = new Set(['CU014', 'CU006', 'CU013', 'CU033']); // CU006/CU013/CU033 hanno un modello di dettaglio dedicato
+  const MODELLI_DETTAGLIO = new Set(['CU006', 'CU013', 'CU033']); // il proxy OSM resta solo per il contorno di selezione
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
   const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
   // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
@@ -2455,6 +2456,9 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       // un solo tetto: i volumi intermedi (basamento, corpo) hanno solo le pareti, niente coperchi a metà altezza
       const mats = [pieceIndex === pieceList.length - 1 ? normalRoof : hiddenCapMaterial(), set[piece.kind]];
       const mesh = new THREE.Mesh(g, mats);
+      // Castelnuovo e Marconi hanno modelli procedurali dedicati: non mostrare il solido proxy
+      // bianco sotto/attraverso il modello. L'outline OSM resta disponibile alla selezione.
+      if (MODELLI_DETTAGLIO.has(code)) mesh.visible = false;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.mats = mats;
@@ -2515,8 +2519,8 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
     for (const feature of context.features || []) {
       const geometry = feature.geometry;
       if (!geometry) continue;
-      if (geometry.type === 'Polygon') for (const r of carveCourtyard(geometry.coordinates)) addPolygon(feature, r, lookup);
-      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of carveCourtyard(polygon)) addPolygon(feature, r, lookup);
+      if (geometry.type === 'Polygon') for (const r of carveCourtyard(geometry.coordinates).flatMap(withoutMarconi)) addPolygon(feature, r, lookup);
+      else if (geometry.type === 'MultiPolygon') for (const polygon of geometry.coordinates) for (const r of carveCourtyard(polygon).flatMap(withoutMarconi)) addPolygon(feature, r, lookup);
     }
     addCuFondi();
     addCuVentaglio();
@@ -2747,6 +2751,21 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       ring.push(ring[0]);
       return [ring];
     });
+  }
+  /* CU013 è ricostruito nel modulo fisica-marconi.js: sottrae la sagoma OSM agli edifici
+     d'intorno prima dell'estrusione, così la ricostruzione non viene attraversata da volumi proxy. */
+  function withoutMarconi(rings) {
+    const marconi = buildings.find((b) => String(b.code).toUpperCase() === 'CU013');
+    const footprint = marconi && marconi.rings && marconi.rings[0];
+    const pc = window.polygonClipping;
+    if (!footprint || !pc || typeof pc.difference !== 'function') return [rings];
+    const outer = closeRing(rings[0]), target = closeRing(footprint);
+    const bbox = (r) => r.reduce((v, p) => [Math.min(v[0], p[0]), Math.min(v[1], p[1]), Math.max(v[2], p[0]), Math.max(v[3], p[1])], [Infinity, Infinity, -Infinity, -Infinity]);
+    const a = bbox(outer), b = bbox(target);
+    if (a[0] > b[2] || b[0] > a[2] || a[1] > b[3] || b[1] > a[3]) return [rings];
+    try {
+      return pc.difference(rings.map(closeRing), [target]).filter((poly) => poly[0] && poly[0].length >= 4);
+    } catch (_) { return [rings]; }
   }
   /* ---------- Vecchio Edificio di Chimica: terrazza, area bianca, pergolato, scale antincendio ---------- */
   let travertineTexBase = null;
