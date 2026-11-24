@@ -64,3 +64,9 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 - La corte CU006 usa una pavimentazione in opus incertum; due raccordi ortogonali chiudono i varchi tra le ali curve e i blocchi laterali. Le due scale antincendio laterali sono avvicinate alle ali e collegate con passerelle perpendicolari alla parete; quella centrale resta nella posizione originale.
 - Aggiunto il modello procedurale di Fisica Enrico Fermi (CU033); il proxy OSM è escluso dalla scena quando è attivo il modello di dettaglio.
+
+## Aggiornamento del 24/11/2026: fondale monumentale CU001–CU003
+
+- CU001 Rettorato, CU002 Giurisprudenza e CU003 Lettere usano facciate esterne procedurali sulle impronte OSM. Le coperture rispettano i cortili elencati in `courtyards.json`; il portico e la scalinata esistenti del Rettorato restano liberi.
+- Travertino, ordini di finestre, cornici, ingressi e scale sono una ricostruzione schematica basata sulle tavole e sulle schede ArchiDiAP. Le altezze (5 piani per CU001, 3 per CU002/003) e le misure di facciata sono stime, non rilievi.
+- Fonti: [Rettorato](https://archidiap.com/opera/palazzo-del-rettorato/), [Facoltà di Lettere e Filosofia](https://archidiap.com/opera/facolta-di-lettere-e-filosofia/) e [tavole della Città Universitaria](https://archidiap.com/beta/assets/uploads/2023/04/Tavole-di-Disegno_La-citta-universitaria-di-Roma_Seminario-internazionale-di-progettazione.pdf). Gli edifici sostituiscono i proxy volumetrici OSM, mantenendo i contorni CU per la selezione.
