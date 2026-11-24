@@ -491,8 +491,41 @@
     }
     return W;
   }
+  function objectWorldBox(object, original) {
+    object.updateWorldMatrix(true, false);
+    const saved = object.matrix.clone(), auto = object.matrixAutoUpdate;
+    if (original && object.userData.edL0) { object.matrixAutoUpdate = false; object.matrix.copy(object.userData.edL0); object.matrixWorldNeedsUpdate = true; }
+    object.updateWorldMatrix(true, true);
+    const box = new T.Box3().setFromObject(object);
+    if (original && object.userData.edL0) { object.matrix.copy(saved); object.matrixAutoUpdate = auto; object.matrixWorldNeedsUpdate = true; object.updateWorldMatrix(true, true); }
+    return box;
+  }
   function primBox(p, original) {
     const f = frameBy(p.frameKey); f.updateWorldMatrix(true, false);
+    if (p.members) {
+      const world = new T.Box3();
+      for (const member of p.members) world.union(objectWorldBox(member, original));
+      const inv = new T.Matrix4().copy(f.matrixWorld).invert();
+      const o = { u0: Infinity, u1: -Infinity, v0: Infinity, v1: -Infinity, h0: Infinity, h1: -Infinity };
+      for (const x of [world.min.x, world.max.x]) for (const y of [world.min.y, world.max.y]) for (const z of [world.min.z, world.max.z]) {
+        const q = new T.Vector3(x, y, z).applyMatrix4(inv);
+        o.u0 = Math.min(o.u0, q.x); o.u1 = Math.max(o.u1, q.x); o.h0 = Math.min(o.h0, q.y); o.h1 = Math.max(o.h1, q.y); o.v0 = Math.min(o.v0, -q.z); o.v1 = Math.max(o.v1, -q.z);
+      }
+      return roundBox(o);
+    }
+    if (!p.mesh.isMesh) {
+      const m = p.mesh, saved = m.matrix.clone(), auto = m.matrixAutoUpdate;
+      if (original && m.userData.edL0) { m.matrixAutoUpdate = false; m.matrix.copy(m.userData.edL0); m.matrixWorldNeedsUpdate = true; }
+      m.updateWorldMatrix(true, true);
+      const bb = new T.Box3().setFromObject(m), inv = new T.Matrix4().copy(f.matrixWorld).invert();
+      const o = { u0: Infinity, u1: -Infinity, v0: Infinity, v1: -Infinity, h0: Infinity, h1: -Infinity };
+      for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
+        const q = new T.Vector3(x, y, z).applyMatrix4(inv);
+        o.u0 = Math.min(o.u0, q.x); o.u1 = Math.max(o.u1, q.x); o.h0 = Math.min(o.h0, q.y); o.h1 = Math.max(o.h1, q.y); o.v0 = Math.min(o.v0, -q.z); o.v1 = Math.max(o.v1, -q.z);
+      }
+      if (m.userData.edL0) { m.matrix.copy(saved); m.matrixAutoUpdate = auto; m.matrixWorldNeedsUpdate = true; m.updateWorldMatrix(true, true); }
+      return roundBox(o);
+    }
     const g = p.mesh.geometry; if (!g.boundingBox) g.computeBoundingBox();
     const bb = g.boundingBox, M = new T.Matrix4().copy(f.matrixWorld).invert().multiply(primWorld(p, original));
     const o = { u0: Infinity, u1: -Infinity, v0: Infinity, v1: -Infinity, h0: Infinity, h1: -Infinity };
@@ -508,13 +541,38 @@
     const id = ids[o.userData.lumps ? Math.floor(h.instanceId / o.userData.lumps) : h.instanceId];
     return id ? findItem('albero:' + id) : null;
   }
-  function primFromHit(h) {
+  const DETAIL_BUILDINGS = { CU006: 'matematica-castelnuovo', CU013: 'fisica-marconi', CU033: 'fisica-fermi' };
+  function primitiveForBuilding(code) {
+    const detail = DETAIL_BUILDINGS[code] && scene.getObjectByName(DETAIL_BUILDINGS[code]);
+    if (detail) {
+      detail.userData.code = code;
+      return { mesh: detail, members: [detail], groupCode: code, inst: null, path: 'building-group:' + code, frameKey: 'lato0' };
+    }
+    const root = scene.getObjectByName('edifici'), members = [];
+    root?.traverse((o) => { if (o.isMesh && o.userData && o.userData.code === code) members.push(o); });
+    return members.length ? { mesh: members[0], members, groupCode: code, inst: null, path: 'building-group:' + code, frameKey: 'lato0' } : null;
+  }
+  function primitiveForObject(mesh, frameKey = 'lato0') {
+    if (!mesh || !mesh.isObject3D) return null;
+    const p = { mesh, inst: null, path: pathOf(mesh), frameKey };
+    if (!p.path || !frameBy(p.frameKey)) return null;
+    const b = primBox(p);
+    return Number.isFinite(b.u0) && Math.hypot(b.u1 - b.u0, b.v1 - b.v0, b.h1 - b.h0) <= 300 ? p : null;
+  }
+  function editWholeBuilding(code) {
+    const p = primitiveForBuilding(code);
+    if (!p) { hint('Non trovo il gruppo 3D di ' + code + '.'); return; }
+    select({ type: 'prim', p });
+    hint('Sposta o ridimensiona l’intero edificio. Option-clic su una parte per modificare solo quel solido.');
+  }
+  function primFromHit(h, buildingCode) {
     const o = h.object, root = o && rootOf(o);
-    if (!o || !o.isMesh || !root || root.name === 'edifici' || root.name === 'alberi') return null; // edifici: solo texture e finestre
+    if (!o || !o.isMesh || !root || root.name === 'alberi') return null;
+    if (root.name === 'edifici' && (!o.userData || o.userData.code !== buildingCode)) return null; // evita le mesh aggregate del quartiere
     const p = { mesh: o, inst: h.instanceId != null ? h.instanceId : null, path: pathOf(o), frameKey: frameKeyOf(o) };
     if (!p.path || !frameBy(p.frameKey)) return null;
     const b = primBox(p);
-    const maxExtent = root.name === 'fisica-marconi' ? 160 : 250;
+    const maxExtent = root.name === 'fisica-marconi' || root.name === 'edifici' ? 160 : 250;
     return Math.hypot(b.u1 - b.u0, b.v1 - b.v0, b.h1 - b.h0) > maxExtent ? null : p; // niente terreno o quartiere unito
   }
   function axisMap(o0, o1, n0, n1) { if (o1 - o0 > 1e-4) { const s = (n1 - n0) / (o1 - o0); return [s, n0 - o0 * s]; } return [1, (n0 + n1) / 2 - (o0 + o1) / 2]; }
@@ -527,6 +585,18 @@
     const m = p.mesh, f = frameBy(p.frameKey); if (!f) return;
     f.updateWorldMatrix(true, false); m.updateWorldMatrix(true, false);
     const F = f.matrixWorld, G = new T.Matrix4().multiplyMatrices(F, boxMatrix(o, n)).multiply(new T.Matrix4().copy(F).invert());
+    if (p.members) {
+      for (const member of p.members) {
+        member.updateWorldMatrix(true, false);
+        if (!member.userData.edL0) member.userData.edL0 = member.matrix.clone();
+        const parentWorld = member.parent ? member.parent.matrixWorld : new T.Matrix4();
+        const originalWorld = new T.Matrix4().multiplyMatrices(parentWorld, member.userData.edL0);
+        member.matrixAutoUpdate = false;
+        member.matrix.copy(new T.Matrix4().copy(parentWorld).invert().multiply(G).multiply(originalWorld));
+        member.matrixWorldNeedsUpdate = true;
+      }
+      return;
+    }
     if (p.inst != null) {
       m.userData.edI0 = m.userData.edI0 || {};
       if (!m.userData.edI0[p.inst]) { const I = new T.Matrix4(); m.getMatrixAt(p.inst, I); m.userData.edI0[p.inst] = I; }
@@ -541,6 +611,7 @@
   // elimina il pezzo: la mesh diventa invisibile (fuori da clic e collisioni della passeggiata), l'istanza di un InstancedMesh ha la matrice scalata a zero
   function primRemove(p) {
     const m = p.mesh;
+    if (p.members) { for (const member of p.members) { member.userData.edHid = true; member.visible = false; } return; }
     if (p.inst != null) {
       m.userData.edI0 = m.userData.edI0 || {};
       if (!m.userData.edI0[p.inst]) { const I = new T.Matrix4(); m.getMatrixAt(p.inst, I); m.userData.edI0[p.inst] = I; }
@@ -549,6 +620,13 @@
   }
   function primRestore(p) {
     const m = p.mesh;
+    if (p.members) {
+      for (const member of p.members) {
+        if (member.userData.edHid) { member.visible = true; delete member.userData.edHid; }
+        if (member.userData.edL0) { member.matrix.copy(member.userData.edL0); member.matrix.decompose(member.position, member.quaternion, member.scale); member.matrixAutoUpdate = true; delete member.userData.edL0; member.matrixWorldNeedsUpdate = true; }
+      }
+      return;
+    }
     if (m.userData.edHid) { m.visible = true; delete m.userData.edHid; }
     if (p.inst != null) { const s = m.userData.edI0 && m.userData.edI0[p.inst]; if (s) { m.setMatrixAt(p.inst, s); m.instanceMatrix.needsUpdate = true; delete m.userData.edI0[p.inst]; } }
     else if (m.userData.edL0) { m.matrix.copy(m.userData.edL0); m.matrix.decompose(m.position, m.quaternion, m.scale); m.matrixAutoUpdate = true; delete m.userData.edL0; m.matrixWorldNeedsUpdate = true; }
@@ -560,8 +638,11 @@
     primsFromDb = new Map();
     for (const o of overrides) {
       if (o.sorgente !== 'primitiva' || (o.stato && o.stato !== 'da applicare') || (!o.valore && !o.rimosso) || !o.originale) continue;
-      const mesh = byPath(o.percorso); if (!mesh || !mesh.isMesh) continue;
-      const p = { mesh, inst: o.istanza != null ? o.istanza : null, path: o.percorso, frameKey: o.cornice || frameKeyOf(mesh) };
+      const groupMatch = /^building-group:(CU\d+)$/i.exec(o.percorso || '');
+      const p = groupMatch ? primitiveForBuilding(groupMatch[1].toUpperCase()) : (() => {
+        const mesh = byPath(o.percorso); return mesh && mesh.isObject3D ? { mesh, inst: o.istanza != null ? o.istanza : null, path: o.percorso, frameKey: o.cornice || frameKeyOf(mesh) } : null;
+      })();
+      if (!p) continue;
       if (!frameBy(p.frameKey)) continue;
       const b0 = primBox(p, true); // il pezzo deve essere ancora quello misurato (i dati possono essere cambiati)
       if (KEYS.every((k) => Math.abs(b0[k] - o.originale[k]) < 0.06)) { if (o.rimosso) primRemove(p); else primApply(p, o.originale, o.valore); primsFromDb.set(o.id, p); }
@@ -1317,7 +1398,7 @@
     deselect();
     // il lato toccato (riga di muro, interno o esterno): la tendina della texture cambia solo quello; sul tetto resta null → tutto l'edificio
     const wall = cellFromHit(h), onSide = wall && wall.code === code ? wall : null;
-    sel = { type: 'edificio', code, tool: null, vis: new T.Group(), handles: [], wall: onSide, tutto: !onSide };
+    sel = { type: 'edificio', code, mesh: h.object, tool: null, vis: new T.Group(), handles: [], wall: onSide, tutto: !onSide };
     fx.add(sel.vis); buildingCard();
     hint(onSide ? 'La texture cambia solo il lato toccato. Spunta «Tutto l’edificio» per cambiarli tutti.' : 'Toccato il tetto: la texture cambia tutto l’edificio.');
   }
@@ -1339,13 +1420,20 @@
     const allLabel = el('label', '', ''); allLabel.append(all, document.createTextNode(w ? ' Tutto l’edificio (non solo il lato toccato)' : ' Tutto l’edificio (lato non determinabile)'));
     const tool = (k, label) => { const b = button(label, () => { sel.tool = sel.tool === k ? null : k; buildingCard(); hint(sel.tool ? 'Tocca una cella della facciata. Toccala di nuovo per rimetterla com’era.' : ''); }); b.setAttribute('aria-pressed', String(sel.tool === k)); return b; };
     const row = el('div', 'ed-row'), n = (st.finestre || []).length, wl = el('select');
+    const transformWhole = button('Sposta o ridimensiona l’intero edificio', () => editWholeBuilding(code));
+    const transformMesh = button('Sposta o ridimensiona questo solido', () => {
+      const p = primFromHit({ object: sel.mesh }, code);
+      if (!p) { hint('Questa parte è unita ad altre geometrie e non si può trasformare separatamente.'); return; }
+      select({ type: 'prim', p });
+      hint('Modifica il solido selezionato con le maniglie. La sagoma completa dell’edificio resta ferma.');
+    });
     for (const k of C.facciate.nomi) { const o = el('option', '', TEXTURE[k] || k); o.value = k; o.selected = k === (sel.palette || 'arancione'); wl.append(o); }
     wl.addEventListener('change', () => { sel.palette = wl.value; });
     sel.palette = sel.palette || 'arancione';
-    row.append(tool('togli', 'Togli finestre'), tool('aggiungi', 'Aggiungi finestre'), tool('muro', 'Texture di un muro'));
+    row.append(transformWhole, transformMesh, tool('togli', 'Togli finestre'), tool('aggiungi', 'Aggiungi finestre'), tool('muro', 'Texture di un muro'));
     if (st.facciata || n) row.append(button('Ripristina originale', () => { facadeState.set(code, clone(base.facciate[code] || { facciata: null, finestre: [] })); applyFacade(code); saveFacade(code); buildingCard(); }));
     row.append(button('Fine', () => deselect(), true));
-    openCard([el('h3', '', 'Edificio ' + code), el('p', 'ed-meta', 'L’edificio non si deforma: si cambiano la texture e le finestre.' + (n ? ` Celle modificate: ${n}.` : '')), el('label', '', sel.tutto || !w ? 'Texture della facciata (tutto l’edificio)' : 'Texture del lato toccato'), sl, allLabel, el('label', '', 'Texture per «Texture di un muro»'), wl, row], 'dock');
+    openCard([el('h3', '', 'Edificio ' + code), el('p', 'ed-meta', 'Puoi spostare o ridimensionare il solido selezionato; per l’intero edificio restano disponibili texture e finestre.' + (n ? ` Celle modificate: ${n}.` : '')), el('label', '', sel.tutto || !w ? 'Texture della facciata (tutto l’edificio)' : 'Texture del lato toccato'), sl, allLabel, el('label', '', 'Texture per «Texture di un muro»'), wl, row], 'dock');
   }
 
   /* ---------- salvataggio ---------- */
@@ -1615,7 +1703,15 @@
       const root = rootOf(hit.object);
       if (sel && sel.type === 'edificio' && sel.tool && root && root.name === 'edifici') { togglePatch(hit); return; }
       if (sel && sel.type === 'item' && sel.tool) { itemTool(hit); return; }
-      if (root && root.name === 'edifici') { selectBuilding(hit); return; }
+      if (root && root.name === 'edifici') {
+        if (e.altKey) { const p = primFromHit(hit, hit.object.userData.code); if (p) { select({ type: 'prim', p }); return; } }
+        selectBuilding(hit); return;
+      }
+      const detailCode = root && Object.keys(DETAIL_BUILDINGS).find((code) => DETAIL_BUILDINGS[code] === root.name);
+      if (detailCode) {
+        if (e.altKey) { const p = primFromHit(hit); if (p) { select({ type: 'prim', p }); return; } }
+        editWholeBuilding(detailCode); return;
+      }
       if (root && root.name === 'alberi') { const t = treeItemFromHit(hit); if (t) select({ type: 'item', it: t }); return; }
       const prim = primFromHit(hit), it = itemAt(hit.point);
       if (it) select({ type: 'item', it, alt: prim ? { type: 'prim', p: prim } : null });
