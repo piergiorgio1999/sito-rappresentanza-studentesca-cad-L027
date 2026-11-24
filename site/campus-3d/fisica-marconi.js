@@ -141,7 +141,21 @@
      uniforme a 21 m: e' l'ipotesi che rispetta il volume documentato.
      Restano validi, e utili quando si tornera' sul tema: la differenza RELATIVA fra i corpi
      (quali parti sono piu' basse) e la torretta a sud-ovest, unico punto che la tavola del
-     quarto piano mostra abitato. */
+     quarto piano mostra abitato.
+
+     Tre metodi hanno provato a ricavare le quote dei singoli corpi dalle assonometrie, e
+     tutti e tre hanno fallito in modo misurabile. Primo: estrazione automatica dei segmenti,
+     che per la stessa ala dava altezze fra 16,2 e 20,3 m secondo quale retta si prendesse
+     per base. Secondo: il conteggio dei piani qui sopra, smentito dal volume. Terzo: fissata
+     la pianta sull'anello OSM, si e' cercata per ogni muro del perimetro l'altezza che porta
+     la sua gronda a cadere sull'inchiostro del disegno raddrizzato, scandendo h da 0 a 30 m;
+     i massimi non sono netti (il secondo picco vale quasi quanto il primo) e danno valori
+     impossibili, 26,75 m e 29,00 m su due muri e 0 m su altri. La causa e' strutturale: in
+     una planometrica lo scorrimento di quota avviene lungo una direzione fissa, e l'edificio
+     ha molte linee parallele a quella direzione, quindi le corrispondenze false sono tante
+     quante quelle vere. Con un raster di 723x1024 e tratto di un pixel non si risolve.
+     Serve una tavola a risoluzione piena, o i prospetti: da quelli le quote si leggono
+     dirette, senza passare per la proiezione. */
   const CORPI = {
     2: [[-42.0,-26.0,-18.0,-10.0],[-4.0,-26.0,20.0,-8.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,14.0],[26.0,-20.0,28.0,-4.0],[28.0,-18.0,30.0,-6.0],[-18.0,-12.0,-4.0,-4.0],[-36.0,-10.0,-18.0,-8.0],[-32.0,-8.0,-18.0,-4.0],[-4.0,-8.0,0.0,-4.0],[4.0,-8.0,20.0,-4.0],[-26.0,-4.0,-20.0,36.0],[4.0,-4.0,12.0,36.0],[-42.0,2.0,-26.0,24.0],[22.0,6.0,42.0,12.0],[24.0,12.0,42.0,14.0],[12.0,20.0,14.0,36.0],[-28.0,24.0,-26.0,36.0],[-20.0,26.0,4.0,36.0],[14.0,30.0,16.0,34.0]],
     3: [[-42.0,-26.0,-20.0,-12.0],[-2.0,-26.0,20.0,-10.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,2.0],[26.0,-18.0,30.0,-6.0],[-40.0,-12.0,-18.0,-10.0],[-34.0,-10.0,-6.0,-8.0],[6.0,-10.0,20.0,-8.0],[-32.0,-8.0,-26.0,-6.0],[-18.0,-8.0,-6.0,-6.0],[6.0,-8.0,14.0,-4.0],[26.0,-6.0,28.0,-4.0],[4.0,-4.0,10.0,22.0],[-24.0,-2.0,-20.0,20.0],[-40.0,2.0,-24.0,6.0],[44.0,2.0,48.0,12.0],[-42.0,4.0,-40.0,20.0],[-40.0,6.0,-30.0,22.0],[-26.0,6.0,-24.0,20.0],[24.0,8.0,32.0,12.0],[42.0,8.0,44.0,12.0],[10.0,20.0,12.0,26.0],[6.0,22.0,10.0,26.0],[-18.0,26.0,2.0,34.0],[-28.0,30.0,-18.0,34.0],[2.0,30.0,14.0,34.0]],
