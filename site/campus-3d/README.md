@@ -59,3 +59,8 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 - Integrati `matematica-castelnuovo.js` e `fisica-marconi.js` nella scena: CU006 usa il modello procedurale di Castelnuovo e CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale.
 - I proxy bianchi OSM di CU006 e CU013 sono nascosti lasciando il contorno di selezione; CU013 viene inoltre sottratto ai volumi contestuali prima dell'estrusione.
+
+## Aggiornamento del 24/11/2026: cortile Castelnuovo e Fisica Fermi
+
+- La corte CU006 usa una pavimentazione in opus incertum; due raccordi ortogonali chiudono i varchi tra le ali curve e i blocchi laterali. Le due scale antincendio laterali sono avvicinate alle ali e collegate con passerelle perpendicolari alla parete; quella centrale resta nella posizione originale.
+- Aggiunto il modello procedurale di Fisica Enrico Fermi (CU033); il proxy OSM è escluso dalla scena quando è attivo il modello di dettaglio.

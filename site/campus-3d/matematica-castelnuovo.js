@@ -106,7 +106,7 @@
     /* Scale antincendio cilindriche, anni '80: posizioni lette sulla pianta BIM della Figura 8
        (due simmetriche verso il fronte, una sull'asse verso la torre). Raggio e altezza stimati
        sull'assonometria. CYL è un array piatto x,z per cilindro (l'API non ammette oggetti annidati). */
-    CYL = Array.isArray(P.CYL) && P.CYL.length >= 2 ? P.CYL.slice() : [-8.9, 29.4, 8.9, 29.4, 0, 42.5];
+    CYL = Array.isArray(P.CYL) && P.CYL.length >= 2 ? P.CYL.slice() : [-11.1, 29.4, 11.1, 29.4, 0, 42.5];
     CYL_R = P.CYL_R ?? 2.6; CYL_H = P.CYL_H ?? 16.0;
   }
 
@@ -188,6 +188,32 @@
     return tex;
   }
 
+  /* Lastre irregolari in opus incertum: griglia spezzata con giunti scuri, in scala metrica. */
+  function opusIncertumTexture() {
+    const S = 512, cv = document.createElement('canvas'); cv.width = cv.height = S;
+    const g = cv.getContext('2d'), n = 3, cell = S / n;
+    g.fillStyle = '#756f65'; g.fillRect(0, 0, S, S);
+    for (let row = -1; row <= n; row += 1) for (let col = -1; col <= n; col += 1) {
+      const x = col * cell, y = row * cell, inset = 7;
+      const points = [
+        [x + inset + Math.random() * 25, y + inset + Math.random() * 20],
+        [x + cell * 0.48 + Math.random() * 30, y + inset + Math.random() * 18],
+        [x + cell - inset - Math.random() * 24, y + cell * 0.38 + Math.random() * 22],
+        [x + cell - inset - Math.random() * 18, y + cell - inset - Math.random() * 22],
+        [x + cell * 0.42 + Math.random() * 28, y + cell - inset - Math.random() * 20],
+        [x + inset + Math.random() * 22, y + cell * 0.52 + Math.random() * 26]
+      ];
+      const shade = 132 + Math.floor(Math.random() * 32);
+      g.beginPath(); points.forEach(([px, py], i) => i ? g.lineTo(px, py) : g.moveTo(px, py));
+      g.closePath(); g.fillStyle = `rgb(${shade},${shade - 3},${shade - 11})`; g.fill();
+      g.strokeStyle = '#655f56'; g.lineWidth = 5; g.stroke();
+      g.strokeStyle = 'rgba(225,218,203,0.28)'; g.lineWidth = 1.5; g.stroke();
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(10, 6); tex.anisotropy = 8;
+    return tex;
+  }
+
   function build(c) {
     readParams();
     const scene = c.scene;
@@ -218,7 +244,7 @@
     const glassDark = std(0x2a373d, { roughness: 0.2, metalness: 0.2 });
     const metal = std(0x8e918d, { roughness: 0.5, metalness: 0.25 });
     const vetroc = std(0xcfdfe4, { map: vetrocementoTexture(), roughness: 0.35, transparent: true, opacity: 0.9 });
-    const pav = std(0x9a948a, { roughness: 1 });
+    const pav = std(0x9a948a, { map: opusIncertumTexture(), roughness: 1 });
 
     const group = new THREE.Group(); group.name = 'matematica-castelnuovo';
 
@@ -413,6 +439,14 @@
       }
     });
 
+    /* Raccordi ortogonali tra le ali curve e i blocchi laterali: chiudono i due varchi
+       ai lati della corte e fanno incontrare i tre volumi senza allargare l'impronta. */
+    [-1, 1].forEach((side) => {
+      const x0 = side < 0 ? -HW - 0.05 : R_IN - 0.25;
+      const x1 = side < 0 ? -R_IN + 0.25 : HW + 0.05;
+      box(x0, x1, 0, H_W2, CZ - 0.25, SIDE_Z1, wTravOut, 'raccordo-ortogonale-corte');
+    });
+
     /* ---------------- curved wings: le ali curve ----------------
        Ferro di cavallo attorno alla corte, non semicerchio pieno: due livelli fuori terra,
        il superiore più stretto dell'inferiore (Getty, cap. struttura). */
@@ -505,7 +539,8 @@
       }
       // direzione radiale verso il muro della corte
       const dx = cx - 0, dz = cz - CZ, dl = Math.hypot(dx, dz) || 1;
-      const ux = dx / dl, uz = dz / dl, span = Math.max(1.2, R_IN - dl);
+      const ux = dx / dl, uz = dz / dl;
+      const span = Math.max(0.2, R_IN - dl - CYL_R + 0.2);
       PIANI.forEach((h, n) => {
         const anello = new THREE.Mesh(new THREE.TorusGeometry(CYL_R, 0.09, 6, 20), ferro);
         anello.rotation.x = Math.PI / 2; anello.position.set(cx, h + 1.05, cz);
@@ -513,7 +548,7 @@
         const piano = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, 0.14, 20), ferroScuro);
         piano.position.set(cx, h, cz); piano.raycast = () => {}; group.add(piano);
         // passerella di collegamento all'edificio, a ogni piano
-        const mid = CYL_R + span / 2 - 0.2, ang = Math.atan2(ux, uz);
+        const mid = CYL_R - 0.1 + span / 2, ang = Math.atan2(ux, uz);
         const pass = new THREE.Mesh(new THREE.BoxGeometry(PASS_W, 0.14, span), ferroScuro);
         pass.position.set(cx + ux * mid, h, cz + uz * mid);
         pass.rotation.y = ang;

@@ -6,8 +6,8 @@
   const DISEGNATI = new Set(['CU014', 'CU032']); // edifici disegnati nella scena (CU035 tolto su richiesta, commento del 23/10)
   // edifici con un modello di dettaglio (corpo dall'STL, facciate, esterni dai file): nella mappa del sito restano loro,
   // al posto del volume estruso dalla planimetria ufficiale (richiesta del 15/11/2026)
-  const MODELLATI = new Set(['CU014', 'CU006', 'CU013']); // CU006/CU013 hanno un modello di dettaglio dedicato
-  const MODELLI_DETTAGLIO = new Set(['CU006', 'CU013']); // il proxy OSM resta solo per il contorno di selezione
+  const MODELLATI = new Set(['CU014', 'CU006', 'CU013', 'CU033']); // CU006/CU013/CU033 hanno un modello di dettaglio dedicato
+  const MODELLI_DETTAGLIO = new Set(['CU006', 'CU013', 'CU033']); // il proxy OSM resta solo per il contorno di selezione
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
   const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
   // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
