@@ -12,6 +12,10 @@
        CU014 Chimica (STL + facciate)   CU013 Fisica Marconi (fisica-marconi.js)
        CU006 Castelnuovo (matematica-castelnuovo.js)   CU033 Fermi (fisica-fermi.js) */
   const MODELLATI = new Set(['CU014', 'CU013', 'CU006', 'CU033']);
+  /* Il proxy bianco va spento alla nascita, non dopo: i moduli lo nascondevano con un
+     controllo ogni 250 ms, e a ogni ricostruzione della scena ricompariva per un attimo
+     dentro il modello. L'outline resta, serve alla selezione dalla lista. */
+  const MODELLI_DETTAGLIO = new Set(['CU006', 'CU013', 'CU033']);
   // Scena: Città Universitaria al centro, dintorni come cartina 2D muta.
   const bounds = { west: 12.5040, south: 41.8946, east: 12.5257, north: 41.9108 };
   // sfumatura circolare della cartina muta attorno al baricentro della CU (metri)
@@ -2544,6 +2548,7 @@ uniform sampler2D roofPhoto; uniform sampler2D roofBlu; uniform vec2 roofRep; un
       // un solo tetto: i volumi intermedi (basamento, corpo) hanno solo le pareti, niente coperchi a metà altezza
       const mats = [pieceIndex === pieceList.length - 1 ? normalRoof : hiddenCapMaterial(), set[piece.kind]];
       const mesh = new THREE.Mesh(g, mats);
+      if (MODELLI_DETTAGLIO.has(code)) mesh.visible = false;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.mats = mats;
