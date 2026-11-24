@@ -154,8 +154,27 @@
      una planometrica lo scorrimento di quota avviene lungo una direzione fissa, e l'edificio
      ha molte linee parallele a quella direzione, quindi le corrispondenze false sono tante
      quante quelle vere. Con un raster di 723x1024 e tratto di un pixel non si risolve.
-     Serve una tavola a risoluzione piena, o i prospetti: da quelli le quote si leggono
-     dirette, senza passare per la proiezione. */
+     I prospetti sono poi arrivati, ed e' da quelli che vengono le quote usate: vedi sotto. */
+
+  /* ---------------- quote dai prospetti originali di Pagano ----------------
+     Fonte: ArchiDiAP, scheda «Istituto di Fisica», tavole dei quattro prospetti (nord, sud,
+     est, ovest), ridisegni dei disegni che Pagano pubblico' su Casabella nel 1936. Sono
+     proiezioni ortogonali con barra di scala: la quota si legge diretta, senza lo
+     scorrimento che rende ambigue le assonometrie.
+     Scala ricavata dalla barra: 10,0 px/m (0-20 m su 200 px). La larghezza del fronte nord
+     misurata cosi' da 88,6 m contro i 91,1 m dell'impronta OSM, il 2,7% di scarto.
+     I quattro prospetti danno gli stessi tre valori di gronda, ed e' la loro concordanza a
+     renderli affidabili:
+       14,7 m  le testate est e ovest
+       19,3 m  il corpo principale, il piu' esteso su tutti e quattro i fronti
+       23,3 m  un solo corpo alto, largo 14,5 m sui fronti nord e sud e 13,4 m su est e ovest
+     Il corpo alto cade a sud-ovest, e li' lo colloca anche il piano di emergenza 2012: la
+     tavola del quarto piano mostra abitato solo quell'angolo. Due fonti indipendenti, stesso
+     punto: e' la verifica piu' solida che abbiamo su questo edificio. */
+  const H_TESTATE = 14.7, H_TORRE = 23.3;
+  const TORRE = [-36.0, 17.0, -21.5, 30.4];   // x0, z0, x1, z1: corpo alto, dai fronti incrociati
+  const TESTATA_E = 38.0;                      // oltre questa x il fronte scende a 14,7 m
+  const TESTATA_O = -36.0;                     // sotto questa x idem
   const CORPI = {
     2: [[-42.0,-26.0,-18.0,-10.0],[-4.0,-26.0,20.0,-8.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,14.0],[26.0,-20.0,28.0,-4.0],[28.0,-18.0,30.0,-6.0],[-18.0,-12.0,-4.0,-4.0],[-36.0,-10.0,-18.0,-8.0],[-32.0,-8.0,-18.0,-4.0],[-4.0,-8.0,0.0,-4.0],[4.0,-8.0,20.0,-4.0],[-26.0,-4.0,-20.0,36.0],[4.0,-4.0,12.0,36.0],[-42.0,2.0,-26.0,24.0],[22.0,6.0,42.0,12.0],[24.0,12.0,42.0,14.0],[12.0,20.0,14.0,36.0],[-28.0,24.0,-26.0,36.0],[-20.0,26.0,4.0,36.0],[14.0,30.0,16.0,34.0]],
     3: [[-42.0,-26.0,-20.0,-12.0],[-2.0,-26.0,20.0,-10.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,2.0],[26.0,-18.0,30.0,-6.0],[-40.0,-12.0,-18.0,-10.0],[-34.0,-10.0,-6.0,-8.0],[6.0,-10.0,20.0,-8.0],[-32.0,-8.0,-26.0,-6.0],[-18.0,-8.0,-6.0,-6.0],[6.0,-8.0,14.0,-4.0],[26.0,-6.0,28.0,-4.0],[4.0,-4.0,10.0,22.0],[-24.0,-2.0,-20.0,20.0],[-40.0,2.0,-24.0,6.0],[44.0,2.0,48.0,12.0],[-42.0,4.0,-40.0,20.0],[-40.0,6.0,-30.0,22.0],[-26.0,6.0,-24.0,20.0],[24.0,8.0,32.0,12.0],[42.0,8.0,44.0,12.0],[10.0,20.0,12.0,26.0],[6.0,22.0,10.0,26.0],[-18.0,26.0,2.0,34.0],[-28.0,30.0,-18.0,34.0],[2.0,30.0,14.0,34.0]],
@@ -184,7 +203,7 @@
     P = (window.MAPPA3D_OVERRIDES && window.MAPPA3D_OVERRIDES.marconi) || {};
     X_MID = P.X_MID ?? 0; Z_MID = P.Z_MID ?? 0;
     // 21 m: QUOTE_CORRETTE di campus-3d.js; coincide con i 5 livelli del piano di emergenza 2012
-    H = P.H ?? 21.0;
+    H = P.H ?? 19.3;   // gronda del corpo principale, misurata sui quattro prospetti di Pagano
     // fascia di coronamento: 0,9 m è la quota d'attico che campus-3d.js usa su tutto il campus
     H_CORN = P.H_CORN ?? 0.9; CORN_OUT = P.CORN_OUT ?? 0.34;
     /* Zoccolo in travertino documentato; l'altezza no, ma la scansione misurata su CU014 la
@@ -201,7 +220,13 @@
     /* Davanzali: i cinque piani fuori terra stanno a 1,30 / 5,25 / 9,20 / 13,15 / 17,10
        (piano terra rialzato e interpiano 3,95 m misurati su CU014), più 0,95 m di parapetto
        interno. L'ultima fila chiude a 20,05 m, appena sotto la fascia di coronamento. */
-    SILLS = Array.isArray(P.SILLS) && P.SILLS.length ? P.SILLS.slice() : [2.25, 6.20, 10.15, 14.10, 18.05];
+    /* I davanzali si distribuiscono sull'altezza vera del corpo principale: scritti a mano
+       restavano tarati sui 21 m di prima e l'ultima fila sfondava il coronamento. */
+    SILLS = Array.isArray(P.SILLS) && P.SILLS.length ? P.SILLS.slice()
+      : (() => {
+        const utile = H - H_CORN - WIN_H - 1.2, passo = utile / Math.max(1, PIANI - 1);
+        return Array.from({ length: PIANI }, (_, i) => +(0.9 + i * passo).toFixed(2));
+      })();
     /* RIENTRANZA DELL'INGRESSO E BALCONATA (fonte 6: le due assonometrie di progetto).
        Le due assonometrie sono proiezioni planometriche (assi di pianta a 30° e 60°
        sull'orizzontale, pianta in vera forma, verticali verticali). La scala grafica in basso
@@ -434,8 +459,43 @@
        Estrusione dell'impronta OSM, corte e pozzo di luce compresi, fino all'imposta della
        fascia di coronamento. Le facce verticali prendono la litoceramica con UV in metri. */
     const H_MURO = H - H_CORN;
-    const massa = flat(RING_REC, 0, [roofMat, litoWall], H_MURO, 'massa-muraria', [RING_CORTE, RING_POZZO]);
+    /* Ritaglio del contorno fra due piani verticali (Sutherland-Hodgman): serve a far
+       salire solo il corpo principale sopra la quota delle testate. */
+    const clipX = (ring, xmin, xmax) => {
+      let out = ring.slice();
+      [[1, xmin], [-1, -xmax]].forEach(([sgn, lim]) => {
+        const src = out; out = [];
+        for (let i = 0; i < src.length; i += 1) {
+          const a = src[i], b = src[(i + 1) % src.length];
+          const da = sgn * a[0] - lim, db = sgn * b[0] - lim;
+          if (da >= 0) out.push(a);
+          if ((da >= 0) !== (db >= 0)) {
+            const t = da / (da - db);
+            out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+          }
+        }
+      });
+      return out;
+    };
+    /* Zoccolo comune fino alla gronda delle testate, poi il corpo principale, poi il corpo alto. */
+    const massa = flat(RING_REC, 0, [roofMat, litoWall], H_TESTATE - H_CORN, 'massa-testate',
+      [RING_CORTE, RING_POZZO]);
     massa.castShadow = true; massa.receiveShadow = true;
+    const RING_PRINC = clipX(RING_REC, TESTATA_O, TESTATA_E);
+    const principale = flat(RING_PRINC, H_TESTATE - H_CORN, [roofMat, litoWall],
+      H_MURO - (H_TESTATE - H_CORN), 'massa-muraria', [RING_CORTE, RING_POZZO]);
+    principale.castShadow = true; principale.receiveShadow = true;
+    box(TORRE[0], TORRE[2], H_MURO, H_TORRE - H_CORN, TORRE[1], TORRE[3],
+      [litoWall, litoWall, roofMat, roofMat, litoWall, litoWall], 'corpo-alto');
+    box(TORRE[0] - CORN_OUT, TORRE[2] + CORN_OUT, H_TORRE - H_CORN, H_TORRE,
+      TORRE[1] - CORN_OUT, TORRE[3] + CORN_OUT, travPlain, 'coronamento-corpo-alto');
+    /* Coronamento e copertura delle due testate, alla loro quota. */
+    [clipX(RING_REC, -99, TESTATA_O), clipX(RING_REC, TESTATA_E, 99)].forEach((r, i) => {
+      if (r.length > 2) {
+        banda(r, H_TESTATE - H_CORN, H_TESTATE, CORN_OUT, travPlain, false, 'coronamento-testata-' + i);
+        flat(r, H_TESTATE - H_CORN + 0.05, roofMat, 0, 'copertura-testata-' + i).receiveShadow = true;
+      }
+    });
 
     /* Zoccolo in travertino e fascia di coronamento, su tutti e tre gli anelli. */
     banda(RING_REC, 0, H_ZOCC, ZOCC_OUT, travDark, false, 'zoccolo');
@@ -530,8 +590,22 @@
        (REC_W × REC_D, misurati sull'assonometria 1) e appoggiata sui tre muri del rientro:
        il disegno non mostra mensole né pilastri sotto, e non ne vengono inventati. Il
        parapetto corre sul solo lato aperto, verso il piazzale. */
-    box(REC_X0, REC_X1, BALC_Y - BALC_T, BALC_Y, REC_Z0, REC_Z1, travPlain, 'balconata');
-    box(REC_X0, REC_X1, BALC_Y, BALC_Y + PAR_H, REC_Z1 - PAR_T, REC_Z1, travPlain, 'parapetto-balconata');
+    /* Materiali letti sulla foto dell'ingresso (ArchiDiAP, Vista-ingresso_3): il parapetto
+       è rivestito della stessa litoceramica del muro, con coronamento e fascia della lastra
+       in travertino chiaro; il sottobalcone è liscio e chiaro, e le pareti del rientro sono
+       lastre di travertino, non litoceramica. Prima erano tutti travertino piatto. */
+    const soffitto = std(P.SOFFITTO ?? 0xd8d3c9, { roughness: 0.95 });
+    const travBalc = trav(REC_W, REC_D, travertinoTexture(120, 120, 2), 2);
+    //            +x        -x        +y         -y         +z        -z
+    box(REC_X0, REC_X1, BALC_Y - BALC_T, BALC_Y, REC_Z0, REC_Z1,
+      [travBalc, travBalc, travPlain, soffitto, travBalc, travBalc], 'balconata');
+    box(REC_X0, REC_X1, BALC_Y, BALC_Y + PAR_H, REC_Z1 - PAR_T, REC_Z1,
+      [litoWall, litoWall, travPlain, travPlain, litoWall, soffitto], 'parapetto-balconata');
+    /* Rivestimento in travertino delle tre pareti del rientro, fino alla quota della lastra. */
+    const SP = 0.06;
+    box(REC_X0, REC_X0 + SP, 0, BALC_Y - BALC_T, REC_Z0, REC_Z1, travBalc, 'rientro-parete-ovest');
+    box(REC_X1 - SP, REC_X1, 0, BALC_Y - BALC_T, REC_Z0, REC_Z1, travBalc, 'rientro-parete-est');
+    box(REC_X0, REC_X1, 0, BALC_Y - BALC_T, REC_Z0, REC_Z0 + SP, travBalc, 'rientro-fondo');
 
     /* ---------------- piano di sedime ----------------
        Piastra su cui poggia il complesso, con il bordo a gradino, come nei due disegni.

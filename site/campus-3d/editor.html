@@ -49,10 +49,12 @@
 </style>
 </head>
 <body>
-<!-- Scheletro vuoto: l'interfaccia viene costruita solo dopo che
-     GET /api/editor-auth/me ha confermato la sessione lato server.
-     Senza sessione la pagina rimanda a login.html senza mostrare nulla. -->
-<div id="boot" class="boot">Verifica della sessione…</div>
+<!-- L'editor si apre e basta: modificare i parametri non tocca niente sul server,
+     i valori restano nel browser finche' non si preme Pubblica. Il controllo resta
+     solo sulle due azioni che scrivono davvero (salvataggio su D1 e pubblicazione su
+     git), perche' quelle partono da un indirizzo pubblico e scrivono nel repository.
+     GET /api/editor-auth/me serve ora solo a scoprire se la sessione c'e' gia'. -->
+<div id="boot" class="boot">Apertura dell'editor…</div>
 <div id="app" hidden></div>
 <script>
 (function () {
@@ -66,7 +68,7 @@
       return r.json();
     })
     .then(function (d) { start((d && d.user) || ''); })
-    .catch(function () { location.replace('login.html'); });
+    .catch(function () { start(''); });   /* senza sessione si entra lo stesso, in sola modifica */
 
   function start(user) {
     $('boot').remove();
