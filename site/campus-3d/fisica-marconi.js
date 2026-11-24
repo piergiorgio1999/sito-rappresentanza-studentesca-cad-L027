@@ -69,7 +69,24 @@
    orizzontale delle finestre non è documentato da nessuna fonte: si usa 3,60 m, lo stesso che
    campus-3d.js adopera per le facciate di CU014, edificio coevo dello stesso campus.
 
+   RIENTRANZA D'INGRESSO E BALCONATA (fonte 6). Le due assonometrie di progetto mostrano, nel
+   punto dove le due ali si incontrano, un intaglio verticale che arriva a terra con l'ingresso
+   in fondo e una lastra quasi quadrata che lo attraversa alla quota del primo piano. Misure e
+   metodo (scala grafica, proiezione planometrica) sono nel commento di readParams() accanto a
+   REC_X0 / REC_W / REC_D / BALC_Y: 7,05 × 7,95 m di pianta, a partire dal vertice OSM
+   [13,61 / 13,83]. Il resto dell'articolazione che le assonometrie mostrano (corpi a quote
+   diverse, corpi bassi, altri cortili, passerella su pilotis, corpo curvo d'angolo, volumi in
+   copertura, finestre raggruppate) NON è stato recepito: quella pianta non combacia con
+   l'impronta OSM, che qui resta il riferimento, e tradurla richiederebbe di inventare dove
+   comincia e dove finisce ciascun corpo.
+
    NON MODELLATO, PER MANCANZA DI FONTI (dichiarato invece che immaginato):
+   - articolazione delle masse delle assonometrie (vedi fonte 6): corpi a quote diverse, cortili
+     ulteriori, passerella su pilotis, corpo curvo d'angolo, volumi tecnici in copertura;
+   - mensole o pilastri sotto la balconata: i disegni non ne mostrano, la lastra è appoggiata
+     sui tre muri del rientro;
+   - quota esatta della balconata: non misurabile sul raster, si usa il primo piano già
+     documentato (5,25 m);
    - gruppo scultoreo di Corrado Vigni nella corte e bassorilievi presso la scalinata: esistenza
      documentata, ubicazione e ingombro no;
    - volumi tecnici e gabbiotti metallici in copertura, impianto fotovoltaico (progetto 2018):
@@ -103,6 +120,7 @@
     H, H_CORN, CORN_OUT, H_ZOCC, ZOCC_OUT, // sommità, fascia di coronamento, zoccolo
     PIANI, WIN_W, WIN_H, WIN_PITCH, WIN_DEP, SILLS, // scansione dei piani e delle finestre
     X_ENTR, DOOR_W, DOOR_H, PENS_W, PENS_D, PENS_Y, PENS_T, // ingresso e pensilina
+    REC_X0, REC_W, REC_D, BALC_Y, BALC_T, PAR_H, PAR_T, // rientranza d'ingresso e balconata
     PLAT_Z, PLAT_H, STEPS, LASTRA,        // piazzale rialzato, scalinata, lato delle lastre
     H_OVEST, X_OVEST, H_EST, X_EST;       // corpi a quota diversa: spenti, vedi intestazione
 
@@ -128,10 +146,36 @@
        (piano terra rialzato e interpiano 3,95 m misurati su CU014), più 0,95 m di parapetto
        interno. L'ultima fila chiude a 20,05 m, appena sotto la fascia di coronamento. */
     SILLS = Array.isArray(P.SILLS) && P.SILLS.length ? P.SILLS.slice() : [2.25, 6.20, 10.15, 14.10, 18.05];
-    // ingresso: asse letto sulla freccia della scheda ACU013 (±5 m), luce e altezza stilizzate
-    X_ENTR = P.X_ENTR ?? 22.5; DOOR_W = P.DOOR_W ?? 6.4; DOOR_H = P.DOOR_H ?? 4.0;
-    // pensilina documentata, dimensioni no: lastra piatta sopra l'ingresso
-    PENS_W = P.PENS_W ?? 11.0; PENS_D = P.PENS_D ?? 3.6; PENS_Y = P.PENS_Y ?? 5.3; PENS_T = P.PENS_T ?? 0.38;
+    /* RIENTRANZA DELL'INGRESSO E BALCONATA (fonte 6: le due assonometrie di progetto).
+       Le due assonometrie sono proiezioni planometriche (assi di pianta a 30° e 60°
+       sull'orizzontale, pianta in vera forma, verticali verticali). La scala grafica in basso
+       misura 0-50 m fra i pixel 35 e 337 dell'immagine, cioè 6,04 px/m; con quel fattore il
+       passo verticale fra due file di finestre, 26 px, dà un interpiano di 4,30 m, coerente
+       con i cinque livelli dentro i 21 m di sommità: la scala è quella.
+       All'angolo rientrante dove le due ali si incontrano (nell'impronta OSM il vertice
+       [13,61 / 13,83], cioè l'angolo interno dell'intaglio sud-est) il fronte non è continuo:
+       c'è un intaglio verticale che arriva a terra, e in fondo a quel rientro sta l'ingresso.
+       Misurati sull'assonometria 1 i due lati orizzontali del piano che chiude il rientro
+       (spigolo vicino a 401/517 px, lato lungo l'asse A fino a 437/538 px e lato lungo l'asse B
+       fino a 424/470 px), risolti sui versori di pianta A=(0,866 / 0,500) e B=(0,500 / -0,866):
+       7,05 m di larghezza e 7,95 m di profondità, cioè la balconata «quasi quadrata». Il
+       rientro ha la stessa pianta e parte dal filo del muro z = 13,84 verso nord. */
+    REC_X0 = P.REC_X0 ?? 13.61; REC_W = P.REC_W ?? 7.05; REC_D = P.REC_D ?? 7.95;
+    /* Quota della balconata: il disegno la dice «del primo piano» ma non è misurabile con
+       sicurezza sul raster (manca uno spigolo verticale di riferimento nel rientro), quindi si
+       usa il primo piano già documentato nel modulo, 5,25 m (scansione misurata su CU014).
+       Spessore della lastra e parapetto non sono documentati: valori minimi dichiarati. */
+    BALC_Y = P.BALC_Y ?? 5.25; BALC_T = P.BALC_T ?? 0.45;
+    PAR_H = P.PAR_H ?? 1.05; PAR_T = P.PAR_T ?? 0.3;
+    /* ingresso: ora sta in fondo al rientro, quindi l'asse è il mezzo del rientro (17,14) e non
+       più il 22,5 letto sulla freccia della scheda ACU013; i due valori distano 5,4 m, cioè
+       quanto l'incertezza ±5 m dichiarata per quella lettura. Luce e altezza restano stilizzate
+       e la luce è ridotta perché deve stare dentro i 7,05 m del rientro. */
+    X_ENTR = P.X_ENTR ?? (REC_X0 + REC_W / 2); DOOR_W = P.DOOR_W ?? 4.8; DOOR_H = P.DOOR_H ?? 4.0;
+    /* pensilina: documentata la presenza, non le dimensioni. Con il rientro, è la lastra della
+       balconata a coprire l'ingresso, quindi la pensilina separata è spenta (PENS_W = 0) invece
+       di raddoppiare un riparo che il disegno non mostra; i parametri restano per riaccenderla. */
+    PENS_W = P.PENS_W ?? 0; PENS_D = P.PENS_D ?? 2.4; PENS_Y = P.PENS_Y ?? 4.5; PENS_T = P.PENS_T ?? 0.38;
     /* Piazzale rialzato in travertino dentro l'intaglio sud-est: profondità e numero di alzate
        non documentati; la quota è quella dello zoccolo, le lastre sono i 60 cm documentati. */
     PLAT_Z = P.PLAT_Z ?? 24.0; PLAT_H = P.PLAT_H ?? H_ZOCC; STEPS = P.STEPS ?? 5; LASTRA = P.LASTRA ?? 0.6;
@@ -300,22 +344,37 @@
       }
     };
 
+    /* ---------------- impronta con la rientranza dell'ingresso ----------------
+       L'impronta OSM resta il riferimento di pianta; l'unica modifica è l'intaglio verticale
+       letto sulle assonometrie all'angolo rientrante [13,61 / 13,83], inserito fra quel vertice
+       e il successivo. L'intaglio va a terra e attraversa tutta l'altezza: la balconata lo
+       chiude solo al primo piano, non lo tampona. Le due ali che lo abbracciano sono quelle
+       dell'impronta: a ovest il corpo che scende verso z = 33,67, a est il muro z = 13,84. */
+    const REC_X1 = REC_X0 + REC_W, REC_Z0 = 13.84 - REC_D, REC_Z1 = 13.84;
+    const RING_REC = [];
+    RING_OUT.forEach((v) => {
+      RING_REC.push(v);
+      if (Math.abs(v[0] - 13.61) < 0.01 && Math.abs(v[1] - 13.83) < 0.01) {
+        RING_REC.push([REC_X0, REC_Z0], [REC_X1, REC_Z0], [REC_X1, REC_Z1]);
+      }
+    });
+
     /* ---------------- massa muraria ----------------
        Estrusione dell'impronta OSM, corte e pozzo di luce compresi, fino all'imposta della
        fascia di coronamento. Le facce verticali prendono la litoceramica con UV in metri. */
     const H_MURO = H - H_CORN;
-    const massa = flat(RING_OUT, 0, [roofMat, litoWall], H_MURO, 'massa-muraria', [RING_CORTE, RING_POZZO]);
+    const massa = flat(RING_REC, 0, [roofMat, litoWall], H_MURO, 'massa-muraria', [RING_CORTE, RING_POZZO]);
     massa.castShadow = true; massa.receiveShadow = true;
 
     /* Zoccolo in travertino e fascia di coronamento, su tutti e tre gli anelli. */
-    banda(RING_OUT, 0, H_ZOCC, ZOCC_OUT, travDark, false, 'zoccolo');
+    banda(RING_REC, 0, H_ZOCC, ZOCC_OUT, travDark, false, 'zoccolo');
     banda(RING_CORTE, 0, H_ZOCC, ZOCC_OUT, travDark, true, 'zoccolo-corte');
-    banda(RING_OUT, H_MURO, H, CORN_OUT, travPlain, false, 'coronamento');
+    banda(RING_REC, H_MURO, H, CORN_OUT, travPlain, false, 'coronamento');
     banda(RING_CORTE, H_MURO, H, CORN_OUT * 0.6, travPlain, true, 'coronamento-corte');
     banda(RING_POZZO, H_MURO, H, CORN_OUT * 0.6, travPlain, true, 'coronamento-pozzo');
 
     /* Copertura piana praticabile dentro il parapetto formato dal coronamento. */
-    flat(RING_OUT, H_MURO + 0.05, roofMat, 0, 'copertura', [RING_CORTE, RING_POZZO]).receiveShadow = true;
+    flat(RING_REC, H_MURO + 0.05, roofMat, 0, 'copertura', [RING_CORTE, RING_POZZO]).receiveShadow = true;
 
     /* Corte centrale e pozzo di luce: la corte è piantumata (ortofoto AGEA 2020), con una
        fascia lastricata lungo i muri; il pozzo resta un fondo in pietra. */
@@ -339,7 +398,8 @@
         const n = Math.floor(L / WIN_PITCH);
         const start = (L - (n - 1) * WIN_PITCH) / 2;
         const ang = Math.atan2(-uz, ux);
-        const fronteIngresso = !hole && Math.abs(nz - 1) < 0.01 && Math.abs(a[1] - 13.84) < 0.4;
+        // il fronte dell'ingresso è ora il fondo del rientro (z = REC_Z0), non più z = 13,84
+        const fronteIngresso = !hole && Math.abs(nz - 1) < 0.01 && Math.abs(a[1] - REC_Z0) < 0.4;
         for (let k = 0; k < n; k += 1) {
           const t = start + k * WIN_PITCH;
           const cx = a[0] + ux * t, cz = a[1] + uz * t;
@@ -356,7 +416,7 @@
         }
       }
     };
-    fileDiFinestre(RING_OUT, false);
+    fileDiFinestre(RING_REC, false);
     fileDiFinestre(RING_CORTE, true);
 
     /* ---------------- piazzale rialzato, scalinata e ingresso ----------------
@@ -364,8 +424,10 @@
        lastricato in travertino con lastre quadrate di 60 cm (misura documentata); la scalinata
        scende verso il piazzale della Minerva. */
     const PX0 = 13.61, PX1 = 48.09, PZ0 = 13.84;
-    flat([[PX0, PZ0], [PX1, PZ0], [PX1, PLAT_Z], [PX0, PLAT_Z]], 0, lastre, PLAT_H, 'piazzale-travertino')
-      .receiveShadow = true;
+    /* Il piazzale entra anche dentro il rientro, fino al fondo: l'ingresso sta in fondo al
+       rientro e ci si arriva camminando sul lastricato, non su un gradino intermedio. */
+    flat([[REC_X0, REC_Z0], [REC_X1, REC_Z0], [REC_X1, PZ0], [PX1, PZ0], [PX1, PLAT_Z], [PX0, PLAT_Z]],
+      0, lastre, PLAT_H, 'piazzale-travertino').receiveShadow = true;
     const SH = PLAT_H / STEPS;
     for (let k = 0; k < STEPS; k += 1) {
       const d = (STEPS - k) * 0.36;
@@ -374,20 +436,31 @@
     // vano d'ingresso: fondo scuro, porte vetrate partite da montanti, pensilina piatta sopra
     /* La massa e' un'estrusione piena: la profondita' dell'incasso si legge solo dal fronte,
        quindi il vano e' una campitura scura a filo e porte e montanti stanno appena davanti. */
+    /* Porta e soglia stanno sul fondo del rientro, z = REC_Z0, non più sul filo z = 13,84. */
     box(X_ENTR - DOOR_W / 2, X_ENTR + DOOR_W / 2, PLAT_H, PLAT_H + DOOR_H,
-      PZ0 - 0.3, PZ0 + 0.02, shadow, 'vano-ingresso');
+      REC_Z0 - 0.3, REC_Z0 + 0.02, shadow, 'vano-ingresso');
     const porta = box(X_ENTR - DOOR_W / 2 + 0.3, X_ENTR + DOOR_W / 2 - 0.3, PLAT_H + 0.02, PLAT_H + DOOR_H - 0.5,
-      PZ0 + 0.02, PZ0 + 0.06, glassDark, 'porta');
+      REC_Z0 + 0.02, REC_Z0 + 0.06, glassDark, 'porta');
     porta.raycast = () => {};
     for (let k = 0; k <= 6; k += 1) {
       const x = X_ENTR - DOOR_W / 2 + 0.3 + (DOOR_W - 0.6) * (k / 6);
-      box(x - 0.05, x + 0.05, PLAT_H + 0.02, PLAT_H + DOOR_H - 0.5, PZ0 + 0.04, PZ0 + 0.1, metal, 'montante-porta');
+      box(x - 0.05, x + 0.05, PLAT_H + 0.02, PLAT_H + DOOR_H - 0.5, REC_Z0 + 0.04, REC_Z0 + 0.1, metal, 'montante-porta');
     }
     // soglia in travertino sotto la porta, a filo del piazzale
     box(X_ENTR - DOOR_W / 2 - 0.3, X_ENTR + DOOR_W / 2 + 0.3, PLAT_H - 0.06, PLAT_H + 0.02,
-      PZ0 - 1.1, PZ0 + 0.9, travPlain, 'soglia');
-    box(X_ENTR - PENS_W / 2, X_ENTR + PENS_W / 2, PENS_Y, PENS_Y + PENS_T,
-      PZ0 - 0.1, PZ0 + PENS_D, travPlain, 'pensilina');
+      REC_Z0 - 1.1, REC_Z0 + 0.9, travPlain, 'soglia');
+    if (PENS_W > 0) {
+      box(X_ENTR - PENS_W / 2, X_ENTR + PENS_W / 2, PENS_Y, PENS_Y + PENS_T,
+        REC_Z0 - 0.1, REC_Z0 + PENS_D, travPlain, 'pensilina');
+    }
+
+    /* ---------------- balconata del primo piano dentro il rientro ----------------
+       Lastra orizzontale che chiude il rientro alla quota del primo piano, quasi quadrata
+       (REC_W × REC_D, misurati sull'assonometria 1) e appoggiata sui tre muri del rientro:
+       il disegno non mostra mensole né pilastri sotto, e non ne vengono inventati. Il
+       parapetto corre sul solo lato aperto, verso il piazzale. */
+    box(REC_X0, REC_X1, BALC_Y - BALC_T, BALC_Y, REC_Z0, REC_Z1, travPlain, 'balconata');
+    box(REC_X0, REC_X1, BALC_Y, BALC_Y + PAR_H, REC_Z1 - PAR_T, REC_Z1, travPlain, 'parapetto-balconata');
 
     /* ---------------- corpi a quota diversa (spenti per mancanza di fonti) ----------------
        Accendendo H_OVEST o H_EST si sovrappone alla massa un volume più alto o più basso sul
