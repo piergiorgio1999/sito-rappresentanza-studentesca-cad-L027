@@ -1268,8 +1268,8 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     </div>
     <div class="card">
       <b>Accesso dei rappresentanti</b>
-      <p class="note">Riservato a chi cura il sito. Da qui si apre l'editor della mappa 3D del campus: parametri degli edifici, salvataggi recuperabili e pubblicazione.</p>
-      <p><a class="btn alt" href="https://orari-chimica.pages.dev/campus-3d/login">Entra nell'editor della mappa</a></p>
+      <p class="note">Da qui si apre l'editor della mappa 3D del campus: parametri degli edifici, materiali, alberi. Si apre senza accesso e le modifiche restano nel browser.</p>
+      <p><a class="btn alt" href="campus-3d/editor.html">Entra nell'editor della mappa</a></p>
     </div>
     <div class="soon" id="accSoon" hidden=""><b>🚧 Prossimamente · lavori in corso</b><span>Presto potrai entrare con il tuo account Sapienza o con il cellulare per pubblicare libri usati e ripetizioni; i docenti potranno pubblicare comunicazioni nelle News. Per ora i moduli qui sotto sono solo un'anteprima.</span></div>
     <p class="banner" id="apiOff" hidden="">Account e annunci non sono raggiungibili in questo momento. Riprova più tardi.</p>
@@ -2902,6 +2902,16 @@ render();
 /* =================== SCHEDE =================== */
 /* Interruttori delle funzioni: quando backend e database su Cloudflare sono pronti, mettere a true */
 const FEATURES = { accounts:false, market:false };
+/* L'editor della mappa vive solo nella copia privata (artifact): sul sito pubblicato la
+   scheda Accedi non deve nemmeno comparire. Il controllo e' sull'host, non su un flag,
+   cosi' non c'e' modo di dimenticarlo acceso in produzione. */
+const SITO_PUBBLICO = /(^|\.)pages\.dev$/i.test(location.hostname) || /orari-chimica/i.test(location.hostname);
+if (SITO_PUBBLICO) {
+  const t = document.getElementById('t-account');
+  if (t) { t.hidden = true; t.disabled = true; }
+  const p = document.getElementById('tab-account');
+  if (p) p.hidden = true;
+}
 const TABS = ['orari','aule','esami','testi','market','food','pellicano','safezone','inclusione','organigramma','mappa','eduroam','segnala','news','impostazioni','account'];
 function showTab(t, push){
   let sub=[]; if(t && t.includes('/')){ [t,...sub]=t.split('/'); }

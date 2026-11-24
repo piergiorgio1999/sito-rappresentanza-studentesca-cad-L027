@@ -55,6 +55,19 @@
   <script src="matematica-castelnuovo.js?v=3" defer></script>
   <script src="fisica-fermi.js?v=1" defer></script>
   <script src="fisica-marconi.js?v=2" defer></script>
-  <script src="editor.js?runtime=2" defer></script>
+  <!-- L'editor e' lo stesso file in tutti e due i casi. Con ?runtime applica soltanto i
+       parametri salvati, senza interfaccia: e' quello che serve al sito pubblicato. Senza
+       ?runtime costruisce anche i pannelli di modifica sul posto, come nell'artifact
+       "Campus Sapienza 3D". Qui si sceglie in base all'host, cosi' sul sito pubblico
+       l'interfaccia non compare mai, nemmeno per sbaglio. -->
+  <script>
+  (function () {
+    var pubblico = /(^|\.)pages\.dev$/i.test(location.hostname) || /orari-chimica/i.test(location.hostname);
+    var s = document.createElement('script');
+    s.src = pubblico ? 'editor.js?runtime=2' : 'editor.js?v=1';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+  </script>
 </body>
 </html>

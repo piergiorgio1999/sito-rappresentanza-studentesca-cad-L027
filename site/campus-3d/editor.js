@@ -209,10 +209,14 @@
   const normAng = (x) => (((Number(x) || 0) % 360) + 360) % 360;
   const angOfItem = (it) => (it.primitiva ? angleOf(it.obj) : it.angKey ? normAng(it.obj[it.angKey]) : 0);
   // angolo mostrato dall'anello: per i poligoni (che ruotano i vertici, senza campo angolo) è la rotazione fatta durante il trascinamento
-  const ringCentre = (it, b) => (!it.primitiva && it.pivot ? it.pivot() : [(b.u0 + b.u1) / 2, (b.v0 + b.v1) / 2]);
+  /* Gli edifici non hanno un riquadro di ingombro: box() torna undefined e qui si leggeva
+     comunque b.u0, buttando un errore a ogni clic che non prendeva un arredo. Il clic
+     andava perso e sembrava che la selezione non funzionasse. */
+  const centro = (b) => (b ? [(b.u0 + b.u1) / 2, (b.v0 + b.v1) / 2] : [0, 0]);
+  const ringCentre = (it, b) => (!it.primitiva && it.pivot ? it.pivot() : centro(b));
   const angShown = (it) => (it.verts && !it.angKey && !(it.primitiva && it.obj.box) ? (sel && sel.vAng) || 0 : angOfItem(it));
   // perno della rotazione di una voce: il suo punto d'ancoraggio (it.pivot) o il centro della scatola
-  const pivotOf = (it) => { if (it.pivot) return it.pivot(); const b = it.box(); return [(b.u0 + b.u1) / 2, (b.v0 + b.v1) / 2]; };
+  const pivotOf = (it) => { if (it.pivot) return it.pivot(); return centro(it.box && it.box()); };
   const setAngItem = (it, a) => { if (it.primitiva) it.obj.angolo = a; else it.obj[it.angKey] = a; };
   const frameBaseOfItem = (it) => (it.primitiva ? it.obj.cornice || 'lato0' : it.frameKey);
   const frameOfItem = (it) => (angOfItem(it) ? 'rot:' + (it.primitiva ? it.obj.id : it.angId) : it.frameKey);
@@ -470,6 +474,7 @@
       if (isTreeItem(it) && C.alberiVisibili && C.alberiVisibili() === false) continue; // alberi spenti con «Alberi»: non si selezionano
       const f = frameBy(frameOfItem(it)); if (!f) continue; // un solido ruotato si tocca nella sua cornice ruotata
       const b = it.box();
+      if (!b) continue; // alcuni elementi non hanno un ingombro: senza questo il clic andava in errore
       if (inBox(b, toLocal(f, world), 0.25) && (!best || vol(b) < best.v)) best = { it, v: vol(b) };
     }
     return best ? best.it : null;
