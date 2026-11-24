@@ -17,7 +17,8 @@
   const LOCAL_EDITS_KEY = 'campus-sapienza-3d-edits-v1';
   const ORARI_ORIGIN = 'https://orari-chimica.pages.dev';
   const ORARI_BRIDGE = ORARI_ORIGIN + '/campus-3d/editor-bridge.html';
-  const ROOTS = ['chimica-esterni', 'cortile-modello', 'alberi', 'edifici', 'minerva', 'planimetria'];
+  const ROOTS = ['chimica-esterni', 'cortile-modello', 'alberi', 'edifici', 'minerva', 'planimetria', 'fisica-marconi',
+    'matematica-castelnuovo', 'fisica-fermi', 'ingresso-aldo-moro', 'interno-aldo-moro', 'raccordo-asfalto'];
   const KEYS = ['u0', 'u1', 'v0', 'v1', 'h0', 'h1'];
   const round = (x) => Math.round(x * 100) / 100;
   const snap = (x) => Math.round(x / SNAP) * SNAP;
@@ -79,7 +80,7 @@
     const host = document.querySelector('.maparea') || document.body;
     ui.host = host;
     ui.bar = el('div', 'ed-bar');
-    ui.edit = el('button', 'ed-btn', '⤡ Modifica'); ui.edit.type = 'button'; ui.edit.setAttribute('aria-pressed', 'false');
+    ui.edit = el('button', 'ed-btn', '⤡ Modifica solidi'); ui.edit.type = 'button'; ui.edit.setAttribute('aria-pressed', 'false');
     ui.add = el('button', 'ed-btn', '＋ Aggiungi'); ui.add.type = 'button'; ui.add.hidden = true;
     ui.show = el('button', 'ed-btn', '▤ Scheda'); ui.show.type = 'button'; ui.show.hidden = true; ui.show.title = 'Riapri la scheda dell’oggetto selezionato';
     ui.trees = el('button', 'ed-btn', '🌳 Alberi'); ui.trees.type = 'button'; ui.trees.title = 'Mostra o nascondi tutti gli alberi';
@@ -513,7 +514,8 @@
     const p = { mesh: o, inst: h.instanceId != null ? h.instanceId : null, path: pathOf(o), frameKey: frameKeyOf(o) };
     if (!p.path || !frameBy(p.frameKey)) return null;
     const b = primBox(p);
-    return Math.hypot(b.u1 - b.u0, b.v1 - b.v0, b.h1 - b.h0) > 250 ? null : p; // niente terreno o quartiere unito
+    const maxExtent = root.name === 'fisica-marconi' ? 160 : 250;
+    return Math.hypot(b.u1 - b.u0, b.v1 - b.v0, b.h1 - b.h0) > maxExtent ? null : p; // niente terreno o quartiere unito
   }
   function axisMap(o0, o1, n0, n1) { if (o1 - o0 > 1e-4) { const s = (n1 - n0) / (o1 - o0); return [s, n0 - o0 * s]; } return [1, (n0 + n1) / 2 - (o0 + o1) / 2]; }
   function boxMatrix(o, n) { // nella cornice: x = u, y = h, z = −v
@@ -1662,6 +1664,9 @@
     fx = new T.Group(); fx.name = 'editor-maniglie'; pins = new T.Group(); pins.name = 'editor-commenti'; patchGroup = new T.Group(); patchGroup.name = 'editor-facciate';
     guides = new T.Group(); guides.name = 'editor-guide'; fx.add(guides);
     scene.add(fx, pins, patchGroup);
+    window.addEventListener('campus3d-model-loaded', (event) => {
+      if (event.detail && event.detail.root === 'fisica-marconi') { reapplyPrims(); refreshSel(); }
+    });
     // facciate già riportate nei file da Claude (texture e finestre per edificio)
     fetch('cortile/facciate.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((f) => {
       base.facciate = (f && f.edifici) || {};
@@ -1685,6 +1690,9 @@
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (ui.card.hidden) setMode(null); else closeCard(); } });
     loop(); connect();
+    if (C.fisicaMarconi && C.fisicaMarconi.userData.dossierLoaded) {
+      setTimeout(() => { reapplyPrims(); refreshSel(); }, 0);
+    }
     window.campus3dEditor = {
       facciate: () => clone(Object.fromEntries(facadeState)), // sola lettura, per riportare le facciate nei file
       // mirino della passeggiata: commenta o modifica quello che sta al centro dello schermo; true se si è aperto qualcosa

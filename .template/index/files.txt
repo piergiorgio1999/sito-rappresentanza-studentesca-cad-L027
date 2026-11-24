@@ -190,6 +190,7 @@
 ./site/campus-3d/models/magnolia_b_tronco.wasm
 ./site/campus-3d/models/minerva-glb.json
 ./site/campus-3d/models/minerva.json
+./site/campus-3d/models/marconi-cu013-dossier.glb
 ./site/campus-3d/models/studenti.json
 ./site/campus-3d/models/studenti/cappello-lontano.wasm
 ./site/campus-3d/models/studenti/cappello-vicino.wasm

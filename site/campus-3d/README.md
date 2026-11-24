@@ -8,7 +8,7 @@ Servire questa cartella con un server HTTP statico e aprire `index.html`. Le ris
 
 - Trascina per orbitare, trascina con il tasto destro o due dita per spostarti, usa rotella o pinch per zoom.
 - `Vista ortofoto` alterna la scena 3D con l’ortofoto e le sagome CU selezionabili.
-- `Ortofoto` e `Edifici` mostrano o nascondono rispettivamente la base aerea e gli edifici estrusi.
+- `Ortofoto` mostra o nasconde la base aerea. In modalità `Modifica solidi` puoi spostare e ridimensionare le mesh della scena; le modifiche restano locali finché non le applichi tramite l'editor protetto.
 - `Tour manuale` avvia per pochi secondi una rotazione manuale; resta disattivato con `prefers-reduced-motion` e non parte automaticamente.
 - Cerca per codice o nome, filtra Chimica (CU014, CU032, CU035), oppure seleziona un edificio dalla lista, dalla mappa o dalla planimetria. La selezione apre i dettagli e mantiene il collegamento alle aule e lezioni.
 
@@ -59,6 +59,8 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 - Integrati `matematica-castelnuovo.js` e `fisica-marconi.js` nella scena: CU006 usa il modello procedurale di Castelnuovo e CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale.
 - I proxy bianchi OSM di CU006 e CU013 sono nascosti lasciando il contorno di selezione; CU013 viene inoltre sottratto ai volumi contestuali prima dell'estrusione.
+- CU013 carica il GLB `models/marconi-cu013-dossier.glb`, ricavato dal dossier integrale fornito dall'utente e registrato sul centroide della sagoma OSM esistente, di fronte a Chimica e oltre lo stradone asfaltato. La mesh è una ricostruzione interpretativa basata sui disegni del dossier, non un rilievo aggiornato; il piazzale incluso nel GLB è escluso per non coprire la viabilità. Se il GLB non si carica resta il modello procedurale.
+- L'editor sul posto include le mesh di CU013: seleziona un solido nella modalità `Modifica solidi` per spostarlo o ridimensionarlo. Le trasformazioni sono sovrapposte al modello e possono essere ripristinate.
 
 ## Aggiornamento del 24/11/2026: cortile Castelnuovo e Fisica Fermi
 

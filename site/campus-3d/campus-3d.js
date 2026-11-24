@@ -462,7 +462,6 @@
   function setBuildingVisibility(visible) {
     showBuildings = visible;
     if (buildingGroup) buildingGroup.visible = visible;
-    $('buildingsToggle').setAttribute('aria-pressed', String(visible));
     $('footprints').hidden = !visible;
     const planFallback = planStage.querySelector('.plan-fallback-paths');
     if (planFallback) planFallback.hidden = !visible;
@@ -6105,21 +6104,9 @@ void main() {
     $('tourButton').addEventListener('click', () => tourButton.getAttribute('aria-pressed') === 'true' ? stopTour() : startTour());
     modeButton.addEventListener('click', () => setView(currentView === '3d' ? 'ortho' : '3d'));
     $('aerialToggle').addEventListener('click', () => setAerial(!showAerial));
-    $('buildingsToggle').addEventListener('click', () => setBuildingVisibility(!showBuildings));
     document.querySelector('.drawer-close').addEventListener('click', closeDetails);
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeDetails(); showGuest(false); } });
     $('guestClose')?.addEventListener('click', () => showGuest(false));
-    $('planLayerToggle')?.addEventListener('click', () => {
-      planVisible = !planVisible;
-      if (planImagePlane) planImagePlane.visible = planVisible;
-      updatePlanSelection();
-      $('planLayerToggle').setAttribute('aria-pressed', String(planVisible));
-      if (embedded && currentView !== '3d') setView('ortho');
-    });
-    $('planOpacity')?.addEventListener('input', (event) => {
-      planOpacity = Number(event.target.value) / 100;
-      if (planImageMaterial) planImageMaterial.opacity = planOpacity;
-    });
   }
   async function loadDependency(path, ready) {
     if (ready()) return;
