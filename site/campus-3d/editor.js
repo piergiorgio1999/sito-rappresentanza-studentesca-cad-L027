@@ -84,13 +84,19 @@
     ui.show = el('button', 'ed-btn', '▤ Scheda'); ui.show.type = 'button'; ui.show.hidden = true; ui.show.title = 'Riapri la scheda dell’oggetto selezionato';
     ui.trees = el('button', 'ed-btn', '🌳 Alberi'); ui.trees.type = 'button'; ui.trees.title = 'Mostra o nascondi tutti gli alberi';
     ui.apply = el('button', 'ed-btn ed-apply', '↥ Applica a Orari Chimica'); ui.apply.type = 'button';
-    ui.bar.append(ui.show, ui.add, ui.trees, ui.edit, ui.apply);
+    /* Scarica le modifiche come file: funziona sempre, anche quando il sito pubblicato
+       non risponde o non si vuole passare dal collegamento con login. Il file e' lo
+       stesso che il sito legge come overrides.json. */
+    ui.dump = el('button', 'ed-btn', '⤓ Scarica le modifiche'); ui.dump.type = 'button';
+    ui.dump.title = 'Salva un file overrides.json con tutte le modifiche fatte';
+    ui.bar.append(ui.show, ui.add, ui.trees, ui.edit, ui.dump, ui.apply);
     ui.rot = el('button', 'ed-btn', '⟳ Ruota'); ui.rot.type = 'button'; ui.rot.hidden = true; ui.rot.title = 'Ruota l’oggetto selezionato (scorciatoia R)'; ui.rot.setAttribute('aria-pressed', 'false'); ui.show.after(ui.rot);
     ui.hint = el('div', 'ed-hint'); ui.hint.hidden = true;
     ui.card = el('div', 'ed-card'); ui.card.hidden = true;
     host.append(ui.bar, ui.hint, ui.card);
     ui.edit.addEventListener('click', () => setMode(mode === 'modifica' ? null : 'modifica'));
     ui.apply.addEventListener('click', applyToOrari);
+    ui.dump.addEventListener('click', scaricaModifiche);
     ui.add.addEventListener('click', addCard);
     ui.trees.addEventListener('click', () => setTrees(ui.trees.getAttribute('aria-pressed') !== 'true'));
     ui.show.addEventListener('click', showCard);
@@ -166,6 +172,21 @@
     bridgeWindow.postMessage({ type: 'campus-apply-edits', request_id: bridgeRequest, editor_edits: editorEdits }, ORARI_ORIGIN);
     hint(`Invio di ${overrides.length} modifiche a Orari Chimica…`);
   }
+  function scaricaModifiche() {
+    const dati = {
+      overrides: (window.MAPPA3D_OVERRIDES || {}),
+      editor_edits: (typeof overrides !== 'undefined' && overrides.length ? overrides : undefined),
+      scritto: new Date().toISOString(),
+    };
+    const testo = JSON.stringify(dati, null, 1);
+    const url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'overrides.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    hint('Salvato overrides.json. Va messo in site/campus-3d/ del repository: il sito lo legge da li\'.');
+  }
+
   function applyToOrari() {
     if (!overrides.length) { hint('Non ci sono modifiche da applicare.'); return; }
     if (bridgeReady && bridgeWindow && !bridgeWindow.closed) { sendEditsToOrari(); return; }
