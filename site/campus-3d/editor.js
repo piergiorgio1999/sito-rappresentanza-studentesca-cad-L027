@@ -1348,7 +1348,48 @@
     row.append(tool('togli', 'Togli finestre'), tool('aggiungi', 'Aggiungi finestre'), tool('muro', 'Texture di un muro'));
     if (st.facciata || n) row.append(button('Ripristina originale', () => { facadeState.set(code, clone(base.facciate[code] || { facciata: null, finestre: [] })); applyFacade(code); saveFacade(code); buildingCard(); }));
     row.append(button('Fine', () => deselect(), true));
-    openCard([el('h3', '', 'Edificio ' + code), el('p', 'ed-meta', 'L’edificio non si deforma: si cambiano la texture e le finestre.' + (n ? ` Celle modificate: ${n}.` : '')), el('label', '', sel.tutto || !w ? 'Texture della facciata (tutto l’edificio)' : 'Texture del lato toccato'), sl, allLabel, el('label', '', 'Texture per «Texture di un muro»'), wl, row], 'dock');
+    /* Edifici ricostruiti a mano: oltre a texture e finestre si possono cambiare i parametri
+       del modulo, cioe' le quote e le misure dei singoli solidi. I valori stanno in
+       window.MAPPA3D_OVERRIDES.<chiave> e il modulo li rilegge quando viene ricostruito:
+       si toglie il gruppo dalla scena e si riesegue il suo script, che e' una IIFE. */
+    const MODULI = {
+      CU013: { chiave: 'marconi', file: 'fisica-marconi.js', gruppo: 'fisicaMarconi', nome: 'Fisica Marconi' },
+      CU033: { chiave: 'fermi', file: 'fisica-fermi.js', gruppo: 'fisicaFermi', nome: 'Fisica Fermi' },
+      CU006: { chiave: 'castelnuovo', file: 'matematica-castelnuovo.js', gruppo: 'matematicaCastelnuovo', nome: 'Matematica Castelnuovo' },
+    };
+    const extra = [];
+    const mdl = MODULI[code];
+    if (mdl) {
+      const W = window;
+      W.MAPPA3D_OVERRIDES = W.MAPPA3D_OVERRIDES || {};
+      const cur = W.MAPPA3D_OVERRIDES[mdl.chiave] || {};
+      const ta = el('textarea', 'ed-par');
+      ta.rows = 7; ta.spellcheck = false;
+      ta.value = JSON.stringify(cur, null, 1);
+      ta.style.cssText = 'width:100%;font:12px ui-monospace,Menlo,monospace;min-height:120px';
+      const esito = el('p', 'ed-meta', '');
+      const go = el('button', 'ed-btn', '⟳ Applica al solido'); go.type = 'button';
+      go.onclick = () => {
+        let v;
+        try { v = JSON.parse(ta.value || '{}'); }
+        catch (e) { esito.textContent = 'JSON non valido: ' + e.message; return; }
+        if (!v || typeof v !== 'object' || Array.isArray(v)) { esito.textContent = 'Serve un oggetto JSON.'; return; }
+        W.MAPPA3D_OVERRIDES[mdl.chiave] = v;
+        try { localStorage.setItem('mappa3d-par-locali', JSON.stringify(W.MAPPA3D_OVERRIDES)); } catch (e) { /* senza memoria vale per questa visita */ }
+        const g = W.campus3d && W.campus3d[mdl.gruppo];
+        if (g && g.parent) g.parent.remove(g);
+        const sc = document.createElement('script');
+        sc.src = mdl.file + '?par=' + Date.now();
+        sc.onload = () => { esito.textContent = 'Ricostruito.'; };
+        sc.onerror = () => { esito.textContent = 'Non sono riuscito a ricaricare il modulo.'; };
+        document.head.appendChild(sc);
+        esito.textContent = 'Ricostruisco…';
+      };
+      extra.push(el('h3', '', 'Parametri di ' + mdl.nome),
+        el('p', 'ed-meta', 'Quote e misure dei solidi, in metri. Si scrivono come coppie nome-valore; quelli che non metti restano ai valori del modulo. Esempio: {"H": 20.5}'),
+        ta, go, esito);
+    }
+    openCard([el('h3', '', 'Edificio ' + code), el('p', 'ed-meta', 'L’edificio non si deforma: si cambiano la texture e le finestre.' + (n ? ` Celle modificate: ${n}.` : '')), el('label', '', sel.tutto || !w ? 'Texture della facciata (tutto l’edificio)' : 'Texture del lato toccato'), sl, allLabel, el('label', '', 'Texture per «Texture di un muro»'), wl, row, ...extra], 'dock');
   }
 
   /* ---------- salvataggio ---------- */

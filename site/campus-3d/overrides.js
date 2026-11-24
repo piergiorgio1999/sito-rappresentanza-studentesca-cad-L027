@@ -9,6 +9,12 @@
   'use strict';
   var TIMEOUT = 2500;
   window.MAPPA3D_OVERRIDES = window.MAPPA3D_OVERRIDES || {};
+  /* Parametri cambiati a mano nell'editor: restano nel browser e vincono su quelli
+     dell'API, cosi' una modifica non si perde ricaricando la pagina. */
+  try {
+    var loc = JSON.parse(localStorage.getItem('mappa3d-par-locali') || 'null');
+    if (loc && typeof loc === 'object') Object.keys(loc).forEach(function (k) { window.MAPPA3D_OVERRIDES[k] = loc[k]; });
+  } catch (e) { /* senza memoria si parte dai valori del modulo */ }
   window.MAPPA3D_EDITOR_EDITS = {};
   window.MAPPA3D_READY = false;
   var done = false;
