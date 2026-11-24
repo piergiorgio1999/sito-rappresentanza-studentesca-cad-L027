@@ -57,5 +57,5 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 ## Aggiornamento del 24/11/2026: ingresso di Fisica Marconi
 
-- Integrato `fisica-marconi.js` nella scena: il modello CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale, con parapetto e uscita vetrata. La forma e le dimensioni dei dettagli sono schematiche dove le fonti non forniscono quote.
-- La sagoma OSM di CU013 viene sottratta ai volumi circostanti prima dell'estrusione, così il modello di dettaglio non è attraversato dalla massa proxy.
+- Integrati `matematica-castelnuovo.js` e `fisica-marconi.js` nella scena: CU006 usa il modello procedurale di Castelnuovo e CU013 comprende la piazzola rialzata con scalinata e la balconata sopra l'ingresso principale.
+- I proxy bianchi OSM di CU006 e CU013 sono nascosti lasciando il contorno di selezione; CU013 viene inoltre sottratto ai volumi contestuali prima dell'estrusione.
