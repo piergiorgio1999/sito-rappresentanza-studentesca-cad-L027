@@ -115,12 +115,54 @@
     [5.02, 23.96], [-17.63, 24.15]];
   const RING_POZZO = [[37.08, -8.39], [29.43, -8.54], [29.47, -1.90], [36.80, -1.87]];
 
+  /* ---------------- quote dei corpi, contate sulle planimetrie ufficiali ----------------
+     Fonte: Sapienza, Ufficio Speciale Prevenzione e Protezione, «Piano di emergenza ed
+     evacuazione - Parte specifica, Edificio CU013 "Fisica Guglielmo Marconi"», rev. 00,
+     novembre 2012, allegato 3: planimetrie di seminterrato, terra, primo, secondo, terzo e
+     quarto piano. Le piante sono state registrate sull'impronta OSM (scala 11,88 px/m,
+     origine sul vertice nord-ovest dell'anello) e il numero di livelli di ogni punto è stato
+     contato su una griglia di 2 m, verificando a quali piani quel punto risulta edificato.
+     Due controprove: il piano terra così misurato dà 3064 m², contro i 3400 m² che la fonte
+     storica di Piacentini attribuisce all'edificio, e il piano quarto dà 72 m², cioè la sola
+     torretta a sud-ovest, che è esattamente ciò che mostra la tavola del quarto piano.
+     Il documento dichiara cinque piani fuori terra e avverte che non tutte le ali li
+     raggiungono: queste quote differenziate sono la traduzione di quell'avvertenza.
+     CORPI[k] = rettangoli che arrivano ALMENO al livello k (cumulativi, per la massa).
+     CORPI_TOP[k] = rettangoli che si FERMANO al livello k (per coperture e coronamenti).
+     ATTENZIONE - questi rettangoli NON sono usati per costruire la massa, e il motivo va
+     letto prima di riaccenderli. Estrudendoli si ottiene un volume di 40 400 m3, mentre la
+     fonte storica di Piacentini riportata dal Museo di Fisica dichiara 72 500 m3: il modello
+     a gradoni starebbe al vero come 1 a 1,8. La causa e' il metodo di conteggio: nelle
+     planimetrie di emergenza sono colorati solo gli ambienti con una destinazione assegnata,
+     mentre corridoi, scale, laboratori senza etichetta e locali tecnici restano bianchi e
+     non vengono contati. Il conteggio quindi sottostima i piani alti, e il volume dichiarato
+     implica un'altezza media di 21,3 m su tutta l'impronta, cioe' cinque livelli quasi
+     ovunque. Finche' non si ricava la sagoma dai prospetti o da un rilievo, la massa resta
+     uniforme a 21 m: e' l'ipotesi che rispetta il volume documentato.
+     Restano validi, e utili quando si tornera' sul tema: la differenza RELATIVA fra i corpi
+     (quali parti sono piu' basse) e la torretta a sud-ovest, unico punto che la tavola del
+     quarto piano mostra abitato. */
+  const CORPI = {
+    2: [[-42.0,-26.0,-18.0,-10.0],[-4.0,-26.0,20.0,-8.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,14.0],[26.0,-20.0,28.0,-4.0],[28.0,-18.0,30.0,-6.0],[-18.0,-12.0,-4.0,-4.0],[-36.0,-10.0,-18.0,-8.0],[-32.0,-8.0,-18.0,-4.0],[-4.0,-8.0,0.0,-4.0],[4.0,-8.0,20.0,-4.0],[-26.0,-4.0,-20.0,36.0],[4.0,-4.0,12.0,36.0],[-42.0,2.0,-26.0,24.0],[22.0,6.0,42.0,12.0],[24.0,12.0,42.0,14.0],[12.0,20.0,14.0,36.0],[-28.0,24.0,-26.0,36.0],[-20.0,26.0,4.0,36.0],[14.0,30.0,16.0,34.0]],
+    3: [[-42.0,-26.0,-20.0,-12.0],[-2.0,-26.0,20.0,-10.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,2.0],[26.0,-18.0,30.0,-6.0],[-40.0,-12.0,-18.0,-10.0],[-34.0,-10.0,-6.0,-8.0],[6.0,-10.0,20.0,-8.0],[-32.0,-8.0,-26.0,-6.0],[-18.0,-8.0,-6.0,-6.0],[6.0,-8.0,14.0,-4.0],[26.0,-6.0,28.0,-4.0],[4.0,-4.0,10.0,22.0],[-24.0,-2.0,-20.0,20.0],[-40.0,2.0,-24.0,6.0],[44.0,2.0,48.0,12.0],[-42.0,4.0,-40.0,20.0],[-40.0,6.0,-30.0,22.0],[-26.0,6.0,-24.0,20.0],[24.0,8.0,32.0,12.0],[42.0,8.0,44.0,12.0],[10.0,20.0,12.0,26.0],[6.0,22.0,10.0,26.0],[-18.0,26.0,2.0,34.0],[-28.0,30.0,-18.0,34.0],[2.0,30.0,14.0,34.0]],
+    4: [[-40.0,-26.0,-20.0,-12.0],[-34.0,-12.0,-28.0,-8.0],[6.0,-4.0,10.0,22.0],[-40.0,4.0,-32.0,20.0],[-24.0,4.0,-20.0,20.0],[-26.0,30.0,-24.0,32.0]],
+    5: [[-30.1,21.0,-25.4,33.7]]
+  };
+  const CORPI_TOP = {
+    1: [[-42.0,-28.0,-20.0,-26.0],[-4.0,-28.0,20.0,-26.0],[38.0,-28.0,48.0,-26.0],[-18.0,-26.0,-4.0,-12.0],[20.0,-26.0,28.0,-22.0],[30.0,-26.0,38.0,-22.0],[26.0,-22.0,28.0,-20.0],[38.0,-22.0,42.0,2.0],[-42.0,-10.0,-36.0,-8.0],[-34.0,-8.0,-32.0,-4.0],[0.0,-8.0,4.0,-4.0],[28.0,-6.0,30.0,-4.0],[12.0,-4.0,20.0,8.0],[-40.0,-2.0,-38.0,2.0],[-34.0,-2.0,-26.0,2.0],[-20.0,-2.0,-18.0,24.0],[30.0,-2.0,38.0,6.0],[-42.0,0.0,-40.0,2.0],[-38.0,0.0,-34.0,2.0],[-16.0,0.0,0.0,4.0],[20.0,0.0,22.0,8.0],[-18.0,2.0,-16.0,6.0],[0.0,2.0,2.0,4.0],[26.0,2.0,30.0,6.0],[40.0,2.0,42.0,6.0],[-16.0,4.0,-4.0,6.0],[22.0,4.0,26.0,6.0],[-44.0,8.0,-42.0,24.0],[22.0,12.0,24.0,14.0],[28.0,14.0,36.0,16.0],[14.0,22.0,16.0,30.0],[-30.0,24.0,-28.0,34.0],[14.0,34.0,16.0,36.0]],
+    2: [[-20.0,-26.0,-18.0,-12.0],[-4.0,-26.0,-2.0,-4.0],[26.0,-20.0,28.0,-18.0],[-42.0,-12.0,-40.0,-10.0],[-18.0,-12.0,-4.0,-10.0],[-36.0,-10.0,-34.0,-8.0],[-6.0,-10.0,-4.0,-4.0],[-2.0,-10.0,6.0,-8.0],[-26.0,-8.0,-18.0,-4.0],[-2.0,-8.0,0.0,-4.0],[4.0,-8.0,6.0,-4.0],[14.0,-8.0,20.0,-4.0],[-32.0,-6.0,-26.0,-4.0],[-18.0,-6.0,-6.0,-4.0],[-26.0,-4.0,-20.0,-2.0],[10.0,-4.0,12.0,20.0],[-26.0,-2.0,-24.0,2.0],[-42.0,2.0,-40.0,4.0],[42.0,2.0,44.0,8.0],[-30.0,6.0,-26.0,24.0],[22.0,6.0,42.0,8.0],[22.0,8.0,24.0,12.0],[32.0,8.0,42.0,14.0],[24.0,12.0,32.0,14.0],[42.0,12.0,48.0,14.0],[-42.0,20.0,-40.0,24.0],[-26.0,20.0,-20.0,30.0],[12.0,20.0,14.0,30.0],[-40.0,22.0,-30.0,24.0],[4.0,22.0,6.0,30.0],[-28.0,24.0,-26.0,30.0],[-20.0,26.0,-18.0,30.0],[2.0,26.0,4.0,30.0],[6.0,26.0,12.0,30.0],[14.0,30.0,16.0,34.0],[-28.0,34.0,14.0,36.0]],
+    3: [[-42.0,-26.0,-40.0,-12.0],[-2.0,-26.0,20.0,-10.0],[38.0,-26.0,48.0,-22.0],[20.0,-22.0,26.0,-4.0],[42.0,-22.0,48.0,2.0],[26.0,-18.0,30.0,-6.0],[-40.0,-12.0,-34.0,-10.0],[-28.0,-12.0,-18.0,-8.0],[-18.0,-10.0,-6.0,-6.0],[6.0,-10.0,20.0,-8.0],[-32.0,-8.0,-26.0,-6.0],[6.0,-8.0,14.0,-4.0],[26.0,-6.0,28.0,-4.0],[4.0,-4.0,6.0,22.0],[-24.0,-2.0,-20.0,4.0],[-40.0,2.0,-24.0,4.0],[44.0,2.0,48.0,12.0],[-42.0,4.0,-40.0,20.0],[-32.0,4.0,-24.0,6.0],[-32.0,6.0,-30.0,22.0],[-26.0,6.0,-24.0,20.0],[24.0,8.0,32.0,12.0],[42.0,8.0,44.0,12.0],[-40.0,20.0,-32.0,22.0],[10.0,20.0,12.0,26.0],[6.0,22.0,10.0,26.0],[-18.0,26.0,2.0,34.0],[-28.0,30.0,-26.0,34.0],[-24.0,30.0,-18.0,34.0],[2.0,30.0,14.0,34.0],[-26.0,32.0,-24.0,34.0]],
+    4: [[-40.0,-26.0,-20.0,-12.0],[-34.0,-12.0,-28.0,-8.0],[6.0,-4.0,10.0,22.0],[-40.0,4.0,-32.0,20.0],[-24.0,4.0,-20.0,20.0]],
+    5: [[-30.1,21.0,-25.4,33.7]]
+  };
+
   let P = {};
   let X_MID, Z_MID,                       // ritocco dell'intero gruppo nella terna locale
     H, H_CORN, CORN_OUT, H_ZOCC, ZOCC_OUT, // sommità, fascia di coronamento, zoccolo
     PIANI, WIN_W, WIN_H, WIN_PITCH, WIN_DEP, SILLS, // scansione dei piani e delle finestre
     X_ENTR, DOOR_W, DOOR_H, PENS_W, PENS_D, PENS_Y, PENS_T, // ingresso e pensilina
     REC_X0, REC_W, REC_D, BALC_Y, BALC_T, PAR_H, PAR_T, // rientranza d'ingresso e balconata
+    SED_ON, SED_X0, SED_X1, SED_Z0, SED_Z1, SED_H, SED_IN, SED_STEP, // piano di sedime
     PLAT_Z, PLAT_H, STEPS, LASTRA,        // piazzale rialzato, scalinata, lato delle lastre
     H_OVEST, X_OVEST, H_EST, X_EST;       // corpi a quota diversa: spenti, vedi intestazione
 
@@ -179,6 +221,21 @@
     /* Piazzale rialzato in travertino dentro l'intaglio sud-est: profondità e numero di alzate
        non documentati; la quota è quella dello zoccolo, le lastre sono i 60 cm documentati. */
     PLAT_Z = P.PLAT_Z ?? 24.0; PLAT_H = P.PLAT_H ?? H_ZOCC; STEPS = P.STEPS ?? 5; LASTRA = P.LASTRA ?? 0.6;
+    /* PIANO DI SEDIME (fonte 6). Le due assonometrie poggiano il complesso su una piastra
+       disegnata con il bordo a gradino. Misurata rettificando l'assonometria 1 nel piano della
+       pianta (vedi fonte 6 per il metodo) e leggendo i bordi come rette di quota 0:
+         bordo esterno  a da -5,8 a 88,5 e b da -0,5 a 81,8  -> 94,3 x 82,3 m
+         gradino interno a da -1,3 a 83,3 e b da  2,7 a 80,6
+       Le coordinate di pianta del disegno (a, b) entrano nella terna locale del modulo con
+       x = a - 38,28 e z = 44,29 - b: la traslazione fa coincidere il centro della piastra con
+       il centro dell'ingombro dell'anello OSM di CU013, che resta il riferimento di posizione
+       e orientamento nel mondo. Lo spessore della piastra e l'alzata del gradino si leggono
+       sul disegno come coppie di rette parallele distanti 0,5-1,2 m in b, cioè 0,6-1,4 m di
+       altezza: valori troppo incerti per essere dichiarati misurati, qui 0,9 e 0,5 m. */
+    SED_ON = P.SED_ON ?? true;
+    SED_X0 = P.SED_X0 ?? -44.1; SED_X1 = P.SED_X1 ?? 50.2;
+    SED_Z0 = P.SED_Z0 ?? -37.5; SED_Z1 = P.SED_Z1 ?? 44.8;
+    SED_H = P.SED_H ?? 0.9; SED_IN = P.SED_IN ?? 4.5; SED_STEP = P.SED_STEP ?? 0.5;
     // corpi a quota diversa: 0 = non modellati, vedi intestazione
     H_OVEST = P.H_OVEST ?? 0; X_OVEST = P.X_OVEST ?? -29.6;
     H_EST = P.H_EST ?? 0; X_EST = P.X_EST ?? 13.6;
@@ -462,16 +519,15 @@
     box(REC_X0, REC_X1, BALC_Y - BALC_T, BALC_Y, REC_Z0, REC_Z1, travPlain, 'balconata');
     box(REC_X0, REC_X1, BALC_Y, BALC_Y + PAR_H, REC_Z1 - PAR_T, REC_Z1, travPlain, 'parapetto-balconata');
 
-    /* ---------------- corpi a quota diversa (spenti per mancanza di fonti) ----------------
-       Accendendo H_OVEST o H_EST si sovrappone alla massa un volume più alto o più basso sul
-       tratto indicato: serve quando arriverà un rilievo che dica dove cominciano i corpi. */
-    if (H_OVEST > 0) {
-      const p = RING_OUT.filter(([x]) => x <= X_OVEST);
-      if (p.length > 2) flat(p.concat([[X_OVEST, p[p.length - 1][1]], [X_OVEST, p[0][1]]]), H_MURO,
-        litoWall, H_OVEST - H_MURO, 'corpo-ovest');
-    }
-    if (H_EST > 0) {
-      box(X_EST, 48.66, H_EST, H_MURO, -26.95, 13.84, roofMat, 'taglio-corpo-est');
+    /* ---------------- piano di sedime ----------------
+       Piastra su cui poggia il complesso, con il bordo a gradino, come nei due disegni.
+       Sta sotto l'edificio e non lo interseca: il suo estradosso è la quota 0 del modulo. */
+    if (SED_ON) {
+      flat([[SED_X0, SED_Z0], [SED_X1, SED_Z0], [SED_X1, SED_Z1], [SED_X0, SED_Z1]],
+        -SED_H - SED_STEP, trav(SED_X1 - SED_X0, SED_Z1 - SED_Z0), SED_H, 'sedime').receiveShadow = true;
+      flat([[SED_X0 + SED_IN, SED_Z0 + SED_IN], [SED_X1 - SED_IN, SED_Z0 + SED_IN],
+        [SED_X1 - SED_IN, SED_Z1 - SED_IN], [SED_X0 + SED_IN, SED_Z1 - SED_IN]],
+        -SED_STEP, travPlain, SED_STEP, 'sedime-gradino').receiveShadow = true;
     }
 
     group.traverse((o) => {

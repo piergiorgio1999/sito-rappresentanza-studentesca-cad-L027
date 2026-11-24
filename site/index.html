@@ -74,6 +74,7 @@ h1{font-family:var(--serif);font-size:clamp(1.7rem,4.6vw,2.7rem);line-height:1.0
 .btn:hover{background:var(--sap2)}
 .btn.alt{background:#fff;color:var(--sap);border:1.5px solid #cfadb6}
 .btn[hidden]{display:none}
+a.btn{display:inline-block;text-decoration:none;text-align:center;line-height:22px}
 .tip{font-size:.83rem;color:var(--muted);margin:0 0 6px}
 
 .panel{border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:10px}
@@ -483,8 +484,8 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .tabs.side button:hover{background:var(--rose)!important}
 .tabs.side button[aria-selected="true"]{background:var(--rose)!important;color:var(--sap2);box-shadow:inset 4px 0 0 var(--sap)}
 .tabs.side button:focus-visible{outline:2px solid var(--sap);outline-offset:-2px}
-#t-market,#t-food,#t-pellicano,#t-account{color:var(--muted);cursor:not-allowed;opacity:.5}
-#t-market:hover,#t-food:hover,#t-pellicano:hover,#t-account:hover{background:none!important}
+#t-market,#t-food,#t-pellicano{color:var(--muted);cursor:not-allowed;opacity:.5}
+#t-market:hover,#t-food:hover,#t-pellicano:hover{background:none!important}
 #t-market{margin-top:auto}
 .side-h{display:none;align-items:center;justify-content:space-between;padding:4px 6px 10px}
 .side-h b{font-family:var(--serif);font-size:1.15rem;color:var(--sap2)}
@@ -853,7 +854,7 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
     <button role="tab" id="t-news" data-tab="news" aria-controls="tab-news" aria-selected="false" tabindex="-1"><span aria-hidden="true">📰</span>News<i class="soonb">presto</i></button>
     <hr class="side-sep">
     <button role="tab" id="t-impostazioni" data-tab="impostazioni" aria-controls="tab-impostazioni" aria-selected="false" tabindex="-1"><span aria-hidden="true">⚙️</span><em class="two">Impostazioni</em></button>
-    <button role="tab" id="t-account" data-tab="account" aria-controls="tab-account" aria-selected="false" tabindex="-1"><span aria-hidden="true">👤</span><b id="tAccLbl">Accedi</b><i class="soonb">presto</i></button>
+    <button role="tab" id="t-account" data-tab="account" aria-controls="tab-account" aria-selected="false" tabindex="-1"><span aria-hidden="true">👤</span><b id="tAccLbl">Accedi</b></button>
     <button role="tab" id="t-market" data-tab="market" aria-controls="tab-market" aria-selected="false" tabindex="-1"><span aria-hidden="true">🛍️</span><em class="two">Marketplace</em><i class="soonb">presto</i></button>
     <button role="tab" id="t-food" data-tab="food" aria-controls="tab-food" aria-selected="false" tabindex="-1"><span aria-hidden="true">🥙</span><em class="two">Cibo vicino a Sapienza</em><i class="soonb">presto</i></button>
     <button role="tab" id="t-pellicano" data-tab="pellicano" aria-controls="tab-pellicano" aria-selected="false" tabindex="-1"><img class="pellicano-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAABACAMAAABvC9RJAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAALKUExURQ9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVA9HVP///0XmT+0AAADsdFJOUwAVW6fb9f723q1jGwNRw/f5zmsPBXnz/bEnZ/jKLCKeb2JzpuW/GQx+U3z8JQEuovuNAh/j9BAJi+06xZANsJcj2pJA8RyAxBFFdJodmGlh1SGCemyKe+6zq3GEwUzgrB7cUvrmMYluZunJ6i3PvAo4E4XsnDNEMgigzTRJ4vI7iAto77tHTqqGkxJdFOe32LaHJjnfBCuvwPCyNrltPI69JIOboetLVqPTpRjkX9EW1lXGkcgOj1hembpwx1RBStLQfak/akboKaTdclpN2RdXlge0Bhp3f0LMYD4vQ8KUeIyoUNfLME+4NWSBwXg9QQAAAAFiS0dE7Va+g40AAAXOSURBVEjHjZbpQ1NHEMDXIxwlQBTwidQiKCB9IikVUoyloBzRWrHWClUa0aAC4YqIqBQU8QoFxAMED1QsRYQCKoh4VdR6VcEiWM9Wa2u1zh/R2fce5CWEyHx6Mzu/t7uzM7NLiLEMGz5ipMTK2sb2PTsyJJHaOzgCL7JRo52GQDi7jAGDMGNd342McwMjeX/8u4gPRlI/G/cJHp4TJ3GMl7clf5/Jvh+iE+s+xY9uaqq/nDIfBVhAPp7mGEj/GyToik8YVIOnW5pFyS1lRr/h0xCqf+Y3OBIaxiEzDZZZ4aiHRQyORPJBilIZ5nVA3XH24MgchkPYz+f2m76ghnkW9hI9n5/H4cs+0wKqfmUpzAuFA1zQZ/iaaossIS4Akhh0inXmdek3FFlsCVkCEPetGmCplNfjl9G9LbeE+GogYcVKgFWCnkgDkmQxzXz8AZLjQJsiTJJK15WWPqh/UIYd0a3ORCd1PGdQrOFi4ckpqqy12T4mxLr1kg05hHyXC5C3kSM2cWmZS0smf3NygVvMlq3GyLY8gO0YqXnouAN1nZ4jQI8pVujOct+Z34uAoshiNIXbYy6WAOy0IytK+SNKwpn9dvVVXPHGfmJ3iWDatMc5YxpoN87bKzgtLSOkPKG/SvetE4iIin5b5f4Da7cfrGD79JU4fMhQ2OFVPBFwWFzuSt2hJIN2REUUB0WjS3jkaK4Yiau2Fmnq8nRPR5Fekc8HSy6yVR4rEK1Due8HpZiABL5NRRtNMsrwXWO7jDFuUiD7kUNq0R54PA6gzl/mtt/wU0aZAAOEz+sqbCwnAvaEw5x6dYODYVQeM5AQWsNR7HKJJKsAfopoaKwD87JXz4+ElFGkqRmYk2Q4w247YH0qzNRXhmcks4LTpIqLfUsrRVqTgfUlZyAvpw2UO02I4LORctniWChdR9qpPpK7QvKjgGmTngO13XnYcMoEaVY5XYCLs63zLpGfaWRquIpTYVzPOl2GjlZPaDhhgmC9XYGrKi/wD/CmK5Bco4gdlvjZpmXQ8ekvwM7MNWHGkeuyGzcXgzab3KKRr6VIdgFYDa+/DeqIrTJo32GCTCSuxTBhRQysJolU/5UidxiQ3y3qxDmHjYLJ3ia7ae7q6oTYIiVcLkqp6TsYPUBBliIKrO6R6RO6ClcbL00yK70FbOb+Bhr7bi/U7/cQ0tsIkKojD5gbB+gPCg+GqI2YanIYciOwLbqT31GtG4b3owzgMFZw20Ou40mXWpc+shIhdd691Y+JB0Bn1xNMrcynhFwGmJQt6gNXQJO2XyNiHlBrTjBUPg3CzsbeI4SBvHHiXvNMAvDHWFHW59Ifli2J8aonM1A9TciuEXelRj0wCu1HWkTTlOjQ3J3SS8haXFkddkbTOzcaq1QTmyli/lQIQ/nYq9jnA1ttK+1he4+IEPmO7r5V459szLTna8GYGHobEaN50SqMPW4ArRlEisnE1q4S173VX6HC4NOFz8zdAqPRx0Nha3SijS/LiAVJ5NLv5t/9/szxcxB4bKoF5AwWLF7liSww9//BOs4DfWg7Cw36h97d5ommDtA+pIXUCQWvMrTQ8m8YrN99Hmtf0vnaw9kcckcOkVwYbOGGK5545d3rSaCc9aSUplHlGzOEzzlIrue+XmDWE9fb0BjaFgw1C1LaSjKtS+vNIL5ubm38lwt0FHLPgZCi5VgR81fFT63SmSFa0yBNuEk9IQ7v494NAFe939DUO95jbiPpkXJaPpxMhvt0s/Z4j1bctMNnYHOTqXtZxujIEqy4+R7l3MNtBmynORvwAPe9ryz9v1u1A95zvnzjxky+XY6qYguUciHt8SyGibgmMw9Aj/ALa8Kh4mK0Mg4fWDoXRyjO4Ab8Xp0c5PGneOX6GjqmYANV5b88nUpvt9TaImJZgkIeXeI+FrGgdQQmEDQXst7BOAlxfz6pvXqM29sqfwYWkqGJIn68DYzoIT6b30YMEaFvq7Ac8yP/A45qoJX7ZcF3AAAAAElFTkSuQmCC" alt=""><em class="two">Lost media (Pelican story)</em><i class="soonb">presto</i></button>
@@ -1262,8 +1263,13 @@ body.f-lexend{--sans:Lexend,"Open Sans",Arial,sans-serif;letter-spacing:.01em}bo
   <!-- ===== Account ===== -->
   <section class="panel" id="tab-account" role="tabpanel" aria-labelledby="t-account" hidden="">
     <div class="ph">
-      <h2><span id="accTitle">Accedi</span> <span class="soonb big">prossimamente</span></h2>
+      <h2><span id="accTitle">Accedi</span></h2>
       <p class="note" id="accSub">Serve per pubblicare libri usati, ripetizioni e, per i docenti, comunicazioni. Per consultare il sito non serve.</p>
+    </div>
+    <div class="card">
+      <b>Accesso dei rappresentanti</b>
+      <p class="note">Riservato a chi cura il sito. Da qui si apre l'editor della mappa 3D del campus: parametri degli edifici, salvataggi recuperabili e pubblicazione.</p>
+      <p><a class="btn alt" href="https://orari-chimica.pages.dev/campus-3d/login.html">Entra nell'editor della mappa</a></p>
     </div>
     <div class="soon" id="accSoon" hidden=""><b>🚧 Prossimamente · lavori in corso</b><span>Presto potrai entrare con il tuo account Sapienza o con il cellulare per pubblicare libri usati e ripetizioni; i docenti potranno pubblicare comunicazioni nelle News. Per ora i moduli qui sotto sono solo un'anteprima.</span></div>
     <p class="banner" id="apiOff" hidden="">Account e annunci non sono raggiungibili in questo momento. Riprova più tardi.</p>
