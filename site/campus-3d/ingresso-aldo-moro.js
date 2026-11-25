@@ -57,6 +57,21 @@
     DISC = Array.isArray(P.DISC) && P.DISC.length === 2 ? P.DISC.slice() : [CU, SL + 15];
   }
 
+  /* Impronta a terra del colonnato con i due corpi in mattoni, in [lon, lat]. campus-3d.js la sottrae ai volumi
+     bianchi della planimetria ufficiale, che attribuiva parte dell'ingresso a Igiene (CU015) e a Ortopedia (CU016)
+     e li faceva compenetrare il modello. È una funzione: legge i parametri (anche gli override) quando serve. */
+  window.MAPPA3D_IMPRONTE = Array.isArray(window.MAPPA3D_IMPRONTE) ? window.MAPPA3D_IMPRONTE : [];
+  window.MAPPA3D_IMPRONTE.push(function improntaIngressoAldoMoro() {
+    readParams();
+    const kLon = 111320 * Math.cos(REF.lat * Math.PI / 180);
+    const u0 = -L / 2 - 0.15, u1 = L / 2 + 0.15, v0 = BLOCK_BACK - 0.2, v1 = Math.max(V_FRONT, BLOCK_FRONT) + 0.2;
+    return [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => {
+      const e = CENTER_EN[0] + A[0] * (U_MID + u) + N[0] * (V_MID + v);
+      const n = CENTER_EN[1] + A[1] * (U_MID + u) + N[1] * (V_MID + v);
+      return [REF.lon + e / kLon, REF.lat + n / 111320];
+    });
+  });
+
   function whenReady(fn) {
     const c = window.campus3d;
     if (window.MAPPA3D_READY === true && typeof THREE !== 'undefined' && c && c.scene && typeof c.project === 'function' && c.scene.getObjectByName('edifici')) fn(c);
@@ -277,6 +292,8 @@
     };
     sync(); setInterval(sync, 250);
     window.campus3d.ingressoAldoMoro = group;
+    // l'impronta ora usa gli override letti in build(): riallinea il ritaglio di CU015 e CU016
+    if (typeof c.ritagliaPlanimetria === 'function') c.ritagliaPlanimetria();
   }
 
   whenReady(build);
