@@ -246,7 +246,6 @@
 ./site/campus-3d/vendor/polygon-clipping.LICENSE.txt
 ./site/campus-3d/vendor/polygon-clipping.umd.min.js
 ./site/campus-3d/vendor/three.min.js
-./site/campus-3d/verifiche/pr95-dopo-cu013-orientamento.png
 ./site/community-scienze-chimiche-2026.png
 ./site/copertine/B00028108/9788808399663_III_ed_italiana.jpg
 ./site/copertine/B015F27B6/9788808183507_3_ed_italiana.jpg
