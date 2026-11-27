@@ -475,7 +475,8 @@
           if (o.name === 'piazzale' && o.parent) o.parent.remove(o);
           if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
         });
-        model.rotation.x = -Math.PI / 2; // Z-up del dossier -> Y-up della scena
+        // I nodi del GLB includono già la conversione Z-up → Y-up. Una seconda
+        // rotazione qui distendeva il fabbricato sul fianco (24 m in verticale).
         model.position.set(-38.3568, 0, 30.0194); // baricentro area dei corpi, non del piazzale
         model.name = 'marconi-dossier-cu013';
         model.userData.source = 'Marconi_CU013_dossier_integrale.zip';
