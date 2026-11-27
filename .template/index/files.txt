@@ -174,8 +174,8 @@
 ./site/campus-3d/editor-bridge.html
 ./site/campus-3d/editor.html
 ./site/campus-3d/editor.js
-./site/campus-3d/fisica-marconi.js
 ./site/campus-3d/fisica-fermi.js
+./site/campus-3d/fisica-marconi.js
 ./site/campus-3d/index.html
 ./site/campus-3d/ingresso-aldo-moro.js
 ./site/campus-3d/interno-aldo-moro.js
@@ -188,9 +188,9 @@
 ./site/campus-3d/models/magnolia_a_tronco.wasm
 ./site/campus-3d/models/magnolia_b_chioma.wasm
 ./site/campus-3d/models/magnolia_b_tronco.wasm
+./site/campus-3d/models/marconi-cu013-dossier.glb
 ./site/campus-3d/models/minerva-glb.json
 ./site/campus-3d/models/minerva.json
-./site/campus-3d/models/marconi-cu013-dossier.glb
 ./site/campus-3d/models/studenti.json
 ./site/campus-3d/models/studenti/cappello-lontano.wasm
 ./site/campus-3d/models/studenti/cappello-vicino.wasm
@@ -246,6 +246,7 @@
 ./site/campus-3d/vendor/polygon-clipping.LICENSE.txt
 ./site/campus-3d/vendor/polygon-clipping.umd.min.js
 ./site/campus-3d/vendor/three.min.js
+./site/campus-3d/verifiche/pr95-dopo-cu013-orientamento.png
 ./site/community-scienze-chimiche-2026.png
 ./site/copertine/B00028108/9788808399663_III_ed_italiana.jpg
 ./site/copertine/B015F27B6/9788808183507_3_ed_italiana.jpg
