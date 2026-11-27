@@ -532,8 +532,9 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:v
 .mp-s.on{fill:color-mix(in srgb,var(--mpS) 70%,transparent);stroke:#1f1f1f;stroke-width:3;filter:drop-shadow(0 0 3px rgba(255,255,255,.9))}
 @media(prefers-reduced-motion:no-preference){.mp-s.lez:not(.on){animation:mpPulse 2.6s ease-in-out infinite}}
 @keyframes mpPulse{50%{stroke:color-mix(in srgb,var(--mpL) 25%,transparent)}}
-.mp-poi-m{cursor:pointer}.mp-poi-m circle{filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 2px 3px rgba(0,0,0,.5))}.mp-poi-m:hover circle{stroke:#ffd166}.mp-poi-m text{pointer-events:none}.mp-poi.hide-bar .c-bar,.mp-poi.hide-water .c-water,.mp-poi.hide-food .c-food,.mp-poi.hide-serv .c-serv{display:none}
+.mp-poi-m{cursor:pointer}.mp-poi-m circle{filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 2px 3px rgba(0,0,0,.5))}.mp-poi-m:hover circle{stroke:#ffd166}.mp-poi-m text{pointer-events:none}.mp-poi.hide-toilets .c-toilets,.mp-poi.hide-library .c-library,.mp-poi.hide-serv .c-serv{display:none}
 .mp-poi-key{position:absolute;left:12px;top:12px;z-index:4;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:.76rem;display:grid;gap:3px;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:default}.mp-poi-key b{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#822433}.mp-poi-key label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}.mp-poi-key input{width:auto;min-height:0;margin:0}.mp-poi-key .dot{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:12px;background:#fff;border:2.5px solid;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mp-poi-key .mp-kfixed{display:flex;align-items:center;gap:6px;font-weight:600}.mp-poi-key .mp-kfixed small{font-size:.68rem;font-weight:500;color:var(--muted)}
 .mp-map.has-3d .mp-poi-key{display:none}
 @media(max-width:699px){.mp-poi-key{font-size:.68rem;padding:5px 7px;top:8px;left:8px}}
 .mp-s.custom{fill:color-mix(in srgb,var(--bc) 60%,transparent);stroke:var(--bc);stroke-width:2;animation:none}.mp-s.custom:hover,.mp-s.custom.hov{fill:color-mix(in srgb,var(--bc) 75%,#fff);stroke:#fff}.mp-s.custom.on{fill:color-mix(in srgb,var(--bc) 80%,transparent);stroke:#1f1f1f;stroke-width:3}
@@ -2996,16 +2997,17 @@ let mpSel=null, mpRoom='', mpV={s:1,tx:0,ty:0}, mpReady=false;
     `<button type="button" class="mp-b${LEZ_BLD.includes(c)?' lez':''}" data-gb="${c}"><span class="cd">${c}${CAMPUS_X[c]&&CAMPUS_X[c].al?' · '+CAMPUS_X[c].al:''}</span><span class="nm">${esc(bTitle(c))}${BLD_LIBS[c]?' 📖':''}</span></button>`).join('');
 })();
 
-/* --- servizi della Città Universitaria: bar, fontanelle e altri servizi sulla planimetria --- */
+/* --- servizi della Città Universitaria: essenziali sempre visibili, altri filtrabili --- */
 const MP_POI_CAT = {
-  bar:   {label:'Bar Sapienza', icon:'☕', color:'#822433'},
+  bar:   {label:'Bar e caffè', icon:'☕', color:'#822433'},
   water: {label:'Fontanelle', icon:'💧', color:'#006778'},
-  food:  {label:'Mense e ristoro', icon:'🍽️', color:'#C54C00'},
+  toilets: {label:'Bagni', icon:'🚻', color:'#356b9a'},
+  library: {label:'Biblioteche', icon:'📚', color:'#76518f'},
   serv:  {label:'Altri servizi', icon:'ℹ️', color:'#4f6b5d'}
 };
 const MP_POI_TYPES = {
-  drinking_water:['water','Fontanella (acqua potabile)'], cafe:['food','Caffetteria'], bar:['food','Bar'], canteen:['food','Mensa'], restaurant:['food','Ristorante'], fast_food:['food','Ristoro'], vending_machine:['food','Distributori automatici'],
-  toilets:['serv','Servizi igienici'], atm:['serv','Bancomat'], bank:['serv','Banca'], library:['serv','Biblioteca'], post_office:['serv','Ufficio postale'], post_box:['serv','Cassetta postale'], pharmacy:['serv','Farmacia'],
+  drinking_water:['water','Fontanella (acqua potabile)'], cafe:['bar','Caffetteria'], bar:['bar','Bar'], canteen:['serv','Mensa'], restaurant:['serv','Ristorante'], fast_food:['serv','Ristoro'], vending_machine:['serv','Distributori automatici'],
+  toilets:['toilets','Servizi igienici'], atm:['serv','Bancomat'], bank:['serv','Banca'], library:['library','Biblioteca'], post_office:['serv','Ufficio postale'], post_box:['serv','Cassetta postale'], pharmacy:['serv','Farmacia'],
   defibrillator:['serv','Defibrillatore (DAE)'], first_aid:['serv','Primo soccorso'], clinic:['serv','Ambulatorio'], doctors:['serv','Ambulatorio'], printing:['serv','Stampa'], shop_copyshop:['serv','Copisteria'], shop_books:['serv','Libreria'], shop_stationery:['serv','Cartoleria'],
   bicycle_parking:['serv','Parcheggio bici'], place_of_worship:['serv','Luogo di culto'], police:['serv','Polizia'], kindergarten:['serv','Asilo nido']
 };
@@ -3026,7 +3028,7 @@ const MP_POI_PLAN = [
   {pt:[273.0,442.0], cat:'serv', img:'data:image/png;base64,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', type:'ciao', name:'CIAO · Centro Informazioni Accoglienza Orientamento', note:'Tocca per aprire la pagina Sapienza', url:'https://www.uniroma1.it/it/pagina/ciao-informazioni-gli-studenti'},
   {pt:[96.2,479.8], cat:'serv', icon:'👮', type:'police', name:'Commissariato P.S.', note:'CU007'},
   {pt:[176.3,729.5], cat:'serv', icon:'🅿️', type:'parking', name:'Parcheggio', note:'Indicato sulla planimetria ufficiale'},
-  {code:'CU001', cat:'serv', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
+  {code:'CU001', cat:'library', icon:'📚', name:'Biblioteca Alessandrina', note:'Rettorato · CU001'},
   {code:'CU011', cat:'serv', icon:'🧸', name:'Asilo nido', note:'CU011'},
   {code:'CU012', cat:'serv', icon:'⛪', name:'Chiesa Divina Sapienza', note:'CU012'},
   /* Fontanelle della planimetria e della fonte Fontanelle.org; i punti inattivi sono indicati chiaramente. */
@@ -3039,7 +3041,9 @@ const MP_POI_PLAN = [
   /* fontanelle all'interno di un edificio: bordo doppio */
   {pt:[459.5,543.5], cat:'water', icon:'💧', indoor:true, name:'Fontanelle all’interno dell’edificio', note:'Matematica «G. Castelnuovo» · CU006'}
 ];
-const mpPoiOn = {bar:true, water:true, food:true, serv:true};
+const MP_POI_PREFS_KEY='orariChimicaMappaServiziV1';
+const mpPoiOn = {toilets:false, library:false, serv:false};
+(function(){ try { const saved=JSON.parse(localStorage.getItem(MP_POI_PREFS_KEY)||'{}'); for(const c of Object.keys(mpPoiOn)) if(typeof saved[c]==='boolean') mpPoiOn[c]=saved[c]; } catch(e){} })();
 (function(){
   const NS='http://www.w3.org/2000/svg', svg=$('mpSvg'), g=document.createElementNS(NS,'g');
   g.setAttribute('class','mp-poi'); svg.append(g);
@@ -3077,26 +3081,21 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     for(const p of data.pois||[]){
       const def=MP_POI_TYPES[p.type]; if(!def) continue;
       const [x,y]=geoToPdf(al,p.lon,p.lat); if(!inside(x,y)) continue;
-      // i due bar della planimetria hanno già il loro segnaposto
-      if(def[0]==='food' && /^(cafe|bar)$/.test(p.type) && placed.some(q=>q.cat==='bar'&&Math.hypot(q.x-x,q.y-y)<14)) continue;
+      // I bar ufficiali hanno già il loro segnaposto; evita il doppione OSM vicino.
+      if(def[0]==='bar' && placed.some(q=>q.cat==='bar'&&Math.hypot(q.x-x,q.y-y)<14)) continue;
       if(placed.some(q=>q.cat===def[0]&&Math.hypot(q.x-x,q.y-y)<2.5)) continue;
       // già sul quadrato blu della planimetria: niente doppione da OpenStreetMap
       if(placed.some(q=>q.type&&q.type===p.type&&Math.hypot(q.x-x,q.y-y)<40)) continue;
       add(x,y,{cat:def[0], icon:MP_POI_ICON[p.type]||'•', name:p.name||def[1], note:p.name?def[1]:''});
     }
-    const n=g.querySelectorAll('.c-water').length; const k=$('mpPoiKey'); if(k) k.querySelector('[data-cat="water"] .n').textContent=n?` (${n})`:'';
   }
   function apply(){ Object.keys(mpPoiOn).forEach(c=>g.classList.toggle('hide-'+c,!mpPoiOn[c])); }
+  function refreshCounts(){ const key=$('mpPoiKey'); if(!key) return; for(const c of ['bar','water','toilets','library','serv']){ const n=g.querySelectorAll('.c-'+c).length, el=key.querySelector(`[data-cat="${c}"] .n`); if(el) el.textContent=` (${n})`; } }
   const key=document.createElement('div'); key.className='mp-poi-key'; key.id='mpPoiKey'; key.setAttribute('aria-label','Servizi sulla mappa');
-  const keyRow=k=>{ const v=MP_POI_CAT[k]; return `<label data-cat="${k}"><input type="checkbox" checked> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`; };
-  key.innerHTML='<b>Servizi</b>'+keyRow('bar')+keyRow('water')+
-    `<div class="mp-krow">${keyRow('serv')}<button type="button" class="mp-kx" aria-expanded="false" aria-controls="mpKeyMore" title="Mostra gli altri servizi">›</button></div>`+
-    `<div class="mp-kmore" id="mpKeyMore" hidden>${keyRow('food')}<ul class="mp-klist"></ul></div>`;
-  key.querySelector('.mp-kx').addEventListener('click',e=>{ const btn=e.currentTarget, more=$('mpKeyMore'), open=more.hidden;
-    if(open){ const seen=new Map(); g.querySelectorAll('.mp-poi-m.c-serv').forEach(m=>{ const n=m.dataset.name, im=m.querySelector('image'), i=im?`<img src="${im.getAttribute('href')}" alt="">`:(m.querySelector('text')?.textContent||'•'); if(n&&!seen.has(n)) seen.set(n,i); });
-      key.querySelector('.mp-klist').innerHTML=[...seen].sort((x,y)=>x[0].localeCompare(y[0],'it')).map(([n,i])=>`<li><span class="dot sm" style="border-color:${MP_POI_CAT.serv.color}">${i}</span>${esc(n)}</li>`).join(''); }
-    more.hidden=!open; btn.setAttribute('aria-expanded',String(open)); btn.title=open?'Nascondi gli altri servizi':'Mostra gli altri servizi'; });
-  key.addEventListener('change',e=>{ const l=e.target.closest('label'); mpPoiOn[l.dataset.cat]=e.target.checked; apply(); });
+  const fixedRow=k=>{ const v=MP_POI_CAT[k]; return `<div class="mp-kfixed" data-cat="${k}"><span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span><small>sempre visibili</small></div>`; };
+  const keyRow=k=>{ const v=MP_POI_CAT[k]; return `<label data-cat="${k}"><input type="checkbox" ${mpPoiOn[k]?'checked':''}> <span class="dot" style="border-color:${v.color}">${v.icon}</span> ${v.label}<span class="n"></span></label>`; };
+  key.innerHTML='<b>Servizi</b>'+fixedRow('bar')+fixedRow('water')+keyRow('toilets')+keyRow('library')+keyRow('serv');
+  key.addEventListener('change',e=>{ const l=e.target.closest('label'); if(!l||!(l.dataset.cat in mpPoiOn)) return; mpPoiOn[l.dataset.cat]=e.target.checked; try{localStorage.setItem(MP_POI_PREFS_KEY,JSON.stringify(mpPoiOn));}catch(x){} apply(); });
   $('mpMap').append(key);
   /* --- segnalazioni di presenza/assenza sulle fontanelle --- */
   const pop=document.createElement('div'); pop.className='mp-fpop'; pop.hidden=true; $('mpMap').append(pop);
@@ -3110,7 +3109,7 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
     (Array.isArray(d)?d:d.list||[]).forEach(f=>{
       const near=[...g.querySelectorAll('.c-water')].find(m=>{ const q=m.transform.baseVal.consolidate(); return q&&Math.hypot(q.matrix.e-f.x,q.matrix.f-f.y)<2; });
       if(near){ near.dataset.k=String(f.id); if(f.status==='confirmed'){ near.classList.remove('mine'); near.dataset.note=''; near.querySelector('title').textContent=near.dataset.name; } return; }
-      add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'Fontanella confermata', k:String(f.id)}); }); }).catch(()=>{});
+      add(f.x,f.y,{cat:'water', icon:'💧', name:'Fontanella (acqua potabile)', note:'Fontanella confermata', k:String(f.id)}); }); refreshCounts(); }).catch(()=>{});
   window.mpFountainMsg=(on)=>{ if(on===false){ pop.hidden=true; return; } popMsg('<b>💧 Fontanelle della Città universitaria</b><span>La mappa riporta i punti della planimetria Sapienza e le segnalazioni pubblicate su Fontanelle.org. Controlla lo stato indicato sul singolo punto.</span>'); };
   function votePop(m){ voteM=m; const k=m.dataset.k, c=votes[k]||{yes:0,no:0}, mine=myV[k], unv=m.classList.contains('mine');
     popMsg(`<b>💧 ${esc(m.dataset.name)}</b><span class="mp-fst">${unv?'Segnalata da uno studente, non ancora verificata dai rappresentanti.':'Sulla mappa ufficiale dei rappresentanti.'}</span>`+
@@ -3125,9 +3124,9 @@ const mpPoiOn = {bar:true, water:true, food:true, serv:true};
       myV[k]=v; try{ localStorage.setItem(VKEY,JSON.stringify(myV)); }catch(x){}
       votePop(voteM); pop.querySelector('.mp-fct').insertAdjacentHTML('beforebegin', ok?`<span class="mp-fok">Grazie! ${v===1?'Conferma registrata.':'Se tante persone dicono che non c\'è, i rappresentanti vengono avvisati e la controllano.'}</span>`:'<span class="mp-fst">Risposta salvata solo qui: il voto si invia dal sito orari-chimica.pages.dev.</span>'); return; }
     });
-  drawPlan();
+  drawPlan(); refreshCounts(); apply();
   Promise.all([fetch('campus-3d/vector-alignment.json').then(r=>r.ok?r.json():null), fetch('/api/campus-osm').then(r=>r.ok?r.json():null)])
-    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); }).catch(()=>{});
+    .then(([al,data])=>{ if(al&&data) drawOsm(al,data); refreshCounts(); }).catch(()=>{});
   /* tocco su un segnaposto: etichetta */
   $('mpMap').addEventListener('click',e=>{ const m=e.target.closest('.mp-poi-m'), t=$('mpTip'); if(!m) return;
     e.stopPropagation(); if(m.dataset.url){ window.open(m.dataset.url,'_blank','noopener'); return; } if(m.classList.contains('c-water') && !m.classList.contains('new')){ t.hidden=true; votePop(m); return; } const r=$('mpMap').getBoundingClientRect(), b=m.getBoundingClientRect();
