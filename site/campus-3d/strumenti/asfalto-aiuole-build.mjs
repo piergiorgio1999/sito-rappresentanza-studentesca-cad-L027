@@ -16,7 +16,7 @@ const pc = createRequire(import.meta.url)(join(here, '..', 'vendor', 'polygon-cl
 const [src, out = join(here, '..', 'asfalto-aiuole.json')] = process.argv.slice(2);
 if (!src) { console.error('manca il file asfalto-aiuole-pdf.json'); process.exit(1); }
 const data = JSON.parse(readFileSync(src, 'utf8'));
-const TOL = 0.3, MIN_AREA = 0.5, HOLE_MIN = 4, CHUNK = 400; // punti PDF (1 pt ≈ 2 m)
+const TOL = 0.3, MIN_AREA = 0.5, HOLE_MIN = 25, CHUNK = 400; // punti PDF (1 pt ≈ 2 m)
 
 function rings(d) { // M/L/C/Z → anelli chiusi, curve approssimate con 6 segmenti
   const t = d.match(/[MLCZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) || [];
