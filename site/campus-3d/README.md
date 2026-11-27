@@ -64,3 +64,8 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 - La corte CU006 usa una pavimentazione in opus incertum; due raccordi ortogonali chiudono i varchi tra le ali curve e i blocchi laterali. Le due scale antincendio laterali sono avvicinate alle ali e collegate con passerelle perpendicolari alla parete; quella centrale resta nella posizione originale.
 - Aggiunto il modello procedurale di Fisica Enrico Fermi (CU033); il proxy OSM è escluso dalla scena quando è attivo il modello di dettaglio.
+
+## Aggiornamento del 27/11/2026: asfalto e aiuole dalla mappa colorata (issue #98)
+
+- Il proprietario ha colorato a mano la planimetria ufficiale: giallo = asfalto, verde = aiuola. `strumenti/asfalto-aiuole-build.mjs` (offline, non caricato dal sito) unisce le migliaia di strisce della pittura, applica la regola nonzero path per path, toglie il verde dal giallo, semplifica i bordi (0,3 pt) e scrive `asfalto-aiuole.json` in coordinate della pagina PDF.
+- `asfalto-aiuole.js` li converte con `campus3d.pdfToWorld` e disegna un solo mesh per strato: asfalto a quota -0,05 e aiuole a -0,03, cioè sotto ogni superficie già modellata (che parte da +0,004) e sopra il terreno (-0,12). Dove esiste un piazzale, un prato o un marciapiede di dettaglio resta visibile quello; gli strati nuovi riempiono solo i vuoti. Le aiuole sono piatte, senza cordolo rialzato, per non attraversare le superfici di dettaglio.
