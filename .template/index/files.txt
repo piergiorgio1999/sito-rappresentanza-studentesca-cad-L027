@@ -159,6 +159,8 @@
 ./site/aule-data.json
 ./site/campus-3d/MAPPA-3D-API.md
 ./site/campus-3d/README.md
+./site/campus-3d/asfalto-aiuole.js
+./site/campus-3d/asfalto-aiuole.json
 ./site/campus-3d/cammina.js
 ./site/campus-3d/campus-3d.js
 ./site/campus-3d/campus-agea-2020.pgw
@@ -204,6 +206,7 @@
 ./site/campus-3d/raccordo-asfalto.js
 ./site/campus-3d/rettorato-facciata.jpg
 ./site/campus-3d/scan/scan-georef.json
+./site/campus-3d/strumenti/asfalto-aiuole-build.mjs
 ./site/campus-3d/tex/azoto/avvertenze-travaso.jpg
 ./site/campus-3d/tex/azoto/rivoira-torino.jpg
 ./site/campus-3d/tex/azoto/scheda-azoto.jpg
