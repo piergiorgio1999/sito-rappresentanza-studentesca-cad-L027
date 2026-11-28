@@ -508,6 +508,55 @@
     const shapes = shapePath.toShapes(false);
     return { shapes, rings };
   }
+  /* Impronte a terra dei modelli di dettaglio (window.MAPPA3D_IMPRONTE: anelli [lon, lat] o funzioni che li
+     restituiscono), registrate dai loro moduli. Il volume della planimetria ufficiale viene ritagliato lì, così un
+     edificio vicino non compenetra il modello (ingresso di Piazzale Aldo Moro, prima diviso fra CU015 e CU016).
+     null = nessun ritaglio: senza libreria, senza impronte o senza sovrapposizione resta la forma originale. */
+  function planShapesFuoriModelli(rings) {
+    const pc = window.polygonClipping, impronte = Array.isArray(window.MAPPA3D_IMPRONTE) ? window.MAPPA3D_IMPRONTE : [];
+    if (!pc || typeof pc.difference !== 'function' || !impronte.length || !rings.length) return null;
+    try {
+      const box = (pts) => pts.reduce((b, [x, y]) => [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)], [Infinity, Infinity, -Infinity, -Infinity]);
+      const subject = rings.map((ring) => ring.map(([x, y]) => { const p = pdfToWorld(x, y); return [p.x, -p.z]; }));
+      const sb = box(subject.flat());
+      const cuts = impronte.map((item) => (typeof item === 'function' ? item() : item))
+        .filter((ring) => Array.isArray(ring) && ring.length >= 3)
+        .map((ring) => ring.map(([lon, lat]) => { const p = project([lon, lat]); return [p.x, p.n]; }))
+        .filter((ring) => { const b = box(ring); return b[0] < sb[2] && b[2] > sb[0] && b[1] < sb[3] && b[3] > sb[1]; })
+        .map((ring) => [ring]);
+      if (!cuts.length) return null;
+      const region = subject.slice(1).reduce((acc, ring) => pc.xor(acc, [ring]), [[subject[0]]]); // come fill-rule evenodd
+      const result = pc.difference(region, ...cuts);
+      const toPts = (ring) => ring.slice(0, -1).map(([x, y]) => new THREE.Vector2(x, y)); // polygon-clipping ripete il primo punto
+      return result.map((poly) => {
+        const shape = new THREE.Shape(toPts(poly[0]));
+        for (const hole of poly.slice(1)) shape.holes.push(new THREE.Path(toPts(hole)));
+        return shape;
+      });
+    } catch (_) { return null; }
+  }
+  // Solo questi volumi della planimetria vengono ritagliati dalle impronte: gli altri edifici restano identici.
+  const PLAN_RITAGLIATI = new Set(['CU015', 'CU016']);
+  function planGeometry(code, parsed, height) {
+    const shapes = (PLAN_RITAGLIATI.has(code) && planShapesFuoriModelli(parsed.rings)) || parsed.shapes;
+    const geometry = new THREE.ExtrudeGeometry(shapes, { depth: height, bevelEnabled: false, curveSegments: 1 });
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, 0.16, 0);
+    applyRoofUVs(geometry);
+    return geometry;
+  }
+  /* Rifà solo i volumi ritagliati: i moduli che registrano un'impronta la chiamano quando hanno letto gli
+     override (MAPPA3D_READY), perché buildPlanLayer può girare prima e usare i parametri di default. */
+  function ritagliaPlanimetria() {
+    for (const code of PLAN_RITAGLIATI) {
+      const mesh = planMeshesByCode.get(code), feature = mesh?.userData.planFeature;
+      const parsed = feature && planShape(feature.path);
+      if (!parsed?.shapes?.length) continue;
+      const old = mesh.geometry;
+      mesh.geometry = planGeometry(code, parsed, mesh.userData.height);
+      old.dispose();
+    }
+  }
   function buildPlanLayer(plan) {
     if (!plan || !alignment || !renderer) return;
     if (plan.colors) {
@@ -543,10 +592,7 @@
       });
       const props = osmFeature?.properties || {};
       const height = heightInfo({ height: osmBuilding?.height || props.height, levels: osmBuilding?.levels || props['building:levels'] }).value;
-      const geometry = new THREE.ExtrudeGeometry(parsed.shapes, { depth: height, bevelEnabled: false, curveSegments: 1 });
-      geometry.rotateX(-Math.PI / 2);
-      geometry.translate(0, 0.16, 0);
-      applyRoofUVs(geometry);
+      const geometry = planGeometry(code, parsed, height);
       const roof = new THREE.MeshBasicMaterial({ color: feature.lesson ? planColors.lesson : 0xffffff, map: showAerial ? roofTexture : null, toneMapped: false });
       const walls = new THREE.MeshStandardMaterial({ color: feature.lesson ? planColors.lesson : 0xb6a99e, roughness: 0.94, metalness: 0 });
       const mesh = new THREE.Mesh(geometry, [roof, walls]);
@@ -6182,6 +6228,6 @@ void main() {
     cortile: { get M() { return courtyardFrame ? courtyardFrame.M : null; }, rebuild: () => loadCourtyardModel() },
     // passeggiata in prima persona (cammina.js): fn viene chiamata a ogni fotogramma al posto di OrbitControls; null la chiude
     primaPersona: (fn) => { frameHook = typeof fn === 'function' ? fn : null; orbitKeys.clear(); zoomGoal = null; if (frameHook) { stopTour(); stopCameraFlight(); } if (controls) controls.enabled = !frameHook; },
-    tasselli: () => scheduleTiles() };
+    tasselli: () => scheduleTiles(), ritagliaPlanimetria: () => ritagliaPlanimetria() };
   init();
 })();

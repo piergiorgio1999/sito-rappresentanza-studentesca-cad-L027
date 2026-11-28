@@ -65,3 +65,7 @@ La registrazione è affine e approssimata: fit OLS su 38 codici condivisi tra pl
 
 - La corte CU006 usa una pavimentazione in opus incertum; due raccordi ortogonali chiudono i varchi tra le ali curve e i blocchi laterali. Le due scale antincendio laterali sono avvicinate alle ali e collegate con passerelle perpendicolari alla parete; quella centrale resta nella posizione originale.
 - Aggiunto il modello procedurale di Fisica Enrico Fermi (CU033); il proxy OSM è escluso dalla scena quando è attivo il modello di dettaglio.
+
+## Aggiornamento del 25/11/2026: ingresso di Piazzale Aldo Moro senza volumi bianchi
+
+- I volumi bianchi della planimetria ufficiale di Igiene (CU015) e Ortopedia (CU016) coprivano circa 340 e 230 m² dell'impronta del colonnato d'ingresso. `ingresso-aldo-moro.js` registra la propria impronta in `window.MAPPA3D_IMPRONTE` e `campus-3d.js` la sottrae ai volumi della planimetria prima dell'estrusione; il ritaglio vale solo per CU015 e CU016, gli altri edifici e i contorni di selezione restano invariati. Poiché la planimetria può essere costruita prima che arrivino gli override, `ingresso-aldo-moro.js` chiama `campus3d.ritagliaPlanimetria()` dopo `build()` per rifare i due volumi con l'impronta definitiva.
