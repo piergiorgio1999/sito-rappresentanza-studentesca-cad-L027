@@ -52,12 +52,12 @@ Anche anteprime, render e schermate da mostrare all'utente nascono da Git: apri
 la PR e usa l'anteprima che il workflow pubblica per quella PR. Un server
 locale serve solo alla verifica dell'agente prima del push.
 
-## Nuove parti del sito: prima in Claude Design
+## Nuove parti del sito: (solo per antropic prima in Claude Design) (gpt sites se openIA )
 
 Quando l'utente chiede di aggiungere una nuova parte al sito (sezione, scheda,
 pagina), non scrivere subito l'HTML.
 
-1. Crea prima la bozza come artifact Claude Design (tipo "Design") e consegnala
+1. Crea prima la bozza come artifact Claude Design (tipo "Design") o gpt sites se gpt  e consegnala
    all'utente.
 2. L'utente la modifica a piacimento nell'interfaccia di Claude.
 3. Solo dopo la sua conferma, genera la nuova parte del sito a partire da quella
