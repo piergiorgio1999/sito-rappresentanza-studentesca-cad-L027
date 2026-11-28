@@ -33,3 +33,7 @@
 
 - name: documentation
   color: "0075CA"
+
+- name: automerge
+  color: "0E8A16"
+  description: "Consente il merge automatico in squash quando tutti i gate della CI sono verdi"
