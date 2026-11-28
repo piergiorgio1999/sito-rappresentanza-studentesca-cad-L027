@@ -174,8 +174,8 @@
 ./site/campus-3d/editor-bridge.html
 ./site/campus-3d/editor.html
 ./site/campus-3d/editor.js
-./site/campus-3d/fisica-marconi.js
 ./site/campus-3d/fisica-fermi.js
+./site/campus-3d/fisica-marconi.js
 ./site/campus-3d/index.html
 ./site/campus-3d/ingresso-aldo-moro.js
 ./site/campus-3d/interno-aldo-moro.js
@@ -188,6 +188,7 @@
 ./site/campus-3d/models/magnolia_a_tronco.wasm
 ./site/campus-3d/models/magnolia_b_chioma.wasm
 ./site/campus-3d/models/magnolia_b_tronco.wasm
+./site/campus-3d/models/marconi-cu013-dossier.glb
 ./site/campus-3d/models/minerva-glb.json
 ./site/campus-3d/models/minerva.json
 ./site/campus-3d/models/studenti.json

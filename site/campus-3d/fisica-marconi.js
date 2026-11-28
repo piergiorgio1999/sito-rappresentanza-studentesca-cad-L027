@@ -152,6 +152,19 @@
     else setTimeout(() => whenReady(fn), 500);
   }
 
+  function ensureGltfLoader() {
+    if (typeof THREE.GLTFLoader === 'function') return Promise.resolve();
+    if (window.__campus3dGltfLoaderPromise) return window.__campus3dGltfLoaderPromise;
+    window.__campus3dGltfLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'vendor/GLTFLoader.js?v=128';
+      script.onload = () => typeof THREE.GLTFLoader === 'function' ? resolve() : reject(new Error('GLTFLoader non inizializzato'));
+      script.onerror = () => reject(new Error('GLTFLoader non disponibile'));
+      document.head.append(script);
+    });
+    return window.__campus3dGltfLoaderPromise;
+  }
+
   /* Litoceramica: listelli rettangolari posati a corsi orizzontali sfalsati, giunti chiari
      sottili. Il riquadro disegnato vale TILE_L metri di lato, così il repeat si calcola in metri. */
   const TILE_L = 3.0;
@@ -443,7 +456,36 @@
       if (o.isMesh && o.name !== 'finestra') { o.castShadow = true; o.receiveShadow = true; }
     });
     group.renderOrder = 2;
+    /* Mantiene il modello procedurale come ripiego. Il dossier CU013 è una mesh Z-up,
+       orientata sugli assi dell'edificio: la ruotiamo in Y-up e ne allineiamo il baricentro
+       dell'impronta al centroide OSM già usato sopra. Il piazzale incluso nel GLB viene escluso
+       per lasciare visibili strada e percorsi della Città Universitaria. */
+    const fallback = new THREE.Group(); fallback.name = 'marconi-procedurale';
+    while (group.children.length) fallback.add(group.children[0]);
+    group.add(fallback);
     scene.add(group);
+
+    ensureGltfLoader()
+      .then(() => new Promise((resolve, reject) => {
+        new THREE.GLTFLoader().load('models/marconi-cu013-dossier.glb', resolve, undefined, reject);
+      }))
+      .then((gltf) => {
+        const model = gltf.scene;
+        model.traverse((o) => {
+          if (o.name === 'piazzale' && o.parent) o.parent.remove(o);
+          if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+        });
+        // I nodi del GLB includono già la conversione Z-up → Y-up. Una seconda
+        // rotazione qui distendeva il fabbricato sul fianco (24 m in verticale).
+        model.position.set(-38.3568, 0, 30.0194); // baricentro area dei corpi, non del piazzale
+        model.name = 'marconi-dossier-cu013';
+        model.userData.source = 'Marconi_CU013_dossier_integrale.zip';
+        group.add(model);
+        fallback.visible = false;
+        group.userData.dossierLoaded = true;
+        window.dispatchEvent(new CustomEvent('campus3d-model-loaded', { detail: { root: 'fisica-marconi' } }));
+      })
+      .catch(() => { /* il modello procedurale resta visibile se il GLB non è disponibile */ });
 
     /* ---------------- visibilità e sostituzione dell'estrusione OSM ----------------
        Come matematica-castelnuovo.js con CU006: questo modulo prende il posto dell'estrusione

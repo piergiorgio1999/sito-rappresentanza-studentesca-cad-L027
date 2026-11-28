@@ -31,8 +31,9 @@
   const planStage = $('planStage');
   const mapHost = $('map3dHost');
   const drawer = $('detailDrawer');
+  const view3dButton = $('view3dButton');
+  const view2dButton = $('view2dButton');
   const tourButton = $('tourButton');
-  const modeButton = $('modeButton');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const metersPerLon = 111320 * Math.cos(((bounds.south + bounds.north) / 2) * Math.PI / 180);
   const metersPerLat = 111132;
@@ -306,8 +307,7 @@
     tourTimer = 0;
     const wasOn = Boolean(controls?.autoRotate);
     if (controls) controls.autoRotate = false;
-    tourButton.textContent = 'Rotazione';
-    tourButton.setAttribute('aria-pressed', 'false');
+    if (tourButton) { tourButton.textContent = 'Rotazione'; tourButton.setAttribute('aria-pressed', 'false'); }
     if (wasOn) notifyParent('campus-rotation', { on: false });
   }
   /* baricentro (area) del confine CU e distanza che lo inquadra tutto */
@@ -419,11 +419,10 @@
     planStage.hidden = !showPlan;
     photoStage.hidden = is3d || showPlan;
     mapHost.classList.toggle('active', is3d);
-    modeButton.textContent = is3d ? 'Vista ortofoto' : 'Vista 3D';
-    modeButton.setAttribute('aria-pressed', String(is3d));
-    modeButton.disabled = !renderer;
-    $('aerialToggle').hidden = is3d;
-    tourButton.disabled = reducedMotion || !is3d;
+    view3dButton.setAttribute('aria-pressed', String(is3d));
+    view2dButton.setAttribute('aria-pressed', String(!is3d));
+    view3dButton.disabled = !renderer;
+    view2dButton.disabled = false;
     setAerial(showAerial);
     if (is3d) setStatus('<b>Vista 3D locale pronta.</b> Volumi indicativi da OpenStreetMap; seleziona un edificio per consultare aule e lezioni.');
     else if (!renderer) setStatus('<b>WebGL non disponibile.</b> Ortofoto AGEA e impronte restano esplorabili.', true);
@@ -434,8 +433,7 @@
     if (!controls || reducedMotion || currentView !== '3d' || viewDim === '2d') return;
     stopTour();
     flyTo(campusCentroid(), campusFitDistance(), 1100);
-    tourButton.textContent = 'Ferma rotazione';
-    tourButton.setAttribute('aria-pressed', 'true');
+    if (tourButton) { tourButton.textContent = 'Ferma rotazione'; tourButton.setAttribute('aria-pressed', 'true'); }
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.6;
     notifyParent('campus-rotation', { on: true });
@@ -462,7 +460,6 @@
   function setBuildingVisibility(visible) {
     showBuildings = visible;
     if (buildingGroup) buildingGroup.visible = visible;
-    $('buildingsToggle').setAttribute('aria-pressed', String(visible));
     $('footprints').hidden = !visible;
     const planFallback = planStage.querySelector('.plan-fallback-paths');
     if (planFallback) planFallback.hidden = !visible;
@@ -6126,9 +6123,8 @@ void main() {
     photoStage.hidden = false;
     planStage.hidden = true;
     mapHost.classList.remove('active');
-    modeButton.disabled = true;
-    modeButton.textContent = 'Vista 3D non disponibile';
-    tourButton.disabled = true;
+    view3dButton.disabled = true;
+    view2dButton.disabled = false;
     setStatus(`<b>Vista 3D non disponibile.</b> ${esc(message)}`, true);
     if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(message || '') }); }
   }
@@ -6146,26 +6142,12 @@ void main() {
       renderList();
     });
     $('search').addEventListener('input', renderList);
-    $('planButton').addEventListener('click', returnToPlan);
     document.querySelectorAll('#officialPlanLink,#detailCode,#detailTitle a').forEach((link) => link.addEventListener('click', (event) => { event.preventDefault(); returnToPlan(); }));
-    $('tourButton').addEventListener('click', () => tourButton.getAttribute('aria-pressed') === 'true' ? stopTour() : startTour());
-    modeButton.addEventListener('click', () => setView(currentView === '3d' ? 'ortho' : '3d'));
-    $('aerialToggle').addEventListener('click', () => setAerial(!showAerial));
-    $('buildingsToggle').addEventListener('click', () => setBuildingVisibility(!showBuildings));
+    view3dButton.addEventListener('click', () => setView('3d'));
+    view2dButton.addEventListener('click', () => setView('ortho'));
     document.querySelector('.drawer-close').addEventListener('click', closeDetails);
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeDetails(); showGuest(false); } });
     $('guestClose')?.addEventListener('click', () => showGuest(false));
-    $('planLayerToggle')?.addEventListener('click', () => {
-      planVisible = !planVisible;
-      if (planImagePlane) planImagePlane.visible = planVisible;
-      updatePlanSelection();
-      $('planLayerToggle').setAttribute('aria-pressed', String(planVisible));
-      if (embedded && currentView !== '3d') setView('ortho');
-    });
-    $('planOpacity')?.addEventListener('input', (event) => {
-      planOpacity = Number(event.target.value) / 100;
-      if (planImageMaterial) planImageMaterial.opacity = planOpacity;
-    });
   }
   async function loadDependency(path, ready) {
     if (ready()) return;
@@ -6188,10 +6170,6 @@ void main() {
   async function init() {
     loadTileManifest();
     bindUI();
-    if (reducedMotion) {
-      tourButton.disabled = true;
-      tourButton.title = 'Tour disattivato dalle preferenze di movimento ridotto.';
-    }
     try {
       const [buildingResponse, contextResponse] = await Promise.all([fetch(SOURCE), fetch(CONTEXT_SOURCE)]);
       if (!buildingResponse.ok || !contextResponse.ok) throw new Error('I dati locali del campus non sono disponibili.');
@@ -6220,7 +6198,6 @@ void main() {
       applyFacadeFile(); // facciate dei file (texture e finestre dei muri), se non c'è l'editor
       if (!extrasGroup) buildMinervaArea(); // Minerva e vasca anche senza la planimetria del sito principale
       setView('3d');
-      tourButton.disabled = reducedMotion;
       if (selectedCode) {
         const selected = buildings.find((b) => b.code === selectedCode);
         if (selected) flyTo(planPointsByCode.get(selectedCode) || (selected.centroid ? project([selected.centroid.lon, selected.centroid.lat]) : null), 500, 0);
@@ -6230,8 +6207,7 @@ void main() {
       if (renderer) renderer.setAnimationLoop(null);
       mapHost.classList.remove('active');
       setStatus(`<b>Non riesco a preparare la mappa 3D.</b> ${esc(error.message || 'Puoi continuare con la planimetria.')}`, true);
-      modeButton.disabled = true;
-      tourButton.disabled = true;
+      view3dButton.disabled = true;
       photoStage.hidden = false;
       planStage.hidden = true;
       if (!parentUnavailableSent) { parentUnavailableSent = true; notifyParent('campus-unavailable', { message: String(error.message || '') }); }
